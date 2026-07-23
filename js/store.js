@@ -353,7 +353,7 @@ function seedDemoData() {
       phone: '9876543210',
       parentName: 'Rajesh Sharma',
       parentPhone: '9876500011',
-      parentEmail: 'rajesh@email.com',
+      parentEmail: 'sharma@family.demo',
       address: '12 Park Street, Mumbai',
       joinDate: '2025-06-01',
       notes: 'Strong in Physics',
@@ -490,11 +490,45 @@ function applyCenterListingMigration(data) {
 }
 
 export function migrateCenterListings(data) {
-  const run = (d) => applyBranchMigration(applyTuitionCategoriesMigration(applyCenterListingMigration(d)));
+  const run = (d) => applyFamilyLoginMigration(applyBranchMigration(applyTuitionCategoriesMigration(applyCenterListingMigration(d))));
   if (arguments.length > 0) return run(data);
   state = run(state);
   saveData(state);
   return state;
+}
+
+export function migrateFamilyLogin(data) {
+  if (arguments.length > 0) return applyFamilyLoginMigration(data);
+  state = applyFamilyLoginMigration(state);
+  saveData(state);
+  return state;
+}
+
+function applyFamilyLoginMigration(data) {
+  if (data._migratedV9) return data;
+
+  const users = data.users || [];
+  const s1 = (data.students || []).find((s) => s.email === 'aarav@email.com')
+    || data.students?.[0];
+  const centerId = s1?.centerId || users.find((u) => u.centerId)?.centerId || data.centers?.[0]?.id;
+  const familyEmail = 'sharma@family.demo';
+
+  if (centerId && !users.some((u) => u.email === familyEmail)) {
+    users.push({
+      id: uid('user'),
+      centerId,
+      email: familyEmail,
+      password: 'demo123',
+      role: 'family',
+      name: 'Sharma Family',
+      parentName: 'Rajesh Sharma',
+      linkedStudentIds: s1 ? [s1.id] : [],
+    });
+  }
+
+  data.users = users.filter((u) => !['aarav@email.com', 'rajesh@email.com'].includes(u.email));
+  data._migratedV9 = true;
+  return data;
 }
 
 function defaultBranchForCenter(data, centerId) {
@@ -785,8 +819,16 @@ function applySeedDemoUsers(data) {
     { id: uid('user'), centerId, email: 'admin@brightminds.demo', password: 'demo123', role: 'center_admin', name: 'Center Admin' },
     { id: uid('user'), centerId, email: 'anita@tutorhub.com', password: 'demo123', role: 'teacher', name: t1?.name || 'Teacher 1', linkedTeacherId: t1?.id },
     { id: uid('user'), centerId, email: 'vikram@tutorhub.com', password: 'demo123', role: 'teacher', name: t2?.name || 'Teacher 2', linkedTeacherId: t2?.id },
-    { id: uid('user'), centerId, email: 'aarav@email.com', password: 'demo123', role: 'student', name: s1?.name || 'Student', linkedStudentId: s1?.id },
-    { id: uid('user'), centerId, email: 'rajesh@email.com', password: 'demo123', role: 'parent', name: 'Rajesh Sharma', linkedStudentIds: s1 ? [s1.id] : [] },
+    {
+      id: uid('user'),
+      centerId,
+      email: 'sharma@family.demo',
+      password: 'demo123',
+      role: 'family',
+      name: 'Sharma Family',
+      parentName: 'Rajesh Sharma',
+      linkedStudentIds: s1 ? [s1.id] : [],
+    },
   ];
   return data;
 }
@@ -1059,11 +1101,40 @@ export function convertLeadToStudent(leadId, batchId) {
     notes: lead.notes || '',
   };
   saveStudent(student);
+  ensureFamilyAccountForStudent(student, lead);
   lead.stage = 'converted';
   lead.convertedStudentId = student.id;
   addLeadActivity(leadId, 'converted', `Enrolled in ${batch?.name || 'batch'}`);
   persist();
   return student;
+}
+
+function ensureFamilyAccountForStudent(student, lead) {
+  const parentEmail = (lead.parentEmail || lead.email || '').trim().toLowerCase();
+  if (!parentEmail) return null;
+
+  let user = findUserByEmail(parentEmail);
+  if (user) {
+    if (user.role === 'family') {
+      const ids = new Set(user.linkedStudentIds || []);
+      ids.add(student.id);
+      user.linkedStudentIds = [...ids];
+    }
+    persist();
+    return user;
+  }
+
+  user = createUser({
+    centerId: student.centerId,
+    name: lead.parentName || `${student.name}'s Family`,
+    email: parentEmail,
+    password: 'demo123',
+    role: 'family',
+    parentName: lead.parentName || undefined,
+    linkedStudentIds: [student.id],
+  });
+  persist();
+  return user;
 }
 
 export function markSessionComplete(batchId, sessionId, completed = true) {
@@ -1184,6 +1255,13 @@ export function getStudents(batchId) {
       students = students.filter((x) => x.id === s.linkedStudentId);
     } else if (s?.role === 'parent' && s.linkedStudentIds?.length) {
       students = students.filter((x) => s.linkedStudentIds.includes(x.id));
+    } else if (s?.role === 'family' && s.linkedStudentIds?.length) {
+      if (s.familyView === 'student') {
+        const sid = s.activeStudentId || s.linkedStudentIds[0];
+        students = students.filter((x) => x.id === sid);
+      } else {
+        students = students.filter((x) => s.linkedStudentIds.includes(x.id));
+      }
     } else if (s?.role === 'teacher' && s.linkedTeacherId) {
       const batchIds = new Set(getBatches().map((b) => b.id));
       students = students.filter((x) => batchIds.has(x.batchId));

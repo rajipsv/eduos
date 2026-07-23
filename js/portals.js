@@ -117,6 +117,7 @@ export function getPortalConfig(role) {
 }
 
 export function getDefaultView(role) {
+  if (role === 'family') return 'parentPortal';
   return getPortalConfig(role).defaultView;
 }
 
@@ -148,6 +149,9 @@ export function canAccessView(role, view) {
 
 export function getNavRole(session) {
   if (session?.role === 'platform_owner' && session.viewCenterId) return 'center_admin';
+  if (session?.role === 'family') {
+    return session.familyView === 'student' ? 'student' : 'parent';
+  }
   return session?.role || 'center_admin';
 }
 

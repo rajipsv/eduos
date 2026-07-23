@@ -63,6 +63,7 @@ const PORTAL_META = {
   platform: { title: 'Platform owner login', hint: 'owner@eduos.app' },
   center: { title: 'Center admin login', hint: 'admin@brightminds.demo' },
   teacher: { title: 'Teacher login', hint: 'anita@tutorhub.com' },
+  family: { title: 'Family login', hint: 'sharma@family.demo' },
   student: { title: 'Student login', hint: 'aarav@email.com' },
   parent: { title: 'Parent login', hint: 'rajesh@email.com' },
 };

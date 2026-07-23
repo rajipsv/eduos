@@ -1,6 +1,6 @@
-import { getCenters, saveLead } from './store.js';
+import { getCenters, saveLead, getBranches, getDefaultBranch } from './store.js';
 import {
-  getSession, getCurrentUser, getCurrentRole,
+  getSession, getCurrentUser, getEffectiveRole,
   getLinkedStudentId, getLinkedStudentIds,
 } from './auth.js';
 import {
@@ -17,7 +17,7 @@ export const TUITION_PAGE_SIZE = 6;
 export const TUITION_PAGE_STEP = 6;
 
 export function canSendTuitionInquiry() {
-  const role = getCurrentRole();
+  const role = getEffectiveRole();
   return role === 'student' || role === 'parent';
 }
 
@@ -62,7 +62,7 @@ export function getListedCenters(rawState) {
 function getEnrolledCenterIds(rawState) {
   const session = getSession();
   const ids = new Set();
-  const role = getCurrentRole();
+  const role = getEffectiveRole();
 
   if (role === 'student') {
     const sid = getLinkedStudentId();
@@ -86,7 +86,7 @@ function getEnrolledCenterIds(rawState) {
 function enrolledBadge(centerId, rawState) {
   const ids = getEnrolledCenterIds(rawState);
   if (!ids.has(centerId)) return '';
-  const role = getCurrentRole();
+  const role = getEffectiveRole();
   if (role === 'parent') {
     return '<span class="badge badge-green" style="margin-left:6px">Your child enrolled here</span>';
   }
@@ -233,20 +233,22 @@ export function renderTuitionMarketplace(rawState, options = {}) {
 }
 
 function inquiryFormHtml(listing, rawState) {
-  const role = getCurrentRole();
+  const role = getEffectiveRole();
   const user = getCurrentUser();
   const session = getSession();
+  const branchField = branchPickerHtml(listing.id);
 
   if (role === 'parent') {
     const childIds = getLinkedStudentIds();
     const children = (rawState?.students || []).filter((s) => childIds.includes(s.id));
     return `
       <div class="form-grid">
+        ${branchField}
         <div class="form-group"><label>Child</label>
           <select id="tmChild">${children.map((s) => `<option value="${s.id}">${s.name} · Grade ${s.grade || '—'}</option>`).join('') || '<option value="">No linked child</option>'}
           </select>
         </div>
-        <div class="form-group"><label>Your name</label><input id="tmName" value="${user?.name || ''}"></div>
+        <div class="form-group"><label>Your name</label><input id="tmName" value="${user?.parentName || user?.name || ''}"></div>
         <div class="form-group"><label>Email</label><input id="tmEmail" value="${user?.email || ''}"></div>
         <div class="form-group full"><label>Message</label><textarea id="tmMessage" rows="3" placeholder="Tell ${listing.name} what you are looking for…"></textarea></div>
       </div>`;
@@ -256,6 +258,7 @@ function inquiryFormHtml(listing, rawState) {
   const student = rawState?.students?.find((s) => s.id === sid) || getStudentsFallback(rawState, session);
   return `
     <div class="form-grid">
+      ${branchField}
       <div class="form-group"><label>Your name</label><input id="tmName" value="${student?.name || user?.name || ''}"></div>
       <div class="form-group"><label>Email</label><input id="tmEmail" value="${user?.email || ''}"></div>
       <div class="form-group"><label>Grade</label><input id="tmGrade" value="${student?.grade || ''}"></div>
@@ -268,6 +271,38 @@ function getStudentsFallback(rawState, session) {
   return (rawState?.students || []).find((s) => s.centerId === session.centerId);
 }
 
+function branchPickerHtml(centerId) {
+  const branches = getBranches(centerId);
+  if (branches.length <= 1) return '';
+  const defaultId = getDefaultBranch(centerId)?.id || branches[0]?.id;
+  return `
+    <div class="form-group">
+      <label>Preferred branch</label>
+      <select id="tmBranch">${branches.map((b) =>
+    `<option value="${b.id}"${b.id === defaultId ? ' selected' : ''}>${b.name}${b.city ? ` · ${b.city}` : ''}</option>`,
+  ).join('')}</select>
+    </div>`;
+}
+
+function resolveInquiryBranchId(listing, rawState, role) {
+  const picked = document.getElementById('tmBranch')?.value;
+  if (picked) return picked;
+
+  if (role === 'student') {
+    const sid = getLinkedStudentId();
+    const student = rawState?.students?.find((s) => s.id === sid);
+    if (student?.branchId) return student.branchId;
+  }
+
+  if (role === 'parent') {
+    const childId = document.getElementById('tmChild')?.value;
+    const child = rawState?.students?.find((s) => s.id === childId);
+    if (child?.branchId) return child.branchId;
+  }
+
+  return getDefaultBranch(listing.id)?.id || null;
+}
+
 function guestInquiryFormHtml(listing) {
   return `
     <div class="panel">
@@ -275,6 +310,7 @@ function guestInquiryFormHtml(listing) {
       <div class="panel-body">
         <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px">No sign-in needed. Tell <strong>${listing.name}</strong> what you are looking for — they will contact you to schedule a demo and complete enrollment.</p>
         <div class="form-grid">
+          ${branchPickerHtml(listing.id)}
           <div class="form-group"><label>Your name</label><input id="tmName" placeholder="Parent or guardian name" autocomplete="name"></div>
           <div class="form-group"><label>Mobile</label><input id="tmPhone" type="tel" placeholder="10-digit mobile" autocomplete="tel"></div>
           <div class="form-group"><label>Email</label><input id="tmEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
@@ -283,7 +319,7 @@ function guestInquiryFormHtml(listing) {
           <div class="form-group full"><label>Message</label><textarea id="tmMessage" rows="3" placeholder="Programs interested in, preferred timing…"></textarea></div>
         </div>
         <button class="btn btn-primary" style="margin-top:12px" data-action="tuition-inquire" data-id="${listing.id}">Send inquiry</button>
-        <p style="font-size:0.78rem;color:var(--text-muted);margin-top:12px">Already enrolled? <button type="button" class="btn btn-ghost btn-sm" data-action="tuition-login" data-portal="parent" data-id="${listing.id}">Family sign in</button></p>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin-top:12px">Already enrolled? <button type="button" class="btn btn-ghost btn-sm" data-action="tuition-login" data-portal="family" data-id="${listing.id}">Family sign in</button></p>
       </div>
     </div>`;
 }
@@ -444,11 +480,12 @@ export function bindTuitionMarketplaceEvents(ctx) {
 }
 
 function submitInquiry(listing, rawState, toast, closeModal) {
-  const role = getCurrentRole();
+  const role = getEffectiveRole();
   const name = document.getElementById('tmName')?.value?.trim();
   const email = document.getElementById('tmEmail')?.value?.trim() || '';
   const phone = document.getElementById('tmPhone')?.value?.trim() || '';
   const message = document.getElementById('tmMessage')?.value?.trim() || '';
+  const branchId = resolveInquiryBranchId(listing, rawState, role);
 
   if (!name) {
     toast('Name is required', 'error');
@@ -489,6 +526,7 @@ function submitInquiry(listing, rawState, toast, closeModal) {
 
   saveLead({
     centerId: listing.id,
+    branchId,
     name: leadName,
     email,
     grade,

@@ -58,7 +58,7 @@ export const LANDING_TESTIMONIALS = [
 
 export const LANDING_STATS = [
   { value: '9', label: 'Platform pillars' },
-  { value: '5', label: 'Role-based portals' },
+  { value: '4', label: 'Role-based portals' },
   { value: '1', label: 'Ops platform — not an LMS' },
 ];
 
@@ -66,8 +66,7 @@ export const LOGIN_PORTALS = [
   { id: 'platform', title: 'Platform owner', subtitle: 'All centers · monitor · support' },
   { id: 'center', title: 'Center admin', subtitle: 'CRM, batches, staff, BI' },
   { id: 'teacher', title: 'Teacher', subtitle: 'Schedule, attendance, classes' },
-  { id: 'student', title: 'Student', subtitle: 'Classes & homework' },
-  { id: 'parent', title: 'Parent', subtitle: 'Child progress & messages' },
+  { id: 'family', title: 'Family', subtitle: 'One login — parent & student views' },
 ];
 
 function stars(n) {

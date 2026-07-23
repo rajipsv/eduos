@@ -1,6 +1,6 @@
 import { exportAll, getRawState, initStore, getStorageLabel } from './store.js';
 import { renderView, pageMeta, initCharts, bindViewEvents } from './views.js';
-import { initAuth, getSession, logout, getSessionLabel, getCurrentRole, platformExitCenterView, canSwitchBranch, setActiveBranch, getActiveBranchId } from './auth.js';
+import { initAuth, getSession, logout, getSessionLabel, platformExitCenterView, canSwitchBranch, setActiveBranch, getActiveBranchId, setFamilyView, isFamilyAccount } from './auth.js';
 import { renderNavHtml, getDefaultView, canAccessView, getNavRole, getSectionIdForView } from './portals.js';
 import { renderAuthScreen, bindAuthEvents } from './auth-views.js';
 import { platformPageMeta } from './platform-views.js';
@@ -20,6 +20,7 @@ const mainNav = document.getElementById('mainNav');
 const sessionLabel = document.getElementById('sessionLabel');
 const storageLabelEl = document.getElementById('storageLabel');
 const branchSelect = document.getElementById('branchSelect');
+const familyViewSelect = document.getElementById('familyViewSelect');
 const modalOverlay = document.getElementById('modalOverlay');
 const modalRoot = document.getElementById('modalRoot');
 const modalTitle = document.getElementById('modalTitle');
@@ -74,10 +75,11 @@ function closeModal() {
 }
 
 function navigate(view, params = {}) {
-  const role = getCurrentRole();
+  const session = getSession();
+  const navRole = getNavRole(session);
   if (params.centerId) platformDetailCenterId = params.centerId;
 
-  if (role && !canAccessView(role, view)) {
+  if (navRole && !canAccessView(navRole, view)) {
     toast('You do not have access to that page', 'error');
     return;
   }
@@ -181,6 +183,14 @@ function syncBranchSwitcher(session) {
   ).join('')}`;
 }
 
+function syncFamilyViewSwitcher(session) {
+  if (!familyViewSelect) return;
+  const show = isFamilyAccount();
+  familyViewSelect.classList.toggle('hidden', !show);
+  if (!show) return;
+  familyViewSelect.value = session?.familyView === 'student' ? 'student' : 'parent';
+}
+
 function buildShellForSession(session) {
   document.querySelector('.support-banner')?.remove();
   const navRole = getNavRole(session);
@@ -193,6 +203,7 @@ function buildShellForSession(session) {
     storageLabelEl.classList.toggle('session-pill-warn', label !== 'Neon PostgreSQL');
   }
   syncBranchSwitcher(session);
+  syncFamilyViewSwitcher(session);
   bindNavClicks();
   if (navRole === 'center_admin') syncPillarNav(currentView);
 
@@ -267,12 +278,13 @@ document.getElementById('exportBtn')?.addEventListener('click', () => {
 });
 
 document.getElementById('quickNotifyBtn')?.addEventListener('click', () => {
-  const role = getCurrentRole();
-  if (role === 'platform_owner' && !getSession()?.viewCenterId) {
+  const session = getSession();
+  const navRole = getNavRole(session);
+  if (session?.role === 'platform_owner' && !session.viewCenterId) {
     toast('Open a center in support view first', 'error');
     return;
   }
-  navigate(canAccessView(role, 'commHub') ? 'commHub' : getDefaultView(role));
+  navigate(canAccessView(navRole, 'commHub') ? 'commHub' : getDefaultView(session.role));
 });
 
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
@@ -284,6 +296,12 @@ branchSelect?.addEventListener('change', () => {
   setActiveBranch(branchSelect.value || null);
   buildShellForSession(getSession());
   ctx.refresh();
+});
+
+familyViewSelect?.addEventListener('change', () => {
+  setFamilyView(familyViewSelect.value);
+  buildShellForSession(getSession());
+  navigate(getDefaultView('family'));
 });
 
 try {

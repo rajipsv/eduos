@@ -96,6 +96,10 @@
           <span class="session-pill" id="sessionLabel"></span>
           <span class="session-pill session-pill-muted" id="storageLabel" title="Where your data is saved"></span>
           <select id="branchSelect" class="branch-select hidden" aria-label="Filter by branch"></select>
+          <select id="familyViewSelect" class="family-view-select hidden" aria-label="Switch family view">
+            <option value="parent">Parent view</option>
+            <option value="student">Student view</option>
+          </select>
 
           <button class="btn btn-ghost" id="exportBtn">Export Data</button>
 
@@ -165,7 +169,7 @@
 
     if (location.protocol !== 'file:') {
 
-      import('./js/app.js?v=20260723j').catch(function (err) {
+      import('./js/app.js?v=20260723k').catch(function (err) {
 
         document.getElementById('appShell').classList.remove('hidden');
 

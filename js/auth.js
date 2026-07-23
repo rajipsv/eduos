@@ -13,6 +13,12 @@ export const ROLES = {
   teacher: 'Teacher',
   student: 'Student',
   parent: 'Parent',
+  family: 'Family',
+};
+
+export const FAMILY_VIEWS = {
+  parent: 'Parent view',
+  student: 'Student view',
 };
 
 export function getSession() {
@@ -40,6 +46,40 @@ export function getCurrentUser() {
 
 export function getCurrentRole() {
   return getSession()?.role || null;
+}
+
+/** Portal role for family accounts — parent or student view. */
+export function getEffectiveRole() {
+  const session = getSession();
+  if (!session) return null;
+  if (session.role === 'family') {
+    return session.familyView === 'student' ? 'student' : 'parent';
+  }
+  return session.role;
+}
+
+export function isFamilyAccount() {
+  return getCurrentRole() === 'family';
+}
+
+export function getFamilyView() {
+  const session = getSession();
+  if (session?.role !== 'family') return null;
+  return session.familyView === 'student' ? 'student' : 'parent';
+}
+
+export function setFamilyView(view) {
+  const session = getSession();
+  if (!session || session.role !== 'family') return;
+  session.familyView = view === 'student' ? 'student' : 'parent';
+  const user = getCurrentUser();
+  if (session.familyView === 'student') {
+    const ids = user?.linkedStudentIds || session.linkedStudentIds || [];
+    session.activeStudentId = ids[0] || null;
+  } else {
+    session.activeStudentId = null;
+  }
+  setSession(resolveSessionBranch(session, user || {}));
 }
 
 export function getActiveBranchId() {
@@ -73,6 +113,22 @@ export function setActiveBranch(branchId) {
 function resolveSessionBranch(session, user) {
   const centerId = session.centerId || session.viewCenterId;
   if (!centerId) return session;
+
+  if (user.role === 'family') {
+    const ids = user.linkedStudentIds || session.linkedStudentIds || [];
+    const studentId = session.familyView === 'student'
+      ? (session.activeStudentId || ids[0])
+      : ids[0];
+    if (studentId) {
+      const student = getStudent(studentId);
+      if (student?.branchId) {
+        const branch = getBranch(student.branchId);
+        session.branchId = student.branchId;
+        session.branchName = branch?.name || null;
+        return session;
+      }
+    }
+  }
 
   if (user.role === 'student' && user.linkedStudentId) {
     const student = getStudent(user.linkedStudentId);
@@ -118,11 +174,24 @@ export function getLinkedTeacherId() {
 }
 
 export function getLinkedStudentId() {
-  return getSession()?.linkedStudentId || getCurrentUser()?.linkedStudentId || null;
+  const session = getSession();
+  const user = getCurrentUser();
+  if (session?.role === 'family' || user?.role === 'family') {
+    const ids = user?.linkedStudentIds || session?.linkedStudentIds || [];
+    if (getFamilyView() === 'student') {
+      return session?.activeStudentId || ids[0] || null;
+    }
+    return null;
+  }
+  return session?.linkedStudentId || user?.linkedStudentId || null;
 }
 
 export function getLinkedStudentIds() {
+  const session = getSession();
   const user = getCurrentUser();
+  if (session?.role === 'family' || user?.role === 'family') {
+    return user?.linkedStudentIds || session?.linkedStudentIds || [];
+  }
   return user?.linkedStudentIds || (user?.linkedStudentId ? [user.linkedStudentId] : []);
 }
 
@@ -140,6 +209,7 @@ export function login(email, password, expectedPortal) {
     teacher: 'teacher',
     student: 'student',
     parent: 'parent',
+    family: 'family',
   };
   const expectedRole = portalRoleMap[expectedPortal];
   if (expectedRole && user.role !== expectedRole) {
@@ -163,6 +233,8 @@ export function login(email, password, expectedPortal) {
     linkedTeacherId: user.linkedTeacherId || null,
     linkedStudentId: user.linkedStudentId || null,
     linkedStudentIds: user.linkedStudentIds || null,
+    familyView: user.role === 'family' ? 'parent' : null,
+    activeStudentId: null,
     viewCenterId: null,
   };
   setSession(resolveSessionBranch(session, user));
@@ -267,6 +339,10 @@ export function getSessionLabel() {
     return session.viewCenterId
       ? `Platform · viewing ${getCenter(session.viewCenterId)?.name || 'center'}${branchPart}`
       : 'Platform owner';
+  }
+  if (session.role === 'family') {
+    const viewLabel = FAMILY_VIEWS[getFamilyView()] || FAMILY_VIEWS.parent;
+    return `${session.centerName || 'Center'}${branchPart} · ${viewLabel}`;
   }
   return `${session.centerName || 'Center'}${branchPart} · ${ROLES[session.role] || session.role}`;
 }

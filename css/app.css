@@ -1680,6 +1680,20 @@ tr:last-child td { border-bottom: none; }
   display: none;
 }
 
+.family-view-select {
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  max-width: 160px;
+}
+
+.family-view-select.hidden {
+  display: none;
+}
+
 .support-banner {
   display: flex;
   align-items: center;

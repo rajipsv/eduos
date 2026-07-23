@@ -32,10 +32,10 @@ import { formatTime } from './scheduler.js';
 import { dayPickerHtml, bindDayPicker } from './scheduler.js';
 import { getRecentWebInquiries } from './crm.js';
 import { academyBanner } from './academy.js';
-import { getCurrentRole } from './auth.js';
+import { getEffectiveRole } from './auth.js';
 
 function canManageStudentSuccess() {
-  const role = getCurrentRole();
+  const role = getEffectiveRole();
   return role === 'center_admin' || role === 'teacher' || role === 'platform_owner';
 }
 
@@ -85,7 +85,7 @@ export function bindLayerEvents(view, ctx) {
 function renderStudentSuccess() {
   const students = getStudents();
   const sel = students[0]?.id || '';
-  const role = getCurrentRole();
+  const role = getEffectiveRole();
 
   if (role === 'parent') {
     return `
@@ -962,7 +962,7 @@ function bindStudentSuccessManageActions({ showModal, closeModal, toast, refresh
 }
 
 function bindStudentSuccessEvents({ showModal, closeModal, toast, refresh }) {
-  const role = getCurrentRole();
+  const role = getEffectiveRole();
   const studentId = () => document.getElementById('ssStudent')?.value || getStudents()[0]?.id;
 
   if (role === 'parent') {
