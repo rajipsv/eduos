@@ -62,6 +62,52 @@ export const LANDING_STATS = [
   { value: '1', label: 'Ops platform — not an LMS' },
 ];
 
+/** Internal sales WhatsApp — not shown on UI; used for wa.me links only. */
+const EDUOS_SALES_WHATSAPP = '919553371972';
+export const EDUOS_SALES_EMAIL = 'hello@eduos.app';
+
+export const LANDING_PRICING_TIERS = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price: '₹18,000',
+    period: '/ year',
+    note: '1 branch · up to 100 active students',
+    featured: true,
+    features: [
+      'Full EduOS workspace — CRM, academy, comms, family portal',
+      'Marketplace listing & guest inquiries',
+      'Best for single-location centers (~40–100 students)',
+    ],
+  },
+  {
+    id: 'branch',
+    name: 'Multi-branch add-on',
+    price: '+ ₹12,000',
+    period: '/ branch / year',
+    note: '+ ₹30 / student / year above 100 per branch',
+    featured: false,
+    features: [
+      'Add locations as branches on one center account',
+      'Branch switcher & branch-scoped CRM',
+      'One academy = one EduOS center (no duplicate signups)',
+    ],
+  },
+  {
+    id: 'pilot',
+    name: 'Design partner',
+    price: '90-day pilot',
+    period: ' · no charge',
+    note: 'Limited early centers',
+    featured: false,
+    features: [
+      'Full platform access during pilot',
+      'Feedback calls & case study (with permission)',
+      'Convert to Starter or branch plan after pilot',
+    ],
+  },
+];
+
 export const LOGIN_PORTALS = [
   { id: 'platform', title: 'Platform owner', subtitle: 'All centers · monitor · support' },
   { id: 'center', title: 'Center admin', subtitle: 'CRM, batches, staff, BI' },
@@ -71,6 +117,12 @@ export const LOGIN_PORTALS = [
 
 function stars(n) {
   return '★'.repeat(n) + '☆'.repeat(5 - n);
+}
+
+export function buildPricingWhatsAppUrl(planName) {
+  const digits = String(EDUOS_SALES_WHATSAPP).replace(/\D/g, '');
+  const text = `Hi EduOS team, I'm interested in the ${planName} plan. Please share platform subscription and payment details for my tuition center.`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }
 
 export function renderLandingHeader() {
@@ -86,6 +138,7 @@ export function renderLandingHeader() {
         </a>
         <nav class="landing-nav" aria-label="Main">
           <button type="button" class="landing-nav-link" data-scroll="features">Features</button>
+          <button type="button" class="landing-nav-link" data-scroll="pricing">Pricing</button>
           <button type="button" class="landing-nav-link" data-scroll="testimonials">Testimonials</button>
           <button type="button" class="landing-nav-link" data-scroll="tuitions">Browse tuitions</button>
         </nav>
@@ -149,6 +202,46 @@ export function renderLandingFeatures() {
     </section>`;
 }
 
+export function renderLandingPricing() {
+  const generalUrl = buildPricingWhatsAppUrl('EduOS platform');
+  return `
+    <section class="landing-section landing-section-alt" id="pricing">
+      <div class="landing-section-head">
+        <p class="landing-eyebrow">Platform subscription</p>
+        <h2>Simple annual plans for tuition centers</h2>
+        <p class="landing-section-sub">EduOS platform fee is separate from what you charge students — collect tuition on your own UPI or bank. Contact us on WhatsApp for invoice, UPI, or NEFT details and to activate your center.</p>
+      </div>
+      <div class="landing-pricing-grid">
+        ${LANDING_PRICING_TIERS.map((tier) => `
+          <article class="landing-pricing-card${tier.featured ? ' landing-pricing-card-featured' : ''}">
+            ${tier.featured ? '<span class="landing-pricing-badge">Most popular</span>' : ''}
+            <h3>${tier.name}</h3>
+            <div class="landing-pricing-price">
+              <span class="landing-pricing-amount">${tier.price}</span>
+              <span class="landing-pricing-period">${tier.period}</span>
+            </div>
+            <p class="landing-pricing-note">${tier.note}</p>
+            <ul class="landing-pricing-features">
+              ${tier.features.map((f) => `<li>${f}</li>`).join('')}
+            </ul>
+            <a
+              class="btn ${tier.featured ? 'btn-primary' : 'btn-secondary'} btn-sm landing-pricing-cta"
+              href="${buildPricingWhatsAppUrl(tier.name)}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Contact via WhatsApp</a>
+          </article>`).join('')}
+      </div>
+      <div class="landing-pricing-foot">
+        <p><strong>Example:</strong> 2 branches, 120 students (60 each) → ₹18,000 + ₹12,000 = <strong>₹30,000/year</strong>. GST may apply on platform fee.</p>
+        <div class="landing-pricing-contact">
+          <a class="btn btn-primary" href="${generalUrl}" target="_blank" rel="noopener noreferrer">Contact via WhatsApp</a>
+          <a class="landing-pricing-email" href="mailto:${EDUOS_SALES_EMAIL}?subject=EduOS%20platform%20subscription">${EDUOS_SALES_EMAIL}</a>
+        </div>
+      </div>
+    </section>`;
+}
+
 export function renderLandingTestimonials() {
   return `
     <section class="landing-section landing-section-alt" id="testimonials">
@@ -180,6 +273,13 @@ export function renderLandingFooter() {
           <strong>EduOS</strong>
         </div>
         <p>Operations platform for tuition centers — not course hosting.</p>
+        <p class="landing-footer-links">
+          <button type="button" class="landing-footer-link" data-scroll="pricing">Pricing</button>
+          <span aria-hidden="true">·</span>
+          <a href="${buildPricingWhatsAppUrl('EduOS platform')}" target="_blank" rel="noopener noreferrer">Contact via WhatsApp</a>
+          <span aria-hidden="true">·</span>
+          <a href="mailto:${EDUOS_SALES_EMAIL}">${EDUOS_SALES_EMAIL}</a>
+        </p>
         <p class="landing-footer-copy">© ${new Date().getFullYear()} EduOS · Tutor Hub demo</p>
       </div>
     </footer>`;

@@ -5,6 +5,7 @@ import {
   renderLandingHeader,
   renderLandingHero,
   renderLandingFeatures,
+  renderLandingPricing,
   renderLandingTestimonials,
   renderLandingFooter,
   bindLandingScroll,
@@ -27,6 +28,7 @@ function renderAuthHome() {
       <main>
         ${renderLandingHero()}
         ${renderLandingFeatures()}
+        ${renderLandingPricing()}
         ${renderLandingTestimonials()}
         <section class="landing-section landing-marketplace-wrap" id="tuitions">
           <div class="landing-section-head">
