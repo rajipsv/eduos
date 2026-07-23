@@ -98,7 +98,6 @@ function navigate(view, params = {}) {
     btn.classList.toggle('active', btn.dataset.view === view);
   });
 
-  const navRole = getNavRole(getSession());
   if (navRole === 'center_admin') {
     openNavSectionId = getSectionIdForView(navRole, view) || 'command';
     syncPillarNav(view);
