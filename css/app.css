@@ -1655,6 +1655,17 @@ tr:last-child td { border-bottom: none; }
   white-space: nowrap;
 }
 
+.session-pill-muted {
+  max-width: 160px;
+  font-size: 0.78rem;
+}
+
+.session-pill-warn {
+  color: var(--danger, #b42318);
+  border-color: color-mix(in srgb, var(--danger, #b42318) 35%, var(--border));
+  background: color-mix(in srgb, var(--danger, #b42318) 8%, var(--surface));
+}
+
 .support-banner {
   display: flex;
   align-items: center;

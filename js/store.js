@@ -191,6 +191,9 @@ export async function initStore() {
           await persistToDatabase(state);
           return state;
         }
+        console.warn('EduOS: API server running but database not connected.', info.reason || '');
+      } else {
+        console.warn('EduOS: /api/health returned', health.status, '— using static server? Start via start.bat for Neon sync.');
       }
     } catch (err) {
       console.warn('EduOS using localStorage (API unavailable):', err.message);

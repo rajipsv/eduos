@@ -17,6 +17,7 @@ const pageTitle = document.getElementById('pageTitle');
 const pageSubtitle = document.getElementById('pageSubtitle');
 const mainNav = document.getElementById('mainNav');
 const sessionLabel = document.getElementById('sessionLabel');
+const storageLabelEl = document.getElementById('storageLabel');
 const modalOverlay = document.getElementById('modalOverlay');
 const modalRoot = document.getElementById('modalRoot');
 const modalTitle = document.getElementById('modalTitle');
@@ -164,6 +165,11 @@ function buildShellForSession(session) {
   openNavSectionId = getSectionIdForView(navRole, getDefaultView(session.role)) || 'command';
   mainNav.innerHTML = renderNavHtml(navRole, { activeView: currentView, openSectionId: openNavSectionId });
   sessionLabel.textContent = getSessionLabel();
+  if (storageLabelEl) {
+    const label = getStorageLabel();
+    storageLabelEl.textContent = label;
+    storageLabelEl.classList.toggle('session-pill-warn', label !== 'Neon PostgreSQL');
+  }
   bindNavClicks();
   if (navRole === 'center_admin') syncPillarNav(currentView);
 
@@ -255,6 +261,13 @@ try {
   await initStore();
   const storageLabel = getStorageLabel();
   console.info(`EduOS storage: ${storageLabel}`);
+  if (storageLabelEl) {
+    storageLabelEl.textContent = storageLabel;
+    storageLabelEl.classList.toggle('session-pill-warn', storageLabel !== 'Neon PostgreSQL');
+  }
+  if (storageLabel !== 'Neon PostgreSQL') {
+    toast('Data is in browser only — restart via start.bat for Neon sync', 'error');
+  }
   initAuth();
 
   const session = getSession();

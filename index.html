@@ -94,6 +94,7 @@
         <div class="topbar-actions">
 
           <span class="session-pill" id="sessionLabel"></span>
+          <span class="session-pill session-pill-muted" id="storageLabel" title="Where your data is saved"></span>
 
           <button class="btn btn-ghost" id="exportBtn">Export Data</button>
 
@@ -163,7 +164,7 @@
 
     if (location.protocol !== 'file:') {
 
-      import('./js/app.js?v=20260723f').catch(function (err) {
+      import('./js/app.js?v=20260723g').catch(function (err) {
 
         document.getElementById('appShell').classList.remove('hidden');
 
