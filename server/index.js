@@ -4,7 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { getPool, testConnection } from './db.js';
+import { testConnection } from './db.js';
+import { getHealthPayload, loadAppState, saveAppState, removeAppState } from './state-api.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -13,7 +14,6 @@ dotenv.config({ path: path.join(root, '.env') });
 const app = express();
 const host = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT) || 8888;
-const STATE_ID = 'global';
 
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -31,26 +31,19 @@ app.use(cors());
 app.use(express.json({ limit: '12mb' }));
 
 app.get('/api/health', async (_req, res) => {
-  if (!process.env.DATABASE_URL) {
-    return res.json({ ok: true, db: false, reason: 'DATABASE_URL not configured' });
+  try {
+    res.json(await getHealthPayload());
+  } catch (err) {
+    console.error('GET /api/health failed:', err);
+    res.status(500).json({ ok: false, db: false, error: 'health_check_failed' });
   }
-  dbReady = await testConnection();
-  res.json({ ok: true, db: dbReady });
 });
 
 app.get('/api/state', async (_req, res) => {
-  if (!process.env.DATABASE_URL) {
-    return res.status(503).json({ error: 'database_not_configured' });
-  }
   try {
-    const result = await getPool().query(
-      'SELECT data, updated_at FROM app_state WHERE id = $1',
-      [STATE_ID],
-    );
-    if (!result.rows.length) {
-      return res.status(404).json({ error: 'not_found' });
-    }
-    res.json({ data: result.rows[0].data, updatedAt: result.rows[0].updated_at });
+    const result = await loadAppState();
+    if (result.error) return res.status(result.status).json({ error: result.error });
+    res.status(result.status).json(result.body);
   } catch (err) {
     console.error('GET /api/state failed:', err);
     res.status(500).json({ error: 'load_failed' });
@@ -58,20 +51,10 @@ app.get('/api/state', async (_req, res) => {
 });
 
 app.put('/api/state', async (req, res) => {
-  if (!process.env.DATABASE_URL) {
-    return res.status(503).json({ error: 'database_not_configured' });
-  }
-  if (!req.body || typeof req.body !== 'object') {
-    return res.status(400).json({ error: 'invalid_body' });
-  }
   try {
-    await getPool().query(
-      `INSERT INTO app_state (id, data, updated_at)
-       VALUES ($1, $2, NOW())
-       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`,
-      [STATE_ID, req.body],
-    );
-    res.json({ ok: true });
+    const result = await saveAppState(req.body);
+    if (result.error) return res.status(result.status).json({ error: result.error });
+    res.status(result.status).json(result.body);
   } catch (err) {
     console.error('PUT /api/state failed:', err);
     res.status(500).json({ error: 'save_failed' });
@@ -79,12 +62,10 @@ app.put('/api/state', async (req, res) => {
 });
 
 app.delete('/api/state', async (_req, res) => {
-  if (!process.env.DATABASE_URL) {
-    return res.status(503).json({ error: 'database_not_configured' });
-  }
   try {
-    await getPool().query('DELETE FROM app_state WHERE id = $1', [STATE_ID]);
-    res.json({ ok: true });
+    const result = await removeAppState();
+    if (result.error) return res.status(result.status).json({ error: result.error });
+    res.status(result.status).json(result.body);
   } catch (err) {
     console.error('DELETE /api/state failed:', err);
     res.status(500).json({ error: 'reset_failed' });

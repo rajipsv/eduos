@@ -40,6 +40,14 @@ const ctx = {
   rawState: null,
 };
 
+function getStorageFallbackHint() {
+  const host = location.hostname || '';
+  if (host.endsWith('.vercel.app') || host.includes('vercel')) {
+    return 'Set DATABASE_URL in Vercel env vars and redeploy (api/health must return db: true)';
+  }
+  return 'Data is in browser only — restart via start.bat for Neon sync';
+}
+
 function toast(message, type = 'default') {
   const el = document.createElement('div');
   el.className = `toast ${type}`;
@@ -266,7 +274,7 @@ try {
     storageLabelEl.classList.toggle('session-pill-warn', storageLabel !== 'Neon PostgreSQL');
   }
   if (storageLabel !== 'Neon PostgreSQL') {
-    toast('Data is in browser only — restart via start.bat for Neon sync', 'error');
+    toast(getStorageFallbackHint(), 'error');
   }
   initAuth();
 

@@ -193,7 +193,7 @@ export async function initStore() {
         }
         console.warn('EduOS: API server running but database not connected.', info.reason || '');
       } else {
-        console.warn('EduOS: /api/health returned', health.status, '— using static server? Start via start.bat for Neon sync.');
+        console.warn('EduOS: /api/health returned', health.status, '— API routes missing. On Vercel, deploy api/ folder and set DATABASE_URL.');
       }
     } catch (err) {
       console.warn('EduOS using localStorage (API unavailable):', err.message);
