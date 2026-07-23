@@ -329,4 +329,4 @@ export const CRM_STAGES = [
   { id: 'converted', label: 'Student' },
 ];
 
-export const CRM_SOURCES = ['Website', 'WhatsApp', 'Facebook Ads', 'Referral', 'Walk-in', 'Student Marketplace', 'Parent Marketplace', 'Other'];
+export const CRM_SOURCES = ['Website', 'WhatsApp', 'Facebook Ads', 'Referral', 'Walk-in', 'Guest Marketplace', 'Student Marketplace', 'Parent Marketplace', 'Other'];

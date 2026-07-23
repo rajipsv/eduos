@@ -32,7 +32,7 @@ function renderAuthHome() {
           <div class="landing-section-head">
             <p class="landing-eyebrow">Tuition marketplace</p>
             <h2>Find the right tuition center</h2>
-            <p class="landing-section-sub">Browse academics, dance, art, drawing, music, sports, coding, and more — filter by category, city, or program. Sign in as a student or parent to send an inquiry.</p>
+            <p class="landing-section-sub">Browse academics, dance, art, drawing, music, sports, coding, and more — send an inquiry without signing in. The center will follow up to schedule a demo and enrollment.</p>
           </div>
           <div class="auth-marketplace" id="authMarketplace">
             ${marketplaceHtml}

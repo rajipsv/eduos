@@ -268,18 +268,37 @@ function getStudentsFallback(rawState, session) {
   return (rawState?.students || []).find((s) => s.centerId === session.centerId);
 }
 
-function inquiryLoginPromptHtml(listing) {
+function guestInquiryFormHtml(listing) {
   return `
     <div class="panel">
       <div class="panel-header"><h3>Send inquiry</h3></div>
       <div class="panel-body">
-        <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.6">Sign in as a student or parent to express interest in <strong>${listing.name}</strong>. Your inquiry goes straight to their admissions pipeline.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
-          <button class="btn btn-primary" type="button" data-action="tuition-login" data-portal="student" data-id="${listing.id}">Student sign in</button>
-          <button class="btn btn-secondary" type="button" data-action="tuition-login" data-portal="parent" data-id="${listing.id}">Parent sign in</button>
+        <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px">No sign-in needed. Tell <strong>${listing.name}</strong> what you are looking for — they will contact you to schedule a demo and complete enrollment.</p>
+        <div class="form-grid">
+          <div class="form-group"><label>Your name</label><input id="tmName" placeholder="Parent or guardian name" autocomplete="name"></div>
+          <div class="form-group"><label>Mobile</label><input id="tmPhone" type="tel" placeholder="10-digit mobile" autocomplete="tel"></div>
+          <div class="form-group"><label>Email</label><input id="tmEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
+          <div class="form-group"><label>Child name</label><input id="tmChildName" placeholder="Student name (optional)"></div>
+          <div class="form-group"><label>Grade</label><input id="tmGrade" placeholder="8, 9, 10…"></div>
+          <div class="form-group full"><label>Message</label><textarea id="tmMessage" rows="3" placeholder="Programs interested in, preferred timing…"></textarea></div>
         </div>
+        <button class="btn btn-primary" style="margin-top:12px" data-action="tuition-inquire" data-id="${listing.id}">Send inquiry</button>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin-top:12px">Already enrolled? <button type="button" class="btn btn-ghost btn-sm" data-action="tuition-login" data-portal="parent" data-id="${listing.id}">Family sign in</button></p>
       </div>
     </div>`;
+}
+
+function inquiryBlockHtml(listing, rawState) {
+  if (canSendTuitionInquiry()) {
+    return `<div class="panel">
+      <div class="panel-header"><h3>Send inquiry</h3></div>
+      <div class="panel-body">
+        ${inquiryFormHtml(listing, rawState)}
+        <button class="btn btn-primary" style="margin-top:12px" data-action="tuition-inquire" data-id="${listing.id}">Send inquiry</button>
+      </div>
+    </div>`;
+  }
+  return guestInquiryFormHtml(listing);
 }
 
 function centerDetailHtml(listing, rawState) {
@@ -288,15 +307,7 @@ function centerDetailHtml(listing, rawState) {
     : '<span class="badge badge-gray">General programs</span>';
   const categories = renderCategoryBadges(listing.categories || []);
 
-  const inquiryBlock = canSendTuitionInquiry()
-    ? `<div class="panel">
-      <div class="panel-header"><h3>Send inquiry</h3></div>
-      <div class="panel-body">
-        ${inquiryFormHtml(listing, rawState)}
-        <button class="btn btn-primary" style="margin-top:12px" data-action="tuition-inquire" data-id="${listing.id}">Send inquiry</button>
-      </div>
-    </div>`
-    : inquiryLoginPromptHtml(listing);
+  const inquiryBlock = inquiryBlockHtml(listing, rawState);
 
   return `
     <div class="panel" style="margin-bottom:16px">
@@ -324,10 +335,6 @@ function bindDetailModalActions(listing, rawState, ctx) {
   const { closeModal, toast, onLoginRequest } = ctx;
 
   document.querySelector('[data-action="tuition-inquire"]')?.addEventListener('click', () => {
-    if (!canSendTuitionInquiry()) {
-      toast('Sign in as Student or Parent to send an inquiry', 'error');
-      return;
-    }
     submitInquiry(listing, rawState, toast, closeModal);
   });
 
@@ -437,14 +444,10 @@ export function bindTuitionMarketplaceEvents(ctx) {
 }
 
 function submitInquiry(listing, rawState, toast, closeModal) {
-  if (!canSendTuitionInquiry()) {
-    toast('Sign in as Student or Parent to send an inquiry', 'error');
-    return;
-  }
-
   const role = getCurrentRole();
   const name = document.getElementById('tmName')?.value?.trim();
-  const email = document.getElementById('tmEmail')?.value?.trim();
+  const email = document.getElementById('tmEmail')?.value?.trim() || '';
+  const phone = document.getElementById('tmPhone')?.value?.trim() || '';
   const message = document.getElementById('tmMessage')?.value?.trim() || '';
 
   if (!name) {
@@ -452,28 +455,45 @@ function submitInquiry(listing, rawState, toast, closeModal) {
     return;
   }
 
+  if (!canSendTuitionInquiry() && !phone && !email) {
+    toast('Please enter a mobile number or email so the center can reach you', 'error');
+    return;
+  }
+
   let grade = '';
   let notes = message;
-  let source = 'Student Marketplace';
+  let source = 'Guest Marketplace';
+  let leadName = name;
 
   if (role === 'parent') {
     const childId = document.getElementById('tmChild')?.value;
     const child = rawState?.students?.find((s) => s.id === childId);
-    grade = child?.grade || '';
+    grade = child?.grade || document.getElementById('tmGrade')?.value?.trim() || '';
     source = 'Parent Marketplace';
     notes = child
       ? `Child: ${child.name}. ${message}`.trim()
       : message;
-  } else {
+  } else if (role === 'student') {
     grade = document.getElementById('tmGrade')?.value?.trim() || '';
+    source = 'Student Marketplace';
+  } else {
+    const childName = document.getElementById('tmChildName')?.value?.trim();
+    grade = document.getElementById('tmGrade')?.value?.trim() || '';
+    if (childName) {
+      leadName = childName;
+      notes = [`Parent: ${name}`, childName ? `Child: ${childName}` : '', message].filter(Boolean).join('. ');
+    } else {
+      notes = message;
+    }
   }
 
   saveLead({
     centerId: listing.id,
-    name,
+    name: leadName,
     email,
     grade,
-    phone: '',
+    phone,
+    parentName: canSendTuitionInquiry() && role === 'parent' ? name : (role === 'student' ? undefined : name),
     course: listing.subjects.slice(0, 3).join(', '),
     source,
     stage: 'inquiry',
@@ -481,11 +501,11 @@ function submitInquiry(listing, rawState, toast, closeModal) {
     activities: [{
       id: `act_${Date.now()}`,
       type: 'inquiry',
-      note: `Submitted via Tuition Marketplace (${role})`,
+      note: `Submitted via Tuition Marketplace (${source})`,
       at: new Date().toISOString(),
     }],
   });
 
-  closeModal();
-  toast(`Inquiry sent to ${listing.name}`, 'success');
+  closeModal?.();
+  toast(`Inquiry sent to ${listing.name}. The center will contact you soon.`, 'success');
 }
