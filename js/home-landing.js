@@ -87,7 +87,7 @@ export function renderLandingHeader() {
         <nav class="landing-nav" aria-label="Main">
           <button type="button" class="landing-nav-link" data-scroll="features">Features</button>
           <button type="button" class="landing-nav-link" data-scroll="testimonials">Testimonials</button>
-          <button type="button" class="landing-nav-link" data-scroll="tuitions">Find tuitions</button>
+          <button type="button" class="landing-nav-link" data-scroll="tuitions">Browse tuitions</button>
         </nav>
         <div class="landing-header-cta">
           <button type="button" class="btn btn-primary btn-sm" data-auth-open-login>Log in</button>
@@ -104,10 +104,6 @@ export function renderLandingHero() {
           <p class="landing-eyebrow">The operating system for education businesses</p>
           <h1 class="landing-headline">Run your academy.<br>Delight every parent.<br><em>Scale with confidence.</em></h1>
           <p class="landing-lead">EduOS is not an LMS — it is the ops platform for tuition centers. Acquire students, run batches, communicate with families, and grow revenue from one place.</p>
-          <div class="landing-hero-actions">
-            <button type="button" class="btn btn-primary" data-scroll="tuitions">Browse tuitions</button>
-            <button type="button" class="btn btn-secondary" data-auth-open-login>Log in</button>
-          </div>
           <div class="landing-stats">
             ${LANDING_STATS.map((s) => `
               <div class="landing-stat">
