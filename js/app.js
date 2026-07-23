@@ -1,10 +1,11 @@
 import { exportAll, getRawState, initStore, getStorageLabel } from './store.js';
 import { renderView, pageMeta, initCharts, bindViewEvents } from './views.js';
-import { initAuth, getSession, logout, getSessionLabel, getCurrentRole, platformExitCenterView } from './auth.js';
+import { initAuth, getSession, logout, getSessionLabel, getCurrentRole, platformExitCenterView, canSwitchBranch, setActiveBranch, getActiveBranchId } from './auth.js';
 import { renderNavHtml, getDefaultView, canAccessView, getNavRole, getSectionIdForView } from './portals.js';
 import { renderAuthScreen, bindAuthEvents } from './auth-views.js';
 import { platformPageMeta } from './platform-views.js';
 import { TUITION_PENDING_KEY, TUITION_OPEN_KEY, canSendTuitionInquiry } from './tuition-marketplace.js';
+import { getBranches } from './store.js';
 
 let currentView = 'dashboard';
 let platformDetailCenterId = null;
@@ -18,6 +19,7 @@ const pageSubtitle = document.getElementById('pageSubtitle');
 const mainNav = document.getElementById('mainNav');
 const sessionLabel = document.getElementById('sessionLabel');
 const storageLabelEl = document.getElementById('storageLabel');
+const branchSelect = document.getElementById('branchSelect');
 const modalOverlay = document.getElementById('modalOverlay');
 const modalRoot = document.getElementById('modalRoot');
 const modalTitle = document.getElementById('modalTitle');
@@ -167,6 +169,18 @@ function bindNavClicks() {
   });
 }
 
+function syncBranchSwitcher(session) {
+  if (!branchSelect) return;
+  const show = canSwitchBranch();
+  branchSelect.classList.toggle('hidden', !show);
+  if (!show) return;
+  const branches = getBranches();
+  const active = getActiveBranchId() || '';
+  branchSelect.innerHTML = `<option value="">All branches</option>${branches.map((b) =>
+    `<option value="${b.id}"${b.id === active ? ' selected' : ''}>${b.name}${b.city ? ` · ${b.city}` : ''}</option>`,
+  ).join('')}`;
+}
+
 function buildShellForSession(session) {
   document.querySelector('.support-banner')?.remove();
   const navRole = getNavRole(session);
@@ -178,6 +192,7 @@ function buildShellForSession(session) {
     storageLabelEl.textContent = label;
     storageLabelEl.classList.toggle('session-pill-warn', label !== 'Neon PostgreSQL');
   }
+  syncBranchSwitcher(session);
   bindNavClicks();
   if (navRole === 'center_admin') syncPillarNav(currentView);
 
@@ -263,6 +278,12 @@ document.getElementById('quickNotifyBtn')?.addEventListener('click', () => {
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
   logout();
   mountAuth('home');
+});
+
+branchSelect?.addEventListener('change', () => {
+  setActiveBranch(branchSelect.value || null);
+  buildShellForSession(getSession());
+  ctx.refresh();
 });
 
 try {

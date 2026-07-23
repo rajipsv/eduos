@@ -95,6 +95,7 @@
 
           <span class="session-pill" id="sessionLabel"></span>
           <span class="session-pill session-pill-muted" id="storageLabel" title="Where your data is saved"></span>
+          <select id="branchSelect" class="branch-select hidden" aria-label="Filter by branch"></select>
 
           <button class="btn btn-ghost" id="exportBtn">Export Data</button>
 
@@ -164,7 +165,7 @@
 
     if (location.protocol !== 'file:') {
 
-      import('./js/app.js?v=20260723h').catch(function (err) {
+      import('./js/app.js?v=20260723i').catch(function (err) {
 
         document.getElementById('appShell').classList.remove('hidden');
 

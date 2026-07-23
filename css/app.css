@@ -1666,6 +1666,20 @@ tr:last-child td { border-bottom: none; }
   background: color-mix(in srgb, var(--danger, #b42318) 8%, var(--surface));
 }
 
+.branch-select {
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  max-width: 200px;
+}
+
+.branch-select.hidden {
+  display: none;
+}
+
 .support-banner {
   display: flex;
   align-items: center;

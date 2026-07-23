@@ -1,6 +1,7 @@
 import {
   getCenters, getCenter, saveCenter, getUsers, findUserByEmail, createUser, persistRaw,
   getState, seedDemoUsers, migrateMultiTenant, migrateCenterListings, initCenterSettings,
+  getDefaultBranch, getBranch, getStudent, getTeacher,
 } from './store.js';
 
 export const SESSION_KEY = 'tutorhub_session';
@@ -39,6 +40,66 @@ export function getCurrentUser() {
 
 export function getCurrentRole() {
   return getSession()?.role || null;
+}
+
+export function getActiveBranchId() {
+  return getSession()?.branchId || null;
+}
+
+export function canSwitchBranch() {
+  const role = getCurrentRole();
+  if (role === 'center_admin') return true;
+  if (role === 'platform_owner' && getSession()?.viewCenterId) return true;
+  return false;
+}
+
+export function setActiveBranch(branchId) {
+  const session = getSession();
+  if (!session || !canSwitchBranch()) return;
+  if (!branchId) {
+    session.branchId = null;
+    session.branchName = null;
+  } else {
+    const branch = getBranch(branchId);
+    if (!branch) return;
+    const centerId = getActiveCenterId();
+    if (branch.centerId !== centerId) return;
+    session.branchId = branch.id;
+    session.branchName = branch.name;
+  }
+  setSession(session);
+}
+
+function resolveSessionBranch(session, user) {
+  const centerId = session.centerId || session.viewCenterId;
+  if (!centerId) return session;
+
+  if (user.role === 'student' && user.linkedStudentId) {
+    const student = getStudent(user.linkedStudentId);
+    if (student?.branchId) {
+      const branch = getBranch(student.branchId);
+      session.branchId = student.branchId;
+      session.branchName = branch?.name || null;
+      return session;
+    }
+  }
+
+  if (user.role === 'teacher' && user.linkedTeacherId) {
+    const teacher = getTeacher(user.linkedTeacherId);
+    if (teacher?.branchId) {
+      const branch = getBranch(teacher.branchId);
+      session.branchId = teacher.branchId;
+      session.branchName = branch?.name || null;
+      return session;
+    }
+  }
+
+  const defaultBranch = getDefaultBranch(centerId);
+  if (defaultBranch) {
+    session.branchId = session.branchId || null;
+    session.branchName = session.branchId ? getBranch(session.branchId)?.name : null;
+  }
+  return session;
 }
 
 export function getActiveCenterId() {
@@ -97,13 +158,15 @@ export function login(email, password, expectedPortal) {
     email: user.email,
     centerId: user.centerId || null,
     centerName: center?.name || null,
+    branchId: null,
+    branchName: null,
     linkedTeacherId: user.linkedTeacherId || null,
     linkedStudentId: user.linkedStudentId || null,
     linkedStudentIds: user.linkedStudentIds || null,
     viewCenterId: null,
   };
-  setSession(session);
-  return { ok: true, session };
+  setSession(resolveSessionBranch(session, user));
+  return { ok: true, session: getSession() };
 }
 
 export function logout() {
@@ -144,21 +207,23 @@ export function registerCenter({ centerName, ownerName, email, phone, city, pass
   center.ownerUserId = user.id;
   saveCenter(center);
   initCenterSettings(center.id, center.name);
-  persistRaw();
 
-  setSession({
+  setSession(resolveSessionBranch({
     userId: user.id,
     role: 'center_admin',
     name: user.name,
     email: user.email,
     centerId: center.id,
     centerName: center.name,
+    branchId: null,
+    branchName: null,
     linkedTeacherId: null,
     linkedStudentId: null,
     linkedStudentIds: null,
     viewCenterId: null,
-  });
+  }, user));
 
+  persistRaw();
   return { ok: true, center, user };
 }
 
@@ -166,6 +231,8 @@ export function platformViewCenter(centerId) {
   const session = getSession();
   if (!session || session.role !== 'platform_owner') return;
   session.viewCenterId = centerId;
+  session.branchId = null;
+  session.branchName = null;
   setSession(session);
 }
 
@@ -195,10 +262,11 @@ export function initAuth() {
 export function getSessionLabel() {
   const session = getSession();
   if (!session) return '';
+  const branchPart = session.branchName ? ` · ${session.branchName}` : '';
   if (session.role === 'platform_owner') {
     return session.viewCenterId
-      ? `Platform · viewing ${getCenter(session.viewCenterId)?.name || 'center'}`
+      ? `Platform · viewing ${getCenter(session.viewCenterId)?.name || 'center'}${branchPart}`
       : 'Platform owner';
   }
-  return `${session.centerName || 'Center'} · ${ROLES[session.role] || session.role}`;
+  return `${session.centerName || 'Center'}${branchPart} · ${ROLES[session.role] || session.role}`;
 }

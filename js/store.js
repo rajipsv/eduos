@@ -20,16 +20,46 @@ function getActiveCenterIdFromSession() {
   }
 }
 
+function getActiveBranchIdFromSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SESSION_KEY));
+    if (!s?.branchId) return null;
+    return s.branchId;
+  } catch {
+    return null;
+  }
+}
+
 function scopeCenter(items = []) {
   const cid = getActiveCenterIdFromSession();
   if (!cid) return [...items];
   return items.filter((i) => i.centerId === cid);
 }
 
+function scopeBranch(items = []) {
+  const bid = getActiveBranchIdFromSession();
+  if (!bid) return [...items];
+  return items.filter((i) => !i.branchId || i.branchId === bid);
+}
+
+function scopeRecords(items = []) {
+  return scopeBranch(scopeCenter(items));
+}
+
 function withCenter(entity) {
   const cid = getActiveCenterIdFromSession();
   if (!cid || entity.centerId) return entity;
   return { ...entity, centerId: cid };
+}
+
+function withBranch(entity) {
+  const bid = getActiveBranchIdFromSession();
+  if (!bid || entity.branchId) return entity;
+  return { ...entity, branchId: bid };
+}
+
+function withTenant(entity) {
+  return withBranch(withCenter(entity));
 }
 
 const defaultData = () => ({
@@ -41,6 +71,7 @@ const defaultData = () => ({
   tests: [],
   messages: [],
   centers: [],
+  branches: [],
   users: [],
   centerSettings: {},
   _migratedV5: false,
@@ -95,6 +126,7 @@ function hydrateState(raw) {
   data.teachers = data.teachers || [];
   data.leads = data.leads || [];
   data.centers = data.centers || [];
+  data.branches = data.branches || [];
   data.users = data.users || [];
   data.organization = data.organization || defaultData().organization;
   data.students = data.students || [];
@@ -458,9 +490,115 @@ function applyCenterListingMigration(data) {
 }
 
 export function migrateCenterListings(data) {
-  const run = (d) => applyTuitionCategoriesMigration(applyCenterListingMigration(d));
+  const run = (d) => applyBranchMigration(applyTuitionCategoriesMigration(applyCenterListingMigration(d)));
   if (arguments.length > 0) return run(data);
   state = run(state);
+  saveData(state);
+  return state;
+}
+
+function defaultBranchForCenter(data, centerId) {
+  const branches = (data.branches || []).filter((b) => b.centerId === centerId);
+  return branches.find((b) => b.isDefault) || branches[0] || null;
+}
+
+function ensureCenterBranches(data, center) {
+  data.branches = data.branches || [];
+  let branches = data.branches.filter((b) => b.centerId === center.id);
+  if (!branches.length) {
+    const main = {
+      id: uid('branch'),
+      centerId: center.id,
+      name: `${center.name} — Main`,
+      city: center.city || '',
+      status: 'active',
+      isDefault: true,
+      createdAt: center.createdAt || new Date().toISOString().slice(0, 10),
+    };
+    data.branches.push(main);
+    branches = [main];
+  }
+  return branches;
+}
+
+function applyBranchMigration(data) {
+  if (data._migratedV8) return data;
+
+  data.branches = data.branches || [];
+
+  for (const center of data.centers || []) {
+    ensureCenterBranches(data, center);
+  }
+
+  const bright = (data.centers || []).find((c) => c.slug === 'bright-minds');
+  if (bright) {
+    const centerBranches = data.branches.filter((b) => b.centerId === bright.id);
+    if (centerBranches.length === 1) {
+      data.branches.push({
+        id: uid('branch'),
+        centerId: bright.id,
+        name: 'Thane Center',
+        city: 'Thane',
+        address: 'Eastern Express Highway',
+        status: 'active',
+        isDefault: false,
+        createdAt: '2025-06-01',
+      });
+    }
+
+    const mumbai = defaultBranchForCenter(data, bright.id);
+    const thane = data.branches.find((b) => b.centerId === bright.id && !b.isDefault);
+
+    for (const batch of (data.batches || []).filter((b) => b.centerId === bright.id)) {
+      if (batch.branchId) continue;
+      batch.branchId = batch.subjects?.includes('Algebra') || batch.name?.includes('Math')
+        ? thane?.id
+        : mumbai?.id;
+    }
+
+    for (const student of (data.students || []).filter((s) => s.centerId === bright.id)) {
+      if (student.branchId) continue;
+      const batch = (data.batches || []).find((b) => b.id === student.batchId);
+      student.branchId = batch?.branchId || mumbai?.id;
+    }
+
+    for (const teacher of (data.teachers || []).filter((t) => t.centerId === bright.id)) {
+      if (teacher.branchId) continue;
+      teacher.branchId = teacher.subjects?.includes('Mathematics') ? thane?.id : mumbai?.id;
+    }
+
+    (data.leads || []).filter((l) => l.centerId === bright.id).forEach((lead, idx) => {
+      if (lead.branchId) return;
+      lead.branchId = idx % 2 === 0 ? mumbai?.id : thane?.id;
+    });
+  }
+
+  for (const key of ['batches', 'students', 'teachers', 'leads', 'attendance', 'tests', 'messages']) {
+    for (const item of data[key] || []) {
+      if (!item.centerId || item.branchId) continue;
+      item.branchId = defaultBranchForCenter(data, item.centerId)?.id || null;
+    }
+  }
+
+  for (const att of data.attendance || []) {
+    if (att.branchId || !att.batchId) continue;
+    const batch = (data.batches || []).find((b) => b.id === att.batchId);
+    if (batch?.branchId) att.branchId = batch.branchId;
+  }
+
+  for (const test of data.tests || []) {
+    if (test.branchId || !test.batchId) continue;
+    const batch = (data.batches || []).find((b) => b.id === test.batchId);
+    if (batch?.branchId) test.branchId = batch.branchId;
+  }
+
+  data._migratedV8 = true;
+  return data;
+}
+
+export function migrateBranches(data) {
+  if (arguments.length > 0) return applyBranchMigration(data);
+  state = applyBranchMigration(state);
   saveData(state);
   return state;
 }
@@ -673,7 +811,63 @@ export function saveCenter(center) {
   if (idx >= 0) state.centers[idx] = center;
   else state.centers.push({ ...center, id: center.id || uid('center') });
   if (!state.centers) state.centers = [];
+  persist();
   return state.centers.find((c) => c.id === (center.id || state.centers.at(-1).id));
+}
+
+export function getBranches(centerId) {
+  ensureState();
+  let branches = state.branches || [];
+  const cid = centerId || getActiveCenterIdFromSession();
+  if (cid) branches = branches.filter((b) => b.centerId === cid);
+  return branches.filter((b) => b.status !== 'closed');
+}
+
+export function getBranch(id) {
+  ensureState();
+  return (state.branches || []).find((b) => b.id === id);
+}
+
+export function getDefaultBranch(centerId) {
+  const branches = getBranches(centerId);
+  return branches.find((b) => b.isDefault) || branches[0] || null;
+}
+
+export function createDefaultBranch(centerId, { name, city } = {}) {
+  ensureState();
+  const center = getCenter(centerId);
+  const existing = getDefaultBranch(centerId);
+  if (existing) return existing;
+  const branch = {
+    id: uid('branch'),
+    centerId,
+    name: name || `${center?.name || 'Center'} — Main`,
+    city: city || center?.city || '',
+    status: 'active',
+    isDefault: true,
+    createdAt: new Date().toISOString().slice(0, 10),
+  };
+  state.branches = state.branches || [];
+  state.branches.push(branch);
+  persist();
+  return branch;
+}
+
+export function saveBranch(branch) {
+  ensureState();
+  state.branches = state.branches || [];
+  const idx = state.branches.findIndex((b) => b.id === branch.id);
+  if (idx >= 0) state.branches[idx] = branch;
+  else {
+    state.branches.push({
+      ...branch,
+      id: uid('branch'),
+      centerId: branch.centerId || getActiveCenterIdFromSession(),
+      status: branch.status || 'active',
+      createdAt: branch.createdAt || new Date().toISOString().slice(0, 10),
+    });
+  }
+  persist();
 }
 
 export function getUsers() {
@@ -702,6 +896,8 @@ export function persistRaw() {
 export function initCenterSettings(centerId, name) {
   state.centerSettings = state.centerSettings || {};
   state.centerSettings[centerId] = { ...defaultData().settings, tutorName: name || 'Your Tutoring Center' };
+  const center = getCenter(centerId);
+  createDefaultBranch(centerId, { name: `${name || center?.name || 'Center'} — Main`, city: center?.city });
   persist();
 }
 
@@ -748,17 +944,17 @@ export function updateSettings(partial) {
 
 // Teachers
 export function getTeachers() {
-  return scopeCenter(state.teachers);
+  return scopeRecords(state.teachers);
 }
 
 export function getTeacher(id) {
-  return scopeCenter(state.teachers).find((t) => t.id === id);
+  return scopeRecords(state.teachers).find((t) => t.id === id);
 }
 
 export function saveTeacher(teacher) {
   const idx = state.teachers.findIndex((t) => t.id === teacher.id);
-  if (idx >= 0) state.teachers[idx] = withCenter(teacher);
-  else state.teachers.push(withCenter({ ...teacher, id: uid('teacher') }));
+  if (idx >= 0) state.teachers[idx] = withTenant(teacher);
+  else state.teachers.push(withTenant({ ...teacher, id: uid('teacher') }));
   persist();
 }
 
@@ -772,13 +968,13 @@ export function deleteTeacher(id) {
 
 // CRM Leads
 export function getLeads(stage) {
-  let leads = scopeCenter(state.leads);
+  let leads = scopeRecords(state.leads);
   if (stage) leads = leads.filter((l) => l.stage === stage);
   return leads;
 }
 
 export function getLead(id) {
-  return scopeCenter(state.leads).find((l) => l.id === id);
+  return scopeRecords(state.leads).find((l) => l.id === id);
 }
 
 export function saveLead(lead) {
@@ -788,7 +984,7 @@ export function saveLead(lead) {
     persist();
     return state.leads[idx];
   }
-  const entry = withCenter({ ...lead, id: uid('lead'), createdAt: lead.createdAt || new Date().toISOString().slice(0, 10), activities: lead.activities || [] });
+  const entry = withTenant({ ...lead, id: uid('lead'), createdAt: lead.createdAt || new Date().toISOString().slice(0, 10), activities: lead.activities || [] });
   state.leads.push(entry);
   persist();
   return entry;
@@ -852,6 +1048,7 @@ export function convertLeadToStudent(leadId, batchId) {
   const student = {
     name: lead.name,
     batchId,
+    branchId: lead.branchId || batch?.branchId,
     grade: lead.grade || '',
     email: lead.email || '',
     phone: lead.phone || '',
@@ -912,7 +1109,7 @@ export function getRawState() {
 }
 
 export function getBatches() {
-  let batches = scopeCenter(state.batches);
+  let batches = scopeRecords(state.batches);
   try {
     const s = JSON.parse(localStorage.getItem(SESSION_KEY));
     if (s?.role === 'teacher' && s.linkedTeacherId) {
@@ -923,7 +1120,7 @@ export function getBatches() {
 }
 
 export function getBatch(id) {
-  return scopeCenter(state.batches).find((b) => b.id === id);
+  return scopeRecords(state.batches).find((b) => b.id === id);
 }
 
 export function saveBatch(batch) {
@@ -934,7 +1131,7 @@ export function saveBatch(batch) {
 
   const idx = state.batches.findIndex((b) => b.id === normalized.id);
   if (idx >= 0) state.batches[idx] = normalized;
-  else state.batches.push(withCenter({ ...normalized, id: uid('batch'), createdAt: new Date().toISOString() }));
+  else state.batches.push(withTenant({ ...normalized, id: uid('batch'), createdAt: new Date().toISOString() }));
   persist();
 }
 
@@ -980,7 +1177,7 @@ export function getStudentReport(studentId) {
 
 // Students
 export function getStudents(batchId) {
-  let students = scopeCenter(state.students);
+  let students = scopeRecords(state.students);
   try {
     const s = JSON.parse(localStorage.getItem(SESSION_KEY));
     if (s?.role === 'student' && s.linkedStudentId) {
@@ -997,13 +1194,13 @@ export function getStudents(batchId) {
 }
 
 export function getStudent(id) {
-  return scopeCenter(state.students).find((s) => s.id === id);
+  return scopeRecords(state.students).find((s) => s.id === id);
 }
 
 export function saveStudent(student) {
   const idx = state.students.findIndex((s) => s.id === student.id);
   if (idx >= 0) state.students[idx] = student;
-  else state.students.push(withCenter({ ...student, id: uid('student') }));
+  else state.students.push(withTenant({ ...student, id: uid('student') }));
   persist();
 }
 
@@ -1018,7 +1215,7 @@ export function getAttendance(batchId, date) {
 }
 
 export function getAttendanceHistory(batchId) {
-  return scopeCenter(state.attendance)
+  return scopeRecords(state.attendance)
     .filter((a) => !batchId || a.batchId === batchId)
     .sort((a, b) => b.date.localeCompare(a.date));
 }
@@ -1028,13 +1225,13 @@ export function saveAttendance(batchId, date, records) {
   if (existing) {
     existing.records = records;
   } else {
-    state.attendance.push(withCenter({ id: uid('att'), batchId, date, records }));
+    state.attendance.push(withTenant({ id: uid('att'), batchId, date, records }));
   }
   persist();
 }
 
 export function getStudentAttendanceStats(studentId) {
-  const records = scopeCenter(state.attendance).flatMap((a) =>
+  const records = scopeRecords(state.attendance).flatMap((a) =>
     a.records[studentId] ? [{ date: a.date, status: a.records[studentId] }] : []
   );
   const total = records.length;
@@ -1046,19 +1243,19 @@ export function getStudentAttendanceStats(studentId) {
 
 // Tests
 export function getTests(batchId) {
-  let tests = scopeCenter(state.tests);
+  let tests = scopeRecords(state.tests);
   if (batchId) tests = tests.filter((t) => t.batchId === batchId);
   return tests;
 }
 
 export function getTest(id) {
-  return scopeCenter(state.tests).find((t) => t.id === id);
+  return scopeRecords(state.tests).find((t) => t.id === id);
 }
 
 export function saveTest(test) {
   const idx = state.tests.findIndex((t) => t.id === test.id);
   if (idx >= 0) state.tests[idx] = test;
-  else state.tests.push(withCenter({ ...test, id: uid('test') }));
+  else state.tests.push(withTenant({ ...test, id: uid('test') }));
   persist();
 }
 
@@ -1068,7 +1265,7 @@ export function deleteTest(id) {
 }
 
 export function getStudentTestStats(studentId) {
-  const results = scopeCenter(state.tests).flatMap((t) => {
+  const results = scopeRecords(state.tests).flatMap((t) => {
     const score = t.marks[studentId];
     if (score == null) return [];
     return [{ test: t.name, subject: t.subject, date: t.date, score, max: t.maxMarks, pct: Math.round((score / t.maxMarks) * 100) }];
@@ -1081,11 +1278,11 @@ export function getStudentTestStats(studentId) {
 
 // Messages
 export function getMessages() {
-  return [...scopeCenter(state.messages)].sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+  return [...scopeRecords(state.messages)].sort((a, b) => b.sentAt.localeCompare(a.sentAt));
 }
 
 export function addMessage(message) {
-  state.messages.unshift(withCenter({ ...message, id: uid('msg'), sentAt: new Date().toISOString() }));
+  state.messages.unshift(withTenant({ ...message, id: uid('msg'), sentAt: new Date().toISOString() }));
   persist();
 }
 
