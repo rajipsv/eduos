@@ -1,0 +1,50 @@
+Test ID,Priority,Area,Test Title,Preconditions,Steps,Expected Result,Account Email,Portal,Environment,Demo Critical
+A1-01,P0,Smoke,App loads,None,"1. Open home URL (Vercel or local). 2. Wait for page load.",Page loads with no JS error overlay or startup failure message.,,guest,Both,Yes
+A1-02,P0,Landing,Header nav layout,Logged out,"1. Check top header.",Features Testimonials Browse tuitions (pill links) plus Log in button; no duplicate Browse/Log in buttons in hero.,,guest,Both,Yes
+A1-03,P0,Landing,Browse tuitions scroll,Logged out,"1. Click Browse tuitions in header.",Page scrolls smoothly to marketplace section.,,guest,Both,Yes
+A1-04,P0,Auth,Login modal opens,Logged out,"1. Click Log in.",Portal chooser modal opens.,,guest,Both,Yes
+A2-01,P0,Auth,Center admin login,Logged out,"1. Log in as Center admin. 2. Enter credentials.",Dashboard loads with full center admin sidebar.,admin@brightminds.demo,center,Both,Yes
+A2-02,P0,Auth,Family login,Logged out,"1. Log in as Family. 2. Enter credentials.",App loads with Parent view as default and family view switcher in top bar.,sharma@family.demo,family,Both,Yes
+A2-03,P1,Auth,Teacher login,Logged out,"1. Log in as Teacher.",Teacher Today home with scoped navigation.,anita@tutorhub.com,teacher,Both,No
+A2-04,P1,Auth,Platform owner login,Logged out,"1. Log in as Platform owner.",Platform dashboard and all centers list.,owner@eduos.app,owner,Both,No
+A2-05,P0,Auth,Logout,Any role logged in,"1. Click Logout.",Returns to public landing page.,any,any,Both,Yes
+A3-01,P0,Family,Parent view nav,Family logged in,"1. Confirm Parent view is selected in top bar.",Parent portal navigation visible (Dashboard Homework Messages Find Tuitions).,sharma@family.demo,family,Both,Yes
+A3-02,P0,Family,Student view switch,Family logged in,"1. Switch top bar to Student view.",Student navigation visible (Home My classes Homework).,sharma@family.demo,family,Both,Yes
+A3-03,P0,Family,Switch back to Parent,Family in Student view,"1. Switch top bar back to Parent view.",Parent nav restored with no errors.,sharma@family.demo,family,Both,Yes
+A4-01,P0,Marketplace,Center detail modal,Logged out,"1. Open marketplace. 2. Bright Minds. 3. Click View.",Center detail modal opens.,,guest,Both,Yes
+A4-02,P0,Marketplace,Guest inquiry form,Logged out with modal open,"1. Check Send inquiry section.",Guest form visible; no sign-in required.,,guest,Both,Yes
+A4-03,P0,Marketplace,Branch picker,Logged out Bright Minds modal,"1. Check Preferred branch field.",Mumbai HQ and Thane Center listed for Bright Minds.,,guest,Both,Yes
+A4-04,P0,Marketplace,Submit guest inquiry,Logged out,"1. Fill name and phone. 2. Click Send inquiry.",Success toast shown; modal closes.,,guest,Both,Yes
+A4-05,P0,CRM,Guest lead in pipeline,After A4-04,"1. Log in as center admin. 2. Open CRM.",New lead exists with source Guest Marketplace and stage Inquiry.,admin@brightminds.demo,center,Both,Yes
+A4-06,P0,CRM,Lead branch filter,After A4-04 with Thane branch selected,"1. Set branch filter to Thane. 2. Check CRM.",Lead visible under Thane filter; behavior correct for Mumbai filter.,admin@brightminds.demo,center,Both,Yes
+B1-01,P1,CRM,Open lead detail,Admin logged in,"1. Open CRM. 2. Open a lead.",Lead detail and activities visible.,admin@brightminds.demo,center,Both,No
+B1-02,P1,CRM,Move pipeline stage,Admin with lead open,"1. Change lead stage.",Stage updates and activity is logged.,admin@brightminds.demo,center,Both,No
+B1-03,P0,CRM,Enroll lead to student,Admin with enrollable lead,"1. Enroll lead into a batch.",Student created and lead marked converted.,admin@brightminds.demo,center,Both,Yes
+B1-04,P1,CRM,Student appears in roster,After B1-03,"1. Open Students page.",New student appears in correct batch and branch.,admin@brightminds.demo,center,Both,No
+B2-01,P0,Branches,Branch switcher visible,Admin logged in,"1. Check branch dropdown in top bar.",All branches Mumbai HQ and Thane Center available.,admin@brightminds.demo,center,Both,Yes
+B2-02,P1,Branches,Thane scope,Admin logged in,"1. Select Thane Center branch.",CRM and students scoped to Thane.,admin@brightminds.demo,center,Both,No
+B2-03,P1,Branches,All branches scope,Admin logged in,"1. Select All branches.",Combined center data visible.,admin@brightminds.demo,center,Both,No
+B2-04,P1,Branches,Teacher no switcher,Teacher logged in,"1. Check top bar.",No branch dropdown; data scoped to teacher branch.,anita@tutorhub.com,teacher,Both,No
+B3-01,P1,Academy,Batches list,Admin logged in,"1. Open Batches.",Demo batches listed.,admin@brightminds.demo,center,Both,No
+B3-02,P1,Academy,Class schedule,Admin logged in,"1. Open Class Schedule.",Sessions with dates visible.,admin@brightminds.demo,center,Both,No
+B3-03,P1,Academy,Mark attendance,Admin logged in,"1. Open Attendance. 2. Mark a record.",Saves without error.,admin@brightminds.demo,center,Both,No
+B3-04,P2,Academy,Tests and marks,Admin logged in,"1. Open Tests and Marks.",Test records visible.,admin@brightminds.demo,center,Local,No
+B3-05,P1,Academy,Teacher attendance,Teacher logged in,"1. Open Mark attendance.",Only teacher batches and students shown.,anita@tutorhub.com,teacher,Both,No
+B4-01,P1,Family,Parent dashboard,Family Parent view,"1. Open Parent Portal home.",Demo child progress and activity visible.,sharma@family.demo,family,Both,No
+B4-02,P1,Family,Parent homework,Family Parent view,"1. Open Homework tab.",Assignments visible for linked child.,sharma@family.demo,family,Both,No
+B4-03,P1,Family,Student homework,Family Student view,"1. Open Homework tab.",Student homework view works.,sharma@family.demo,family,Both,No
+B4-04,P1,Marketplace,Family marketplace inquiry,Family logged in,"1. Find Tuitions. 2. Send inquiry.",Lead created with Parent or Student Marketplace source.,sharma@family.demo,family,Both,No
+B5-01,P1,Platform,All centers list,Owner logged in,"1. Open All centers.",Multiple centers listed including Bright Minds and specialty demos.,owner@eduos.app,owner,Both,No
+B5-02,P1,Platform,Support view,Owner logged in,"1. Open a center. 2. Enter Support view.",Center admin nav loads with support banner.,owner@eduos.app,owner,Both,No
+B5-03,P1,Platform,Exit support view,Owner in support view,"1. Click Back to platform.",Returns to platform console.,owner@eduos.app,owner,Both,No
+C1-01,P2,Landing,Features scroll,Logged out,"1. Click Features in header.",Scrolls to features section.,,guest,Both,No
+C1-02,P2,Landing,Testimonials scroll,Logged out,"1. Click Testimonials in header.",Scrolls to testimonials section.,,guest,Both,No
+C1-03,P2,Landing,Nav pill styling,Logged out,"1. Inspect nav link buttons.",Pill background visible; green tint on hover.,,guest,Both,No
+C1-04,P2,Landing,Mobile layout,Logged out at ~375px width,"1. Resize browser to mobile width.",Header usable; nav scrolls if needed; no broken layout.,,guest,Both,No
+C1-05,P2,Auth,Register center,Logged out,"1. Register your tuition center. 2. Submit form.",New center and admin account created.,new email,center,Local,No
+D1-01,P1,Auth,Wrong password,Logged out,"1. Enter valid email with wrong password.",Clear error message; no crash.,admin@brightminds.demo,center,Both,No
+D1-02,P1,Auth,Wrong portal for family,Logged out,"1. Use Teacher portal with family email.",Error message shown; login rejected.,sharma@family.demo,teacher,Both,No
+D1-03,P1,Marketplace,Inquiry validation,Logged out,"1. Submit inquiry without phone and email.",Validation error shown.,,guest,Both,No
+D1-04,P1,Marketplace,Inquiry phone only,Logged out,"1. Submit with name and phone only.",Inquiry succeeds.,,guest,Both,No
+D1-05,P2,Data,Concurrent edit note,Two tabs same admin,"1. Edit data in both tabs.",Document behavior; note known last-write-wins limit.,admin@brightminds.demo,center,Both,No
+D1-06,P2,System,Export data,Admin logged in,"1. Click Export Data.",JSON file downloads.,admin@brightminds.demo,center,Both,No

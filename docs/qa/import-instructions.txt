@@ -1,0 +1,27 @@
+EduOS Manual QA — Google Sheets Import
+======================================
+
+Production URL: https://eduos-nine.vercel.app/
+Local URL:      http://127.0.0.1:8888/ (run start.bat)
+Password:       demo123 (all demo accounts)
+
+IMPORT STEPS
+------------
+1. Create a new Google Sheet.
+2. File → Import → Upload → select each CSV below as a separate tab:
+   - test-cases.csv        → rename tab "Test Cases"
+   - test-runs-template.csv → rename tab "Test Runs"
+   - defects-template.csv  → rename tab "Defects"
+   - accounts.csv          → rename tab "Accounts"
+3. On Test Runs tab, add data validation on Result column:
+   Pass, Fail, Blocked, Not Run
+4. Freeze header row on each tab.
+5. Share with testers (Editor on Test Runs + Defects; Viewer on Test Cases).
+
+DEMO SIGN-OFF GATE
+------------------
+All rows in test-cases.csv where Demo Critical = Yes must Pass on Vercel before customer demos.
+
+Key demo-critical Test IDs:
+  A1-01 to A1-04, A2-01, A2-02, A2-05, A3-01 to A3-03,
+  A4-01 to A4-06, B1-03, B2-01
