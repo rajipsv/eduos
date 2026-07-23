@@ -1,0 +1,50 @@
+Tier,Model,Price INR,Included,Overage,Billing Unit,Best For,Notes
+Starter,Flat annual per center,18000,1 branch up to 100 active students,30 per student per year above 100 per branch,Per center year,Single-location centers up to ~100 students,One academy = one EduOS center registration
+Branch add-on,Per additional branch on same center,12000 per extra branch per year,Full platform on that branch,30 per student per year above 100 on that branch,Per branch year,2nd location and beyond,Add branch in app — do not register a second Starter center
+Design Partner,Pilot,0,Same as agreed tier,None,90 days,First 5-10 centers in pilot,Feedback and case study; converts to paid plan after pilot
+
+Metric,Definition
+Active student,Enrolled student on EduOS with assigned batch (not lead-only)
+Branch,Physical or logical location under one center (Mumbai HQ Thane Online)
+One center rule,Same legal academy uses one EduOS center; multiple locations are branches not duplicate signups
+Billing cycle,Annual invoice (monthly optional by agreement)
+Fee collection,Centers collect tuition via own UPI cash or bank — not required for platform fee
+GST,May apply on EduOS platform fee — confirm with accountant
+
+Example Scenario,Branches,Students,Calculation,Total INR Year,Notes
+Starter fit,1,80,Starter flat,18000,
+Single branch overage,1,150,18000 + 50 x 30,33000,
+Two branches honest,2,120 total 60 each,18000 + 12000,30000,Correct: one center two branches
+Two signups gaming,2 centers,120 total 60 each,2 x 18000,36000,Discouraged — costs more than honest 30000
+Two branches scale,2,280 total 140 per branch,30000 + 80 x 30,32400,40 overage per branch
+
+Model Comparison,Setup,Students,Tiered INR,Per Student 150 INR,Per Student 200 INR,Per Student 225 INR,Notes
+Tiered vs per-student,1 branch,80,18000,12000,16000,18000,Tiered anchors small centers at 18k floor
+Tiered vs per-student,1 branch,140,19200,21000,28000,31500,Per-student wins EduOS revenue at 200+ rate
+Tiered vs per-student,2 branches,280,32400,42000,56000,63000,Volume discount built into tiered model
+Effective per student tiered,1 branch,80,225 per student,,,,
+Effective per student tiered,1 branch,140,137 per student,,,,
+Effective per student tiered,2 branches,280,116 per student,,,,
+Hybrid future option,1 branch,140,21000 at 75 overage,,,,Not current list price
+Hybrid future option,2 branches,280,36000 at 75 overage,,,,18000 + 12000 + 80 x 75
+
+Course Fee Band,Monthly Fee INR,Annual Tuition INR,Platform 1pct Per Student Year,Typical Center
+Lite,2000,24000,240,Group tuition single subject
+Standard,4000,48000,480,Multi-subject coaching
+Premium,8000,96000,960,JEE NEET board intensive
+
+Course Fee Model Formula,students x monthly_fee x 12 x rate,Minimum 18000 per center year,No bank required for display-fee model
+
+Course Fee 1pct All Scenarios,Setup,Students,Lite INR,Standard INR,Premium INR,Tiered INR
+Course fee comparison,Single center,80,19200,38400,76800,18000
+Course fee comparison,Single center larger,140,33600,67200,134400,19200
+Course fee comparison,Single center over 100,150,36000,72000,144000,33000
+Course fee comparison,Two branches one center,120,28800,57600,115200,30000
+Course fee comparison,Two branches scale,280,67200,134400,268800,32400
+
+Course Fee Lite vs Tiered,Setup,Students,Tiered INR,Course Fee 1pct INR,Delta INR
+Lite delta,Single center,80,18000,19200,1200
+Lite delta,Single center larger,140,19200,33600,14400
+Lite delta,Single center over 100,150,33000,36000,3000
+Lite delta,Two branches one center,120,30000,28800,-1200
+Lite delta,Two branches scale,280,32400,67200,34800

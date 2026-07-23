@@ -199,6 +199,65 @@
       color: #8a9a8a;
     }
     .highlight { color: #2d6a4f; font-weight: 600; }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 16px 0;
+    }
+    .pricing-tier {
+      border: 1px solid #dde8e0;
+      border-radius: 12px;
+      padding: 16px;
+      background: #f6faf8;
+    }
+    .pricing-tier.featured {
+      border-color: #2d6a4f;
+      background: #f0fdf4;
+      box-shadow: 0 4px 16px rgba(45, 106, 79, 0.12);
+    }
+    .pricing-tier h4 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 16pt;
+      color: #1b4332;
+      margin-bottom: 4px;
+    }
+    .pricing-tier .price {
+      font-size: 18pt;
+      font-weight: 700;
+      color: #2d6a4f;
+      margin: 8px 0;
+    }
+    .pricing-tier .price-note {
+      font-size: 8.5pt;
+      color: #5a6b5a;
+      margin-bottom: 10px;
+    }
+    .pricing-tier ul {
+      padding-left: 16px;
+      font-size: 9pt;
+      color: #3d4f3d;
+    }
+    .pricing-tier li { margin-bottom: 4px; }
+    .pricing-footnote {
+      font-size: 8.5pt;
+      color: #5a6b5a;
+      margin-top: 12px;
+      font-style: italic;
+    }
+    .pricing-compare table { font-size: 9pt; }
+    .pricing-compare th { font-size: 8.5pt; }
+    .pricing-compare .rec { background: #f0fdf4; font-weight: 600; color: #1b4332; }
+    .pricing-callout {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-left: 4px solid #2d6a4f;
+      background: #f6faf8;
+      font-size: 9pt;
+      color: #3d4f3d;
+    }
+    .pricing-callout strong { color: #1b4332; }
   </style>
 </head>
 <body>
@@ -368,6 +427,230 @@
       </tbody>
     </table>
 
+    <div class="page-num">5</div>
+  </section>
+
+  <!-- PAGE 6: PRICING -->
+  <section class="page">
+    <h2>Platform pricing</h2>
+    <p class="lead">One academy = one EduOS center. Add branches inside that center — do not register the same business twice to game pricing.</p>
+
+    <div class="pricing-grid">
+      <div class="pricing-tier">
+        <h4>Starter</h4>
+        <div class="price">₹18,000 / year</div>
+        <p class="price-note">1 branch · up to 100 active students</p>
+        <ul>
+          <li>Full EduOS workspace (CRM, academy, comms, family portal)</li>
+          <li>Marketplace listing &amp; guest inquiries</li>
+          <li>Best for single-location centers</li>
+        </ul>
+      </div>
+      <div class="pricing-tier featured">
+        <h4>Multi-branch add-on</h4>
+        <div class="price">+ ₹12,000 / branch / year</div>
+        <p class="price-note">Same center account · + ₹30 / student / year above 100 per branch</p>
+        <ul>
+          <li>Add Thane, Pune, Online as branches — not separate signups</li>
+          <li>Branch switcher &amp; branch-scoped CRM</li>
+          <li>Cheaper than registering two Starter centers (see table)</li>
+          <li>Upgrade when you open a 2nd location or exceed 100 students on a branch</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>How pricing is calculated</h3>
+    <table>
+      <thead><tr><th>Example</th><th>Branches</th><th>Students</th><th>Annual fee (illustrative)</th></tr></thead>
+      <tbody>
+        <tr><td>Single center</td><td>1</td><td>80</td><td>₹18,000</td></tr>
+        <tr><td>Single center, larger</td><td>1</td><td>150</td><td>₹18,000 + (50 × ₹30) = ₹33,000</td></tr>
+        <tr><td>Two branches (one center)</td><td>2</td><td>120 total (60 each)</td><td>₹18,000 + ₹12,000 = <strong>₹30,000</strong></td></tr>
+        <tr><td>Gaming: 2 separate signups</td><td>2 × Starter</td><td>120 total (60 each)</td><td>2 × ₹18,000 = ₹36,000 — discouraged; use branches instead</td></tr>
+        <tr><td>Two branches, scale</td><td>2</td><td>280 (140 per branch)</td><td>₹30,000 + (40 + 40) × ₹30 = <strong>₹32,400</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Design partner offer (limited)</h3>
+    <p>Early centers: <span class="highlight">90-day pilot at no charge</span> in exchange for feedback and a case study. Pricing above applies after pilot unless a custom agreement is signed.</p>
+
+    <p class="pricing-footnote">Illustrative pricing only — not a legal quote. GST may apply. Online fee collection available in a future phase.</p>
+    <div class="page-num">6</div>
+  </section>
+
+  <!-- PAGE 7: PRICING COMPARISON -->
+  <section class="page pricing-compare">
+    <h2>Pricing models compared</h2>
+    <p class="lead">Same three real-world setups — tiered (recommended) vs pure per-student. Tiered keeps a predictable floor for small centers; per-student scales linearly and can undercharge small centers or overcharge large ones depending on the rate.</p>
+
+    <h3>Annual fee by setup</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Setup</th>
+          <th>Tiered (EduOS)</th>
+          <th>₹150 / student</th>
+          <th>₹200 / student</th>
+          <th>₹225 / student</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1 branch · 80 students</td>
+          <td class="rec">₹18,000</td>
+          <td>₹12,000</td>
+          <td>₹16,000</td>
+          <td>₹18,000</td>
+        </tr>
+        <tr>
+          <td>1 branch · 140 students</td>
+          <td class="rec">₹19,200</td>
+          <td>₹21,000</td>
+          <td>₹28,000</td>
+          <td>₹31,500</td>
+        </tr>
+        <tr>
+          <td>2 branches · 140 each (280 total)</td>
+          <td class="rec">₹32,400</td>
+          <td>₹42,000</td>
+          <td>₹56,000</td>
+          <td>₹63,000</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Effective cost per student (tiered only)</h3>
+    <table>
+      <thead><tr><th>Setup</th><th>Students</th><th>Annual fee</th><th>₹ / student / year</th></tr></thead>
+      <tbody>
+        <tr><td>Single center</td><td>80</td><td>₹18,000</td><td>₹225</td></tr>
+        <tr><td>Single center, larger</td><td>140</td><td>₹19,200</td><td>₹137</td></tr>
+        <tr><td>Two branches, scale</td><td>280</td><td>₹32,400</td><td>₹116</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Why EduOS uses tiered + branch add-on</h3>
+    <table>
+      <thead><tr><th>Model</th><th>Pros</th><th>Cons</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Tiered (recommended)</strong></td>
+          <td>Predictable ₹18k for small centers; volume discount as they grow; branch add-on closes split-signup loophole</td>
+          <td>Overage at ₹30/student is modest — most revenue is base + branches, not headcount</td>
+        </tr>
+        <tr>
+          <td>Pure per-student</td>
+          <td>Feels fair (“pay for usage”); strong revenue at 140+ students</td>
+          <td>Under ₹18k for centers under ~120 students at common rates; harder to pitch a fixed annual budget</td>
+        </tr>
+        <tr>
+          <td>Hybrid (future option)</td>
+          <td>₹18k includes 100 students + higher overage (e.g. ₹75/student above 100)</td>
+          <td>More math at quote time — better once centers ask to scale past 100</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="pricing-callout">
+      <strong>Hybrid illustration (not current list price):</strong> ₹18,000 includes first 100 students + ₹75/student above 100 → 140 students = ₹21,000; 280 students (2 branches) = ₹36,000. Stronger overage without abandoning the ₹18k Starter anchor.
+    </div>
+
+    <p class="pricing-footnote">Per-student columns are illustrative alternatives for discussion — EduOS list pricing follows the tiered model on page 6.</p>
+    <div class="page-num">7</div>
+  </section>
+
+  <!-- PAGE 8: COURSE-FEE BASED PRICING -->
+  <section class="page pricing-compare">
+    <h2>Course fee × students (fair usage model)</h2>
+    <p class="lead">Center declares the <strong>monthly course fee</strong> on each batch (display only — parents can still pay via your UPI/cash). EduOS bills a small % of <strong>notional annual tuition</strong>: active students × monthly fee × 12. Higher-fee coaching pays more; budget group tuition pays less — scales with both headcount and ticket size.</p>
+
+    <div class="pricing-callout">
+      <strong>Formula:</strong> Annual EduOS fee = active students × monthly course fee × 12 × <strong>1%</strong> &nbsp;(minimum <strong>₹18,000</strong>/center/year). No bank account required for this model — fee is invoiced to the center, not deducted from parent payments.
+    </div>
+
+    <h3>Course fee bands (illustrative)</h3>
+    <table>
+      <thead><tr><th>Band</th><th>Monthly fee / student</th><th>Annual tuition / student</th><th>Typical center</th></tr></thead>
+      <tbody>
+        <tr><td>Lite</td><td>₹2,000</td><td>₹24,000</td><td>Group tuition, single subject</td></tr>
+        <tr><td>Standard</td><td>₹4,000</td><td>₹48,000</td><td>Multi-subject coaching</td></tr>
+        <tr><td>Premium</td><td>₹8,000</td><td>₹96,000</td><td>JEE / NEET / board intensive</td></tr>
+      </tbody>
+    </table>
+
+    <h3>All scenarios @ 1% of notional annual tuition</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Setup</th>
+          <th>Students</th>
+          <th>Lite (₹2k/mo)</th>
+          <th>Standard (₹4k/mo)</th>
+          <th>Premium (₹8k/mo)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Single center</td><td>80</td><td>₹19,200</td><td>₹38,400</td><td>₹76,800</td></tr>
+        <tr><td>Single center, larger</td><td>140</td><td>₹33,600</td><td>₹67,200</td><td>₹1,34,400</td></tr>
+        <tr><td>Single center, over 100</td><td>150</td><td>₹36,000</td><td>₹72,000</td><td>₹1,44,000</td></tr>
+        <tr><td>Two branches (one center)</td><td>120</td><td>₹28,800</td><td>₹57,600</td><td>₹1,15,200</td></tr>
+        <tr><td>Two branches, scale</td><td>280</td><td>₹67,200</td><td>₹1,34,400</td><td>₹2,68,800</td></tr>
+      </tbody>
+    </table>
+    <p class="pricing-footnote" style="margin-top:8px">Calculation: students × monthly fee × 12 × 1%. Values above ₹18,000 shown; smaller centers below floor pay ₹18,000 minimum.</p>
+
+    <h3>Every model side-by-side (Standard ₹4k/mo course fee)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Setup</th>
+          <th>Students</th>
+          <th>Tiered</th>
+          <th>₹150 / student</th>
+          <th>Course fee 1%</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Single center</td><td>80</td><td class="rec">₹18,000</td><td>₹12,000</td><td>₹38,400</td></tr>
+        <tr><td>Single center, larger</td><td>140</td><td>₹19,200</td><td>₹21,000</td><td>₹67,200</td></tr>
+        <tr><td>Single center, over 100</td><td>150</td><td>₹33,000</td><td>₹22,500</td><td>₹72,000</td></tr>
+        <tr><td>Two branches (one center)</td><td>120</td><td>₹30,000</td><td>₹18,000</td><td>₹57,600</td></tr>
+        <tr><td>Two branches, scale</td><td>280</td><td>₹32,400</td><td>₹42,000</td><td>₹1,34,400</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Same setups — Lite ₹2k/mo course fee @ 1%</h3>
+    <table>
+      <thead><tr><th>Setup</th><th>Students</th><th>Tiered</th><th>Course fee 1%</th><th>Δ vs tiered</th></tr></thead>
+      <tbody>
+        <tr><td>Single center</td><td>80</td><td>₹18,000</td><td>₹19,200</td><td>+₹1,200</td></tr>
+        <tr><td>Single center, larger</td><td>140</td><td>₹19,200</td><td>₹33,600</td><td>+₹14,400</td></tr>
+        <tr><td>Single center, over 100</td><td>150</td><td>₹33,000</td><td>₹36,000</td><td>+₹3,000</td></tr>
+        <tr><td>Two branches (one center)</td><td>120</td><td>₹30,000</td><td>₹28,800</td><td>−₹1,200</td></tr>
+        <tr><td>Two branches, scale</td><td>280</td><td>₹32,400</td><td>₹67,200</td><td>+₹34,800</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Effective ₹ / student / year (course-fee model @ 1%)</h3>
+    <table>
+      <thead><tr><th>Course band</th><th>Formula per student</th><th>₹ / student / year</th></tr></thead>
+      <tbody>
+        <tr><td>Lite ₹2k/mo</td><td>₹24,000 × 1%</td><td>₹240</td></tr>
+        <tr><td>Standard ₹4k/mo</td><td>₹48,000 × 1%</td><td>₹480</td></tr>
+        <tr><td>Premium ₹8k/mo</td><td>₹96,000 × 1%</td><td>₹960</td></tr>
+      </tbody>
+    </table>
+
+    <div class="pricing-callout">
+      <strong>Why this feels fair:</strong> A center charging ₹8,000/month gets more value from CRM, comms, and parent trust than one charging ₹2,000 — so they pay more in absolute terms, but the <strong>same 1%</strong> rate. <strong>Trade-off:</strong> at Standard/Premium fees, 1% exceeds tiered pricing significantly — consider <strong>0.5% for Standard</strong> or keep tiered as list price and offer course-fee pricing only on request.
+    </div>
+
+    <p class="pricing-footnote">Illustrative only. Centers with mixed batches use a weighted average monthly fee. Payment gateway (deduct fee at source) is optional in a later phase.</p>
+    <div class="page-num">8</div>
+  </section>
+
+  <!-- PAGE 9: CTA -->
+  <section class="page">
     <div class="cta">
       <h3>See EduOS in action</h3>
       <p>Live demo available — walk through every role in one session:</p>
@@ -379,7 +662,7 @@
       </ul>
       <p style="margin-top:14px"><strong>Contact:</strong> hello@eduos.app &nbsp;·&nbsp; <strong>Demo:</strong> Run start.bat → http://127.0.0.1:8888</p>
     </div>
-    <div class="page-num">5</div>
+    <div class="page-num">9</div>
   </section>
 
 </body>
