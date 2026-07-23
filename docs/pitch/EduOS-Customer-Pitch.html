@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduOS — Customer Pitch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      color: #1a2e1a;
+      line-height: 1.55;
+      font-size: 10.5pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 18mm 20mm;
+      page-break-after: always;
+      position: relative;
+    }
+    .page:last-child { page-break-after: auto; }
+
+    /* Cover */
+    .cover {
+      background: linear-gradient(145deg, #1b4332 0%, #2d6a4f 42%, #40916c 100%);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24mm;
+    }
+    .cover-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 9pt;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      width: fit-content;
+    }
+    .cover h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 42pt;
+      font-weight: 400;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .cover .tagline {
+      font-size: 14pt;
+      opacity: 0.92;
+      max-width: 420px;
+      margin-bottom: 48px;
+    }
+    .cover-footer {
+      margin-top: auto;
+      font-size: 9.5pt;
+      opacity: 0.75;
+    }
+
+    h2 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 22pt;
+      color: #1b4332;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+    h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #2d6a4f;
+      margin: 18px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    p { margin-bottom: 10px; color: #3d4f3d; }
+    .lead { font-size: 11.5pt; color: #2d3b2d; margin-bottom: 16px; }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .stat {
+      background: #f0f7f4;
+      border: 1px solid #d8e8de;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .stat .num { font-size: 20pt; font-weight: 700; color: #2d6a4f; }
+    .stat .lbl { font-size: 8.5pt; color: #5a6b5a; margin-top: 4px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+    .card {
+      border: 1px solid #dde8e0;
+      border-radius: 10px;
+      padding: 14px;
+      background: #fafcfb;
+    }
+    .card h4 { font-size: 10.5pt; margin-bottom: 6px; color: #1b4332; }
+    .card p { font-size: 9.5pt; margin: 0; }
+
+    .layers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .layer {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 8px 10px;
+      background: #f6faf8;
+      border-radius: 8px;
+      border-left: 3px solid #40916c;
+    }
+    .layer-num {
+      font-weight: 700;
+      color: #40916c;
+      font-size: 9pt;
+      min-width: 18px;
+    }
+    .layer-text strong { display: block; font-size: 9.5pt; }
+    .layer-text span { font-size: 8.5pt; color: #5a6b5a; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+      margin: 10px 0;
+    }
+    th, td {
+      border: 1px solid #dde8e0;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    th { background: #2d6a4f; color: white; font-weight: 600; }
+    tr:nth-child(even) td { background: #f6faf8; }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 14px 0;
+    }
+    .flow-step {
+      background: #2d6a4f;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 8.5pt;
+      font-weight: 600;
+    }
+    .flow-arrow { color: #40916c; font-weight: 700; }
+
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 14px 0;
+    }
+    .compare-box {
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .compare-box.bad { background: #fef2f2; border: 1px solid #fecaca; }
+    .compare-box.good { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .compare-box h4 { font-size: 10pt; margin-bottom: 8px; }
+    .compare-box ul { padding-left: 16px; font-size: 9pt; color: #3d4f3d; }
+    .compare-box li { margin-bottom: 4px; }
+
+    .cta {
+      background: linear-gradient(135deg, #1b4332, #2d6a4f);
+      color: white;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 20px;
+    }
+    .cta h3 { color: white; margin: 0 0 8px; text-transform: none; letter-spacing: 0; font-size: 14pt; }
+    .cta p { color: rgba(255,255,255,0.9); margin: 0; font-size: 10pt; }
+    .cta ul { margin: 12px 0 0 18px; font-size: 9.5pt; color: rgba(255,255,255,0.92); }
+
+    .page-num {
+      position: absolute;
+      bottom: 12mm;
+      right: 20mm;
+      font-size: 8pt;
+      color: #8a9a8a;
+    }
+    .highlight { color: #2d6a4f; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE 1: COVER -->
+  <section class="page cover">
+    <div class="cover-badge">Tuition Center Operations Platform</div>
+    <h1>EduOS</h1>
+    <p class="tagline">The operating system for education businesses — acquire students, run operations, keep parents informed, and grow with confidence.</p>
+    <div class="cover-footer">
+      Product overview for tuition centers &amp; coaching institutes<br>
+      Confidential · 2026
+    </div>
+  </section>
+
+  <!-- PAGE 2: PROBLEM & SOLUTION -->
+  <section class="page">
+    <h2>The problem tuition centers face</h2>
+    <p class="lead">Most academies stitch together spreadsheets, WhatsApp groups, and generic LMS tools. Nothing connects leads → classes → parents → business decisions in one place.</p>
+
+    <div class="compare">
+      <div class="compare-box bad">
+        <h4>❌ Today (fragmented)</h4>
+        <ul>
+          <li>Leads lost in notebooks and chat threads</li>
+          <li>Schedules in Excel, links copied manually</li>
+          <li>Parents call for attendance and homework updates</li>
+          <li>Owners guess instead of deciding from data</li>
+          <li>LMS tools want to host your content — not run your business</li>
+        </ul>
+      </div>
+      <div class="compare-box good">
+        <h4>✓ With EduOS (unified ops)</h4>
+        <ul>
+          <li>CRM pipeline from inquiry to enrolled student</li>
+          <li>Auto-generated class schedules with meeting links</li>
+          <li>Automated parent updates on WhatsApp &amp; email</li>
+          <li>BI that tells you what to do next</li>
+          <li>Works with Zoom, Meet, and your existing teaching tools</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>What EduOS is — and is not</h3>
+    <div class="grid-2">
+      <div class="card">
+        <h4>EduOS handles operations</h4>
+        <p>CRM, batches, schedules, attendance, tests, homework tracking, parent communication, tutor performance, and business intelligence.</p>
+      </div>
+      <div class="card">
+        <h4>Your tutors keep teaching their way</h4>
+        <p>EduOS does not replace Zoom, Google Meet, or your curriculum platforms. It coordinates logistics and gives everyone visibility.</p>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="num">9</div><div class="lbl">Integrated pillars</div></div>
+      <div class="stat"><div class="num">5</div><div class="lbl">Role-based portals</div></div>
+      <div class="stat"><div class="num">1</div><div class="lbl">Platform, many centers</div></div>
+      <div class="stat"><div class="num">0</div><div class="lbl">Content hosting required</div></div>
+    </div>
+    <div class="page-num">2</div>
+  </section>
+
+  <!-- PAGE 3: NINE PILLARS -->
+  <section class="page">
+    <h2>Nine pillars. One platform.</h2>
+    <p class="lead">Every capability a tuition center needs — from first inquiry to parent satisfaction — without bolting on five different products.</p>
+
+    <div class="layers">
+      <div class="layer"><div class="layer-num">1</div><div class="layer-text"><strong>Education CRM</strong><span>Public website, lead pipeline, demos, enrollment</span></div></div>
+      <div class="layer"><div class="layer-num">2</div><div class="layer-text"><strong>Academy OS</strong><span>Batches, schedule, teachers, students, attendance, tests</span></div></div>
+      <div class="layer"><div class="layer-num">3</div><div class="layer-text"><strong>Communication</strong><span>WhatsApp, email, SMS, event-driven automations</span></div></div>
+      <div class="layer"><div class="layer-num">4</div><div class="layer-text"><strong>Student Success</strong><span>Learning journey, homework, interventions, certificates</span></div></div>
+      <div class="layer"><div class="layer-num">5</div><div class="layer-text"><strong>Tutor Success</strong><span>Lesson plans, homework review, performance, PD</span></div></div>
+      <div class="layer"><div class="layer-num">6</div><div class="layer-text"><strong>Parent Experience</strong><span>Progress, homework, attendance, messages, preferences</span></div></div>
+      <div class="layer"><div class="layer-num">7</div><div class="layer-text"><strong>AI Assistants</strong><span>Insights, message drafts, role-aware guidance</span></div></div>
+      <div class="layer"><div class="layer-num">8</div><div class="layer-text"><strong>Business Intelligence</strong><span>KPIs, trends, predictions, daily decisions</span></div></div>
+      <div class="layer"><div class="layer-num">9</div><div class="layer-text"><strong>Extensions &amp; Partners</strong><span>Zoom, calendar, Twilio — connect, don't rebuild</span></div></div>
+    </div>
+
+    <h3>Built for every stakeholder</h3>
+    <table>
+      <thead>
+        <tr><th>Role</th><th>What they get</th><th>Key outcome</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Center owner</strong></td><td>Full dashboard, CRM, BI, all pillars</td><td>Run and grow the business from one screen</td></tr>
+        <tr><td><strong>Teacher</strong></td><td>Today's classes, attendance, homework, students</td><td>Focus on teaching, not admin chaos</td></tr>
+        <tr><td><strong>Parent</strong></td><td>Child progress, homework, messages</td><td>Trust and transparency without phone calls</td></tr>
+        <tr><td><strong>Student</strong></td><td>Schedule, homework status</td><td>Clear expectations, fewer surprises</td></tr>
+        <tr><td><strong>Platform operator</strong></td><td>All centers, onboarding, support view</td><td>Scale EduOS as a multi-center product</td></tr>
+      </tbody>
+    </table>
+    <div class="page-num">3</div>
+  </section>
+
+  <!-- PAGE 4: WORKFLOWS -->
+  <section class="page">
+    <h2>How centers use EduOS daily</h2>
+
+    <h3>Workflow 1 — From stranger to enrolled student</h3>
+    <div class="flow">
+      <span class="flow-step">Website inquiry</span><span class="flow-arrow">→</span>
+      <span class="flow-step">CRM lead</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Demo class</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Counseling</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Batch allocation</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Enrolled student</span>
+    </div>
+    <p>Capture leads from your public site, WhatsApp, walk-ins, and ads. Move them through a visual pipeline with follow-up reminders — then enroll in one click.</p>
+
+    <h3>Workflow 2 — Running classes every week</h3>
+    <div class="flow">
+      <span class="flow-step">Create batch</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Auto-schedule</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Meeting links</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Mark attendance</span><span class="flow-arrow">→</span>
+      <span class="flow-step">Notify parents</span>
+    </div>
+    <p>Pick days and times, add topics, and EduOS generates the full term schedule with Google Meet, Zoom, or Teams links. Teachers mark attendance; parents get updates automatically.</p>
+
+    <h3>Workflow 3 — Homework &amp; parent visibility</h3>
+    <div class="grid-2">
+      <div class="card">
+        <h4>Staff (admin &amp; teachers)</h4>
+        <p>Create assignments, issue certificates, post feedback, and review submissions. Interventions trigger when a student falls behind.</p>
+      </div>
+      <div class="card">
+        <h4>Parents &amp; students</h4>
+        <p>Parents see homework status and progress — read-only, no admin clutter. Students submit work; parents stay informed via portal and WhatsApp.</p>
+      </div>
+    </div>
+
+    <h3>Workflow 4 — Owner decisions, not just reports</h3>
+    <p>Business Intelligence goes beyond charts. EduOS surfaces <span class="highlight">today's decisions</span>: which leads need follow-up, which students are at risk, which batches need attention — with one-click actions.</p>
+
+    <div class="page-num">4</div>
+  </section>
+
+  <!-- PAGE 5: SCALE & CTA -->
+  <section class="page">
+    <h2>Multi-center ready</h2>
+    <p class="lead">EduOS is built for operators who onboard many tuition centers on one platform — each with isolated data, their own admin, teachers, and families.</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <h4>For franchise &amp; SaaS operators</h4>
+        <p>Platform dashboard shows all centers. Support view lets your team help a center without sharing passwords. Suspend, monitor, and onboard new centers in minutes.</p>
+      </div>
+      <div class="card">
+        <h4>For independent academies</h4>
+        <p>Register your center and get a full workspace immediately — CRM, batches, comms, and parent portal included. No IT team required to start.</p>
+      </div>
+    </div>
+
+    <h3>Why centers choose EduOS over generic tools</h3>
+    <table>
+      <thead><tr><th>Capability</th><th>Spreadsheets + WhatsApp</th><th>Generic LMS</th><th>EduOS</th></tr></thead>
+      <tbody>
+        <tr><td>Lead-to-enrollment CRM</td><td>Manual</td><td>Rarely</td><td>✓ Built-in</td></tr>
+        <tr><td>Auto class scheduling</td><td>Manual</td><td>Partial</td><td>✓ Topic-based</td></tr>
+        <tr><td>Parent WhatsApp automations</td><td>Manual</td><td>No</td><td>✓ Event-driven</td></tr>
+        <tr><td>Teacher workspace</td><td>No</td><td>Content-focused</td><td>✓ Ops-focused</td></tr>
+        <tr><td>Owner decision engine</td><td>No</td><td>Reports only</td><td>✓ Action cards</td></tr>
+        <tr><td>Multi-center platform</td><td>No</td><td>No</td><td>✓ Native</td></tr>
+      </tbody>
+    </table>
+
+    <div class="cta">
+      <h3>See EduOS in action</h3>
+      <p>Live demo available — walk through every role in one session:</p>
+      <ul>
+        <li>Center owner: CRM → batch → schedule → BI decisions</li>
+        <li>Teacher: today's classes, attendance, homework</li>
+        <li>Parent: progress portal and automated updates</li>
+        <li>Platform operator: multi-center dashboard</li>
+      </ul>
+      <p style="margin-top:14px"><strong>Contact:</strong> hello@eduos.app &nbsp;·&nbsp; <strong>Demo:</strong> Run start.bat → http://127.0.0.1:8888</p>
+    </div>
+    <div class="page-num">5</div>
+  </section>
+
+</body>
+</html>

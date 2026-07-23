@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduOS — Workflow &amp; High-Level Design</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      color: #1a2e1a;
+      line-height: 1.55;
+      font-size: 10pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover {
+      min-height: 260mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 20mm;
+      background: linear-gradient(145deg, #1b4332, #2d6a4f 55%, #40916c);
+      color: white;
+      page-break-after: always;
+    }
+    .cover .badge {
+      display: inline-block;
+      font-size: 9pt;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin-bottom: 16px;
+    }
+    .cover h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 38pt;
+      font-weight: 400;
+      margin-bottom: 12px;
+    }
+    .cover p { font-size: 12pt; opacity: 0.92; max-width: 480px; }
+    .cover .meta { margin-top: 40px; font-size: 9pt; opacity: 0.7; }
+
+    section { padding: 8mm 0; page-break-inside: avoid; }
+    section.break { page-break-before: always; padding-top: 0; }
+
+    h2 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 18pt;
+      color: #1b4332;
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #40916c;
+    }
+    h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #2d6a4f;
+      margin: 14px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    p, li { color: #3d4f3d; margin-bottom: 6px; }
+    ul { margin: 6px 0 10px 18px; }
+    .lead { font-size: 10.5pt; margin-bottom: 12px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+      margin: 10px 0 14px;
+    }
+    th, td {
+      border: 1px solid #dde8e0;
+      padding: 7px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #2d6a4f; color: white; font-weight: 600; }
+    tr:nth-child(even) td { background: #f6faf8; }
+
+    .diagram {
+      background: #f6faf8;
+      border: 1px solid #dde8e0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: Consolas, monospace;
+      font-size: 8.5pt;
+      line-height: 1.45;
+      white-space: pre;
+      margin: 10px 0;
+      color: #2d3b2d;
+    }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin: 10px 0;
+    }
+    .flow span {
+      background: #2d6a4f;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 8.5pt;
+      font-weight: 600;
+    }
+    .flow .arrow { background: none; color: #40916c; padding: 0; font-weight: 700; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
+    .card {
+      border: 1px solid #dde8e0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #fafcfb;
+    }
+    .card h4 { font-size: 9.5pt; color: #1b4332; margin-bottom: 4px; }
+    .card p { font-size: 9pt; margin: 0; }
+
+    code { background: #eef5f0; padding: 1px 5px; border-radius: 4px; font-size: 8.5pt; }
+    .footer-note {
+      margin-top: 16px;
+      font-size: 8.5pt;
+      color: #8a9a8a;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cover">
+    <div class="badge">Workflow &amp; High-Level Design</div>
+    <h1>EduOS</h1>
+    <p>Tutoring operations platform — not an LMS. Multi-tenant MVP architecture, roles, nine layers, and core workflows.</p>
+    <div class="meta">Product: EduOS (tutor-hub) · Version: local-first demo · 2026</div>
+  </div>
+
+  <section>
+    <h2>1. What EduOS Is</h2>
+    <p class="lead">EduOS is the <strong>operating system for tuition centers</strong>. It handles everything around teaching:</p>
+    <ul>
+      <li>Acquiring and enrolling students (CRM)</li>
+      <li>Running batches, schedules, attendance, and tests</li>
+      <li>Messaging parents and staff</li>
+      <li>Tracking student/tutor success signals</li>
+      <li>Business intelligence and decisions</li>
+      <li>Connecting external tools (Zoom, WhatsApp, calendars)</li>
+    </ul>
+    <p><strong>Teaching itself</strong> happens on the tutor's own platforms (Zoom, Google Meet, Khan Academy, etc.). EduOS coordinates logistics and visibility.</p>
+    <div class="diagram">PLATFORM OWNER (EduOS) — onboard centers · monitor · support view
+         │
+    ┌────┴────┬────────┐
+ Center A  Center B  Center C  (each tenant isolated)
+    │
+ Admin · Teachers · Students · Parents</div>
+  </section>
+
+  <section class="break">
+    <h2>2. Design Principles</h2>
+    <table>
+      <thead><tr><th>Principle</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Ops-first</strong></td><td>CRM, schedule, attendance, comms — not course hosting</td></tr>
+        <tr><td><strong>Multi-tenant</strong></td><td>Each center's data isolated by <code>centerId</code></td></tr>
+        <tr><td><strong>Role-based portals</strong></td><td>Same app, different nav and permissions per role</td></tr>
+        <tr><td><strong>Decisions, not dashboards</strong></td><td>BI suggests what to do next</td></tr>
+        <tr><td><strong>Local MVP</strong></td><td>Data in browser localStorage; run via <code>start.bat</code></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Deferred:</strong> Payments / billing (Layer 10 removed from roadmap).</p>
+  </section>
+
+  <section>
+    <h2>3. Roles &amp; Portals</h2>
+    <p class="lead">Each user logs in through a portal tile. Session stored in <code>tutorhub_session</code>.</p>
+    <table>
+      <thead><tr><th>Role</th><th>Who</th><th>Default landing</th><th>Data scope</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Platform owner</strong></td><td>EduOS operator</td><td>Platform dashboard</td><td>All centers; support view into one center</td></tr>
+        <tr><td><strong>Center admin</strong></td><td>Academy owner</td><td>Command dashboard</td><td>Full center workspace</td></tr>
+        <tr><td><strong>Teacher</strong></td><td>Tutor</td><td>Teacher Today</td><td>Own batches &amp; students</td></tr>
+        <tr><td><strong>Student</strong></td><td>Learner</td><td>Student home</td><td>Own profile, schedule, homework</td></tr>
+        <tr><td><strong>Parent</strong></td><td>Guardian</td><td>Parent dashboard</td><td>Linked child(ren) only</td></tr>
+      </tbody>
+    </table>
+    <h3>Platform owner support view</h3>
+    <ol>
+      <li>All centers → open a center → Support view</li>
+      <li>Nav switches to center-admin menus; data scoped to that center</li>
+      <li>Back to platform exits support view</li>
+    </ol>
+    <p><strong>Center registration:</strong> Auth screen → creates center + center admin → empty scoped workspace.</p>
+  </section>
+
+  <section class="break">
+    <h2>4. The Nine Layers</h2>
+    <table>
+      <thead><tr><th>Layer</th><th>Name</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Education CRM</td><td>Public site, leads, pipeline, enrollment</td></tr>
+        <tr><td>2</td><td>Academy OS</td><td>Batches, schedule, teachers, students, attendance, tests</td></tr>
+        <tr><td>3</td><td>Communication</td><td>WhatsApp, email, SMS, automations</td></tr>
+        <tr><td>4</td><td>Student Success</td><td>Journeys, homework, interventions, certificates</td></tr>
+        <tr><td>5</td><td>Tutor Success</td><td>Lesson plans, homework review, tutor performance, PD</td></tr>
+        <tr><td>6</td><td>Parent Experience</td><td>Dashboard, progress, messages, preferences</td></tr>
+        <tr><td>7</td><td>AI Assistants</td><td>Rule-based / optional GPT insights</td></tr>
+        <tr><td>8</td><td>Business Intelligence</td><td>KPIs, trends, owner decisions</td></tr>
+        <tr><td>9</td><td>Extensions &amp; Partners</td><td>Zoom, calendar, templates, partners</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="break">
+    <h2>5. Core Workflows</h2>
+
+    <h3>5.1 Lead → Student (Layer 1)</h3>
+    <div class="flow">
+      <span>Website inquiry</span><span class="arrow">→</span>
+      <span>CRM lead</span><span class="arrow">→</span>
+      <span>Pipeline</span><span class="arrow">→</span>
+      <span>Demo</span><span class="arrow">→</span>
+      <span>Counseling</span><span class="arrow">→</span>
+      <span>Batch</span><span class="arrow">→</span>
+      <span>Student</span>
+    </div>
+    <p><strong>Pipeline stages:</strong> Lead → Inquiry → Demo → Counseling → Admission → Payment → Batch allocation → Student</p>
+    <ul>
+      <li>Public Website form writes to CRM</li>
+      <li>Tabs: Pipeline, All leads, Follow-ups</li>
+      <li>Log activities, schedule demos, move stages, enroll to batch</li>
+      <li>WhatsApp follow-up from lead detail</li>
+    </ul>
+
+    <h3>5.2 Daily academy operations (Layer 2)</h3>
+    <div class="grid-2">
+      <div class="card"><h4>Setup once</h4><p>Add teachers → Create batches → Topics + days/times → Auto-generate schedule</p></div>
+      <div class="card"><h4>Each week</h4><p>Schedule + links → Mark attendance → Notify parents → Record tests → Notify parents</p></div>
+    </div>
+    <ul>
+      <li>One topic = one session; auto-generate Meet/Zoom/Teams links</li>
+      <li>Mark done on completed classes</li>
+      <li>Attendance: present / absent / late → optional parent WhatsApp</li>
+    </ul>
+
+    <h3>5.3 Homework &amp; student success (Layers 4 &amp; 5)</h3>
+    <table>
+      <thead><tr><th>Action</th><th>Center admin</th><th>Teacher</th><th>Parent</th><th>Student</th></tr></thead>
+      <tbody>
+        <tr><td>+ Assignment</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr>
+        <tr><td>Issue certificate</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr>
+        <tr><td>+ Feedback</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr>
+        <tr><td>Submit homework</td><td>—</td><td>—</td><td>mark submitted</td><td>submit</td></tr>
+        <tr><td>View only</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="break">
+    <h3>5.4 Communication (Layer 3)</h3>
+    <ul>
+      <li>Channels: WhatsApp, email, SMS, push (simulated in demo)</li>
+      <li>Templates &amp; automations: absence, tests, homework due, class reminders</li>
+      <li>Comm Hub: broadcasts, settings, message log</li>
+      <li>WhatsApp simulate or live via Meta API in Settings</li>
+    </ul>
+
+    <h3>5.5 Parent experience (Layer 6)</h3>
+    <table>
+      <thead><tr><th>Tab</th><th>Content</th></tr></thead>
+      <tbody>
+        <tr><td>Home</td><td>Success score, next class, activity, contact teacher</td></tr>
+        <tr><td>Progress</td><td>Strengths, skills, test history</td></tr>
+        <tr><td>Homework</td><td>Assignments and status</td></tr>
+        <tr><td>Attendance</td><td>History and rate</td></tr>
+        <tr><td>Feedback / Messages / Settings</td><td>Teacher notes, thread, notification prefs</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5.6 Intelligence &amp; AI (Layers 7 &amp; 8)</h3>
+    <div class="grid-2">
+      <div class="card"><h4>Business Intelligence</h4><p>Decisions feed, KPIs, trends, lead analytics — action cards not static reports</p></div>
+      <div class="card"><h4>AI Assistants</h4><p>Role-aware chat; rule-based default; optional OpenAI; drafts parent messages</p></div>
+    </div>
+
+    <h3>5.7 Extensions (Layer 9)</h3>
+    <p>Connections (Zoom, Calendar, Twilio), ops templates, partner catalog — not a content marketplace.</p>
+  </section>
+
+  <section class="break">
+    <h2>6. End-to-End Journey (New Center)</h2>
+    <ol>
+      <li>Platform owner registers center</li>
+      <li>Center admin configures Settings; public site + CRM live</li>
+      <li>Create batches, generate schedule; link teacher accounts</li>
+      <li>Leads convert to students</li>
+      <li>Teachers mark attendance, assign homework</li>
+      <li>Automations notify parents; parent portal active</li>
+      <li>Owner uses BI decisions and reports</li>
+    </ol>
+  </section>
+
+  <section class="break">
+    <h2>7. Technical Architecture</h2>
+    <div class="diagram">index.html
+  └── js/app.js          Auth, navigation, modals
+        ├── auth.js        Login, register, support view
+        ├── portals.js     Role nav &amp; access control
+        ├── store.js       localStorage v5, multi-tenant
+        ├── views.js       Dashboard, CRM, academy
+        ├── layer-views.js Layers 3–9 + public site
+        ├── platform.js    Assignments, parent prefs, etc.
+        └── intelligence.js / ai.js / communication.js</div>
+
+    <h3>Data model</h3>
+    <table>
+      <thead><tr><th>Entity</th><th>Scoped by</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>centers[]</code></td><td>platform</td><td>Tenant root</td></tr>
+        <tr><td><code>users[]</code></td><td>center</td><td>Roles, linked IDs</td></tr>
+        <tr><td><code>batches</code>, <code>students</code>, <code>leads</code></td><td><code>centerId</code></td><td>Core ops data</td></tr>
+        <tr><td><code>attendance</code>, <code>tests</code>, <code>messages</code></td><td><code>centerId</code></td><td>Ops records</td></tr>
+      </tbody>
+    </table>
+    <p>Session: <code>tutorhub_session</code> · Data: <code>tutorhub_data_v5</code></p>
+
+    <h3>Running locally</h3>
+    <ol>
+      <li>Double-click <strong>start.bat</strong> (keep window open)</li>
+      <li>Open <strong>http://127.0.0.1:8888/</strong></li>
+      <li>Do not open <code>file:///…/index.html</code> — ES modules need a local server</li>
+    </ol>
+  </section>
+
+  <section class="break">
+    <h2>8. Demo Accounts</h2>
+    <p>Password for all: <strong>demo123</strong></p>
+    <table>
+      <thead><tr><th>Portal</th><th>Email</th></tr></thead>
+      <tbody>
+        <tr><td>Platform owner</td><td>owner@eduos.app</td></tr>
+        <tr><td>Center admin</td><td>admin@brightminds.demo</td></tr>
+        <tr><td>Teacher</td><td>anita@tutorhub.com / vikram@tutorhub.com</td></tr>
+        <tr><td>Student</td><td>aarav@email.com</td></tr>
+        <tr><td>Parent</td><td>rajesh@email.com</td></tr>
+      </tbody>
+    </table>
+    <p>Centers: <strong>Bright Minds Academy</strong> (full data) · <strong>Excel Tutors Pune</strong> (empty). Reset: Settings → Reset Demo Data</p>
+  </section>
+
+  <section>
+    <h2>9. Permission Summary</h2>
+    <ul>
+      <li><strong>Platform owner</strong> — all centers + support view</li>
+      <li><strong>Center admin</strong> — all layers in center</li>
+      <li><strong>Teacher</strong> — scoped batches/students + homework tools</li>
+      <li><strong>Student</strong> — schedule + homework submit</li>
+      <li><strong>Parent</strong> — view + message + mark homework submitted</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>10. Out of Scope (MVP)</h2>
+    <ul>
+      <li>Payment collection and invoicing</li>
+      <li>Hosting course videos or worksheet libraries</li>
+      <li>Production backend / real multi-user sync</li>
+      <li>Native mobile apps</li>
+      <li>Full API enforcement (demo UI only)</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>11. Suggested Reading Order</h2>
+    <ol>
+      <li>Center admin → Dashboard</li>
+      <li>CRM → lead to enrollment</li>
+      <li>Batches → auto-schedule → Class Schedule</li>
+      <li>Attendance + Tests → Communication Hub</li>
+      <li>Teacher → Today → attendance → homework</li>
+      <li>Parent → dashboard → homework</li>
+      <li>Platform owner → all centers → support view</li>
+    </ol>
+    <p class="footer-note">Document reflects tutor-hub multi-tenant auth release. Update when layers or roles change.</p>
+  </section>
+
+</body>
+</html>

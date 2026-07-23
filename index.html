@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>EduOS — Education Business Platform</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/app.css?v=20260723e">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+
+</head>
+
+<body>
+
+  <div id="fileNotice" class="file-notice hidden">
+    <div class="auth-shell">
+      <div class="auth-card auth-card-wide">
+        <div class="auth-brand">
+          <div class="brand-icon">E</div>
+          <div>
+            <h1>EduOS</h1>
+            <p>Cannot run from a double-clicked file</p>
+          </div>
+        </div>
+        <p class="auth-lead">Browsers block this app when opened as <code>file:///…/index.html</code>. EduOS needs a tiny local web server — that is normal for modern web apps.</p>
+        <ol class="file-steps">
+          <li>Open folder <code>C:\Users\rponnuru\Projects\tutor-hub</code></li>
+          <li>Double-click <strong>start.bat</strong> (keep that window open)</li>
+          <li>Your browser opens <a href="http://127.0.0.1:8888/">http://127.0.0.1:8888/</a></li>
+        </ol>
+        <p class="auth-demo">If the browser does not open automatically, copy the link above after running <strong>start.bat</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="authRoot" class="auth-root hidden"></div>
+
+  <div class="app hidden" id="appShell">
+
+    <aside class="sidebar" id="sidebar">
+
+      <div class="brand">
+
+        <div class="brand-icon">E</div>
+
+        <div>
+
+          <h1>EduOS</h1>
+
+          <p id="brandSubtitle">Education Business Platform</p>
+
+        </div>
+
+      </div>
+
+      <nav class="nav" id="mainNav"></nav>
+
+      <div class="sidebar-footer">
+
+        <p>Tutoring operations platform</p>
+
+      </div>
+
+    </aside>
+
+
+
+    <main class="main">
+
+      <header class="topbar">
+
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+
+        <div class="topbar-title">
+
+          <h2 id="pageTitle">Dashboard</h2>
+
+          <p id="pageSubtitle">Overview of your education business</p>
+
+        </div>
+
+        <div class="topbar-actions">
+
+          <span class="session-pill" id="sessionLabel"></span>
+
+          <button class="btn btn-ghost" id="exportBtn">Export Data</button>
+
+          <button class="btn btn-ghost" id="logoutBtn">Logout</button>
+
+          <button class="btn btn-primary" id="quickNotifyBtn">Quick Message</button>
+
+        </div>
+
+      </header>
+
+      <div class="content" id="content">
+
+        <div class="panel" id="bootStatus">
+
+          <div class="panel-body empty-state">
+
+            <h4>Loading EduOS…</h4>
+
+            <p>If this message stays, the app needs a local server (not a double-clicked file).</p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+
+  <div class="modal-overlay hidden" id="modalOverlay">
+
+    <div class="modal" id="modalRoot">
+
+      <div class="modal-header">
+
+        <h3 id="modalTitle">Modal</h3>
+
+        <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+
+      </div>
+
+      <div class="modal-body" id="modalBody"></div>
+
+      <div class="modal-footer" id="modalFooter"></div>
+
+    </div>
+
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+
+    if (location.protocol === 'file:') {
+
+      document.getElementById('fileNotice').classList.remove('hidden');
+
+    }
+
+  </script>
+
+  <script type="module">
+
+    if (location.protocol !== 'file:') {
+
+      import('./js/app.js?v=20260723e').catch(function (err) {
+
+        document.getElementById('appShell').classList.remove('hidden');
+
+        document.getElementById('content').innerHTML =
+
+          '<div class="panel"><div class="panel-body empty-state"><h4>App failed to start</h4><p>' +
+
+          err.message + '</p><p style="margin-top:12px">Run <strong>start.bat</strong>, then open <a href="http://127.0.0.1:8888/">http://127.0.0.1:8888/</a></p></div></div>';
+
+      });
+
+    }
+
+  </script>
+
+</body>
+
+</html>
+
+
