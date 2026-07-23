@@ -1,8 +1,10 @@
 import {
   generateSchedule,
   formatScheduleLabel,
+  formatTime,
   getSessionProgress,
   getUpcomingSessions,
+  normalizeSession,
 } from './scheduler.js';
 import { ensurePlatformData, seedPlatformDemo } from './platform.js';
 
@@ -90,7 +92,7 @@ const defaultData = () => ({
 });
 
 function migrateBatch(batch) {
-  return {
+  const migrated = {
     scheduleDays: ['mon', 'wed', 'fri'],
     startTime: '16:00',
     endTime: '18:00',
@@ -101,8 +103,10 @@ function migrateBatch(batch) {
     meetingPlatform: 'google-meet',
     ...batch,
     subjects: batch.subjects || [],
-    topics: batch.topics?.length ? batch.topics : batch.subjects || [],
+    topics: batch?.topics?.length ? batch.topics : batch.subjects || [],
   };
+  migrated.sessions = (migrated.sessions || []).map(normalizeSession);
+  return migrated;
 }
 
 function hydrateState(raw) {
@@ -1141,9 +1145,117 @@ export function markSessionComplete(batchId, sessionId, completed = true) {
   const batch = getBatch(batchId);
   const session = batch?.sessions?.find((s) => s.id === sessionId);
   if (!session) return false;
+  normalizeSession(session);
+  session.status = completed ? 'completed' : 'scheduled';
   session.completed = completed;
   persist();
   return true;
+}
+
+function findBatchSession(batchId, sessionId) {
+  const batch = getBatch(batchId);
+  const session = batch?.sessions?.find((s) => s.id === sessionId);
+  return { batch, session };
+}
+
+async function notifyBatchParentsSession(batch, session, kind) {
+  const { sendWhatsApp } = await import('./whatsapp.js');
+  const academy = getState().settings.tutorName;
+  const students = getStudents(batch.id);
+  let notified = 0;
+
+  for (const student of students) {
+    if (!student.parentPhone) continue;
+    let message;
+    if (kind === 'cancelled') {
+      message = `Dear ${student.parentName},
+
+Class cancelled for ${student.name}:
+
+📚 ${session.topic} (${batch.name})
+📅 ${session.date} · ${formatTime(session.startTime)}${session.cancelReason ? `\nNote: ${session.cancelReason}` : ''}
+
+— ${academy}`;
+    } else {
+      const old = session.rescheduledFrom;
+      message = `Dear ${student.parentName},
+
+Class rescheduled for ${student.name}:
+
+📚 ${session.topic} (${batch.name})
+${old ? `Was: ${old.date} · ${formatTime(old.startTime)}\n` : ''}Now: ${session.date} · ${formatTime(session.startTime)}–${formatTime(session.endTime)}
+${session.rescheduleReason ? `Note: ${session.rescheduleReason}\n` : ''}Join: ${session.meetingLink}
+
+— ${academy}`;
+    }
+    await sendWhatsApp({
+      to: student.parentPhone,
+      message,
+      type: kind === 'cancelled' ? 'class_cancelled' : 'class_rescheduled',
+      meta: { batchId: batch.id, sessionId: session.id, studentId: student.id },
+    });
+    notified += 1;
+  }
+  return notified;
+}
+
+export async function cancelBatchSession(batchId, sessionId, { reason = '', notifyParents = true } = {}) {
+  const { batch, session } = findBatchSession(batchId, sessionId);
+  if (!batch || !session) return { ok: false, error: 'Session not found' };
+  normalizeSession(session);
+  if (session.status === 'completed') return { ok: false, error: 'Completed classes cannot be cancelled' };
+  session.status = 'cancelled';
+  session.completed = false;
+  session.cancelReason = reason.trim();
+  session.cancelledAt = new Date().toISOString();
+  persist();
+  const notified = notifyParents ? await notifyBatchParentsSession(batch, session, 'cancelled') : 0;
+  return { ok: true, notified };
+}
+
+export async function rescheduleBatchSession(
+  batchId,
+  sessionId,
+  { date, startTime, endTime, reason = '', notifyParents = true } = {}
+) {
+  const { batch, session } = findBatchSession(batchId, sessionId);
+  if (!batch || !session) return { ok: false, error: 'Session not found' };
+  normalizeSession(session);
+  if (session.status === 'completed') return { ok: false, error: 'Completed classes cannot be rescheduled' };
+  if (!date || !startTime || !endTime) return { ok: false, error: 'Date and time are required' };
+
+  session.rescheduledFrom = {
+    date: session.date,
+    startTime: session.startTime,
+    endTime: session.endTime,
+  };
+  session.date = date;
+  session.startTime = startTime;
+  session.endTime = endTime;
+  session.status = 'scheduled';
+  session.completed = false;
+  session.rescheduleReason = reason.trim();
+  session.rescheduledAt = new Date().toISOString();
+  persist();
+  const notified = notifyParents ? await notifyBatchParentsSession(batch, session, 'rescheduled') : 0;
+  return { ok: true, notified };
+}
+
+export function restoreBatchSession(batchId, sessionId) {
+  const { batch, session } = findBatchSession(batchId, sessionId);
+  if (!batch || !session) return { ok: false, error: 'Session not found' };
+  session.status = 'scheduled';
+  session.completed = false;
+  session.cancelReason = '';
+  delete session.cancelledAt;
+  persist();
+  return { ok: true };
+}
+
+export function getBatchSession(batchId, sessionId) {
+  const { batch, session } = findBatchSession(batchId, sessionId);
+  if (!batch || !session) return null;
+  return normalizeSession({ ...session, batchId: batch.id, batchName: batch.name });
 }
 
 export function getTeacherReport(teacherId) {

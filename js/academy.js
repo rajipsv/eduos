@@ -1,5 +1,5 @@
 import { getBatches, getStudents, getTeachers, getTests, getAttendanceHistory } from './store.js';
-import { getAllSessions, getUpcomingSessions } from './scheduler.js';
+import { getAllSessions, getUpcomingSessions, normalizeSession } from './scheduler.js';
 
 export function getAcademyStats() {
   const batches = getBatches();
@@ -8,8 +8,11 @@ export function getAcademyStats() {
   const today = new Date().toISOString().slice(0, 10);
   const sessions = getAllSessions(batches);
   const upcoming = getUpcomingSessions(batches, 100).length;
-  const completed = sessions.filter((s) => s.completed).length;
-  const todayClasses = sessions.filter((s) => s.date === today && !s.completed).length;
+  const completed = sessions.filter((s) => normalizeSession(s).status === 'completed').length;
+  const todayClasses = sessions.filter((s) => {
+    const n = normalizeSession(s);
+    return s.date === today && n.status === 'scheduled';
+  }).length;
   const capacityPct = batches.length
     ? Math.round(
         batches.reduce((sum, b) => {

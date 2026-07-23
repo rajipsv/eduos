@@ -23,6 +23,10 @@ import {
   addLeadActivity,
   updateLead,
   markSessionComplete,
+  cancelBatchSession,
+  rescheduleBatchSession,
+  restoreBatchSession,
+  getBatchSession,
   getMessages,
   getState,
   saveBatch,
@@ -68,7 +72,10 @@ import {
   sessionsPreviewHtml,
   formatTime,
   getAllSessions,
+  sessionStatusBadge,
+  normalizeSession,
 } from './scheduler.js';
+import { renderWeekCalendarHtml, getMondayOfWeek, addDays } from './schedule-calendar.js';
 import { getCrmStats, searchLeads, getStageLabel, formatLeadAge } from './crm.js';
 import { academyBanner, academyStatsGrid } from './academy.js';
 import {
@@ -85,7 +92,7 @@ export const pageMeta = {
   platform: { title: 'Platform Roadmap', subtitle: 'Product capabilities for tuition centers' },
   crm: { title: 'Education CRM', subtitle: 'Lead pipeline, demos, follow-ups, enrollment' },
   batches: { title: 'Batch Management', subtitle: 'Auto-schedule batches from topics and timings' },
-  schedule: { title: 'Class Schedule', subtitle: 'Sessions, meeting links, mark classes done' },
+  schedule: { title: 'Class Schedule', subtitle: 'In-app week calendar — cancel, reschedule, notify parents' },
   teachers: { title: 'Teachers', subtitle: 'Tutor roster and batch assignments' },
   students: { title: 'Student Management', subtitle: 'Records, batches, parent contacts' },
   attendance: { title: 'Attendance Tracking', subtitle: 'Daily marking and parent notifications' },
@@ -610,7 +617,7 @@ function renderBatches() {
         const atCapacity = count >= (b.capacity || 999);
         const progress = getBatchProgress(b.id);
         const teacher = getTeacher(b.teacherId);
-        const nextClass = (b.sessions || []).find((s) => !s.completed && s.date >= new Date().toISOString().slice(0, 10));
+        const nextClass = (b.sessions || []).map(normalizeSession).find((s) => s.status === 'scheduled' && s.date >= new Date().toISOString().slice(0, 10));
         return `<div class="batch-card">
           <h4>${b.name}</h4>
           <div class="meta">${b.schedule || 'No schedule'}</div>
@@ -631,15 +638,16 @@ function renderBatches() {
 
 function renderSchedule() {
   const batches = getBatches();
-  const upcoming = getUpcomingSessions(batches, 50);
+  const weekStart = getMondayOfWeek(new Date());
+  const calendarSessions = getAllSessions(batches, { includeCompleted: true, includeCancelled: true });
+  const upcoming = scheduleTabSessions('upcoming', '');
 
   return `
-    ${academyBanner('Class Schedule', 'Upcoming sessions with meeting links — mark classes complete as you finish them.')}
+    ${academyBanner('Class Schedule', 'In-app week calendar for all batches — click a class to cancel, reschedule, or mark done. Optional WhatsApp alerts to parents.')}
     ${academyStatsGrid(['todayClasses', 'upcoming', 'completed'])}
     <div class="report-tabs" style="margin-top:16px">
-      <button class="report-tab active" data-sched-tab="upcoming">Upcoming</button>
-      <button class="report-tab" data-sched-tab="all">All sessions</button>
-      <button class="report-tab" data-sched-tab="completed">Completed</button>
+      <button class="report-tab active" data-sched-layout="calendar">Calendar</button>
+      <button class="report-tab" data-sched-layout="list">List</button>
     </div>
     <div class="toolbar" style="margin-top:12px">
       <select id="scheduleFilter">
@@ -647,9 +655,24 @@ function renderSchedule() {
         ${batches.map((b) => `<option value="${b.id}">${b.name}</option>`).join('')}
       </select>
     </div>
-    <div class="panel"><div class="panel-header"><h3>Class Schedule & Meeting Links</h3></div>
-      <div class="panel-body" id="scheduleList">
-        ${scheduleListHtml(upcoming, { showComplete: true })}
+    <div class="panel" id="scheduleCalendarPanel">
+      <div class="panel-header"><h3>Week calendar</h3></div>
+      <div class="panel-body" id="scheduleCalendarWrap">
+        ${renderWeekCalendarHtml(calendarSessions, weekStart)}
+      </div>
+    </div>
+    <div class="panel hidden" id="scheduleListPanel">
+      <div class="panel-header"><h3>Session list</h3></div>
+      <div class="panel-body">
+        <div class="report-tabs" style="margin-bottom:12px">
+          <button class="report-tab active" data-sched-tab="upcoming">Upcoming</button>
+          <button class="report-tab" data-sched-tab="all">All</button>
+          <button class="report-tab" data-sched-tab="completed">Completed</button>
+          <button class="report-tab" data-sched-tab="cancelled">Cancelled</button>
+        </div>
+        <div id="scheduleList">
+          ${scheduleListHtml(upcoming, { showManage: true })}
+        </div>
       </div>
     </div>`;
 }
@@ -657,30 +680,59 @@ function renderSchedule() {
 function scheduleTabSessions(tab, batchId) {
   const batches = getBatches();
   const filtered = batchId ? batches.filter((b) => b.id === batchId) : batches;
-  if (tab === 'completed') return getAllSessions(filtered).filter((s) => s.completed);
-  if (tab === 'all') return getAllSessions(filtered);
   const today = new Date().toISOString().slice(0, 10);
-  return getAllSessions(filtered, { includeCompleted: false }).filter((s) => s.date >= today);
+  if (tab === 'completed') return getAllSessions(filtered).filter((s) => s.status === 'completed');
+  if (tab === 'cancelled') return getAllSessions(filtered, { includeCompleted: true }).filter((s) => s.status === 'cancelled');
+  if (tab === 'all') return getAllSessions(filtered, { includeCompleted: true, includeCancelled: true });
+  return getAllSessions(filtered, { includeCompleted: false, includeCancelled: false }).filter((s) => s.date >= today);
 }
 
-function scheduleListHtml(sessions, { showComplete = false } = {}) {
+function sessionRescheduleNote(session) {
+  const s = normalizeSession(session);
+  if (!s.rescheduledFrom) return '';
+  return `<br><small>Was ${s.rescheduledFrom.date} · ${formatTime(s.rescheduledFrom.startTime)}</small>`;
+}
+
+function sessionManageButtons(s) {
+  const st = normalizeSession(s);
+  const base = `data-batch="${s.batchId}" data-session="${s.id}"`;
+  if (st.status === 'scheduled') {
+    return `
+      <button class="btn btn-sm btn-secondary" data-action="reschedule-session" ${base}>Reschedule</button>
+      <button class="btn btn-sm btn-secondary" data-action="cancel-session" ${base}>Cancel</button>
+      <button class="btn btn-sm btn-secondary" data-action="complete-session" ${base}>Mark done</button>`;
+  }
+  if (st.status === 'cancelled') {
+    return `<button class="btn btn-sm btn-secondary" data-action="restore-session" ${base}>Restore</button>`;
+  }
+  if (st.status === 'completed') {
+    return `<button class="btn btn-sm btn-secondary" data-action="undo-session" ${base}>Undo</button>`;
+  }
+  return '';
+}
+
+function scheduleListHtml(sessions, { showManage = false } = {}) {
   if (!sessions.length) {
     return '<div class="empty-state"><h4>No sessions</h4><p>Create a batch, add topics, and generate a schedule.</p></div>';
   }
 
-  return sessions.map((s) => `
+  return sessions.map((s) => {
+    const st = normalizeSession(s);
+    return `
     <div class="session-row" data-batch-id="${s.batchId}" data-session-id="${s.id}">
       <div class="session-info">
-        <h4>${s.topic} ${s.completed ? '<span class="badge badge-green">Done</span>' : ''}</h4>
-        <p><strong>${s.batchName}</strong> · ${s.date} · ${formatTime(s.startTime)}–${formatTime(s.endTime)}</p>
+        <h4>${s.topic} ${sessionStatusBadge(s)}</h4>
+        <p><strong>${s.batchName}</strong> · ${s.date} · ${formatTime(s.startTime)}–${formatTime(s.endTime)}${sessionRescheduleNote(s)}</p>
+        ${st.cancelReason ? `<p style="font-size:0.82rem;color:var(--text-muted)">Cancel note: ${st.cancelReason}</p>` : ''}
       </div>
       <div class="session-actions">
-        ${!s.completed ? `<a href="${s.meetingLink}" target="_blank" class="btn btn-sm btn-primary">Join Meeting</a>` : ''}
-        <button class="btn btn-sm btn-secondary" data-action="copy-link" data-link="${s.meetingLink}">Copy Link</button>
-        ${showComplete && !s.completed ? `<button class="btn btn-sm btn-secondary" data-action="complete-session" data-batch="${s.batchId}" data-session="${s.id}">Mark done</button>` : ''}
-        ${showComplete && s.completed ? `<button class="btn btn-sm btn-secondary" data-action="undo-session" data-batch="${s.batchId}" data-session="${s.id}">Undo</button>` : ''}
+        ${st.status === 'scheduled' ? `<a href="${s.meetingLink}" target="_blank" class="btn btn-sm btn-primary">Join Meeting</a>` : ''}
+        <button class="btn btn-sm btn-secondary" data-action="copy-link" data-link="${s.meetingLink || ''}">Copy Link</button>
+        <button class="btn btn-sm btn-ghost" data-action="open-session" data-batch="${s.batchId}" data-session="${s.id}">Details</button>
+        ${showManage ? sessionManageButtons(s) : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function renderTeachers() {
@@ -1217,7 +1269,7 @@ export function bindViewEvents(view, ctx, params = {}) {
 
   if (view === 'crm') bindCRMEvents({ showModal, closeModal, toast, refresh });
   if (view === 'batches') bindBatchEvents({ showModal, closeModal, toast, refresh });
-  if (view === 'schedule') bindScheduleEvents({ toast, refresh });
+  if (view === 'schedule' || view === 'teacherHome') bindScheduleEvents({ showModal, closeModal, toast, refresh });
   if (view === 'teachers') bindTeacherEvents({ showModal, closeModal, toast, refresh, navigate });
   if (view === 'reports') bindReportEvents();
   if (view === 'students') bindStudentEvents({ showModal, closeModal, toast, refresh });
@@ -1500,11 +1552,13 @@ function showScheduleModal(batch, { showModal, closeModal, toast, refresh }) {
         const sessions = (batch.sessions || []).map((s) => {
           const linkInput = document.querySelector(`[data-session-link="${s.id}"]`);
           const doneInput = document.querySelector(`[data-session-done="${s.id}"]`);
-          return {
+          const completed = doneInput?.checked || false;
+          return normalizeSession({
             ...s,
             meetingLink: linkInput?.value || s.meetingLink,
-            completed: doneInput?.checked || false,
-          };
+            completed,
+            status: completed ? 'completed' : (s.status === 'cancelled' ? 'cancelled' : 'scheduled'),
+          });
         });
         updateBatchSessions(batch.id, sessions);
         closeModal();
@@ -1515,30 +1569,203 @@ function showScheduleModal(batch, { showModal, closeModal, toast, refresh }) {
   });
 }
 
-function bindScheduleEvents({ toast, refresh }) {
-  const activeTab = () => document.querySelector('[data-sched-tab].active')?.dataset.schedTab || 'upcoming';
+function showSessionDetailModal(batchId, sessionId, ctx) {
+  const session = getBatchSession(batchId, sessionId);
+  if (!session) return;
+  const { showModal, closeModal, toast, refresh } = ctx;
+  const st = normalizeSession(session);
 
-  const reloadSchedule = () => {
+  showModal({
+    title: session.topic,
+    body: `
+      <div style="font-size:0.9rem;line-height:1.65">
+        <p><strong>Batch:</strong> ${session.batchName}</p>
+        <p><strong>When:</strong> ${session.date} · ${formatTime(session.startTime)}–${formatTime(session.endTime)}</p>
+        <p><strong>Status:</strong> ${sessionStatusBadge(session) || 'Scheduled'}</p>
+        ${session.rescheduledFrom ? `<p><strong>Previous slot:</strong> ${session.rescheduledFrom.date} · ${formatTime(session.rescheduledFrom.startTime)}</p>` : ''}
+        ${session.cancelReason ? `<p><strong>Cancel note:</strong> ${session.cancelReason}</p>` : ''}
+        ${st.status === 'scheduled' ? `<p><strong>Meeting:</strong> <a href="${session.meetingLink}" target="_blank" rel="noopener">${session.meetingLink}</a></p>` : ''}
+      </div>`,
+    footer: `
+      <button type="button" class="btn btn-secondary" data-modal-cancel>Close</button>
+      ${st.status === 'scheduled' ? `<a href="${session.meetingLink}" target="_blank" class="btn btn-primary">Join Meeting</a>` : ''}
+      ${st.status === 'scheduled' ? `<button type="button" class="btn btn-secondary" id="modalRescheduleSession">Reschedule</button>` : ''}
+      ${st.status === 'scheduled' ? `<button type="button" class="btn btn-secondary" id="modalCancelSession">Cancel class</button>` : ''}
+      ${st.status === 'cancelled' ? `<button type="button" class="btn btn-primary" id="modalRestoreSession">Restore</button>` : ''}`,
+    onMount: () => {
+      document.getElementById('modalCancelSession')?.addEventListener('click', () => {
+        closeModal();
+        showCancelSessionModal(batchId, sessionId, ctx);
+      });
+      document.getElementById('modalRescheduleSession')?.addEventListener('click', () => {
+        closeModal();
+        showRescheduleSessionModal(batchId, sessionId, ctx);
+      });
+      document.getElementById('modalRestoreSession')?.addEventListener('click', () => {
+        restoreBatchSession(batchId, sessionId);
+        closeModal();
+        toast('Class restored to schedule', 'success');
+        refresh?.();
+      });
+    },
+  });
+}
+
+function showCancelSessionModal(batchId, sessionId, ctx) {
+  const session = getBatchSession(batchId, sessionId);
+  if (!session) return;
+  const { showModal, closeModal, toast, refresh } = ctx;
+
+  showModal({
+    title: 'Cancel class',
+    body: `
+      <p style="margin:0 0 12px;color:var(--text-muted)">${session.topic} · ${session.batchName} · ${session.date}</p>
+      <div class="form-group full"><label>Reason (optional)</label><textarea id="cancelSessionReason" placeholder="Teacher unwell, holiday, etc."></textarea></div>
+      <div class="form-group full"><label><input type="checkbox" id="cancelNotifyParents" checked> Notify parents on WhatsApp</label></div>`,
+    footer: `<button type="button" class="btn btn-secondary" data-modal-cancel>Back</button><button type="button" class="btn btn-danger" id="confirmCancelSession">Cancel class</button>`,
+    onMount: () => {
+      document.getElementById('confirmCancelSession').onclick = async () => {
+        const result = await cancelBatchSession(batchId, sessionId, {
+          reason: document.getElementById('cancelSessionReason')?.value || '',
+          notifyParents: document.getElementById('cancelNotifyParents')?.checked,
+        });
+        closeModal();
+        if (!result.ok) return toast(result.error, 'error');
+        toast(result.notified ? `Class cancelled · ${result.notified} parent(s) notified` : 'Class cancelled', 'success');
+        refresh?.();
+      };
+    },
+  });
+}
+
+function showRescheduleSessionModal(batchId, sessionId, ctx) {
+  const session = getBatchSession(batchId, sessionId);
+  if (!session) return;
+  const { showModal, closeModal, toast, refresh } = ctx;
+
+  showModal({
+    title: 'Reschedule class',
+    body: `
+      <p style="margin:0 0 12px;color:var(--text-muted)">${session.topic} · ${session.batchName}</p>
+      <div class="form-grid">
+        <div class="form-group"><label>New date</label><input type="date" id="rescheduleDate" value="${session.date}"></div>
+        <div class="form-group"><label>Start</label><input type="time" id="rescheduleStart" value="${session.startTime || '16:00'}"></div>
+        <div class="form-group"><label>End</label><input type="time" id="rescheduleEnd" value="${session.endTime || '18:00'}"></div>
+        <div class="form-group full"><label>Note for parents (optional)</label><textarea id="rescheduleReason" placeholder="Moved due to exam week"></textarea></div>
+        <div class="form-group full"><label><input type="checkbox" id="rescheduleNotifyParents" checked> Notify parents on WhatsApp</label></div>
+      </div>`,
+    footer: `<button type="button" class="btn btn-secondary" data-modal-cancel>Back</button><button type="button" class="btn btn-primary" id="confirmRescheduleSession">Save new time</button>`,
+    onMount: () => {
+      document.getElementById('confirmRescheduleSession').onclick = async () => {
+        const result = await rescheduleBatchSession(batchId, sessionId, {
+          date: document.getElementById('rescheduleDate')?.value,
+          startTime: document.getElementById('rescheduleStart')?.value,
+          endTime: document.getElementById('rescheduleEnd')?.value,
+          reason: document.getElementById('rescheduleReason')?.value || '',
+          notifyParents: document.getElementById('rescheduleNotifyParents')?.checked,
+        });
+        closeModal();
+        if (!result.ok) return toast(result.error, 'error');
+        toast(result.notified ? `Class rescheduled · ${result.notified} parent(s) notified` : 'Class rescheduled', 'success');
+        refresh?.();
+      };
+    },
+  });
+}
+
+function bindScheduleEvents({ showModal, closeModal, toast, refresh }) {
+  const ctx = { showModal, closeModal, toast, refresh };
+  const activeTab = () => document.querySelector('[data-sched-tab].active')?.dataset.schedTab || 'upcoming';
+  const activeLayout = () => document.querySelector('[data-sched-layout].active')?.dataset.schedLayout || 'calendar';
+
+  const getWeekStart = () => document.querySelector('.schedule-cal')?.dataset.weekStart || getMondayOfWeek(new Date());
+
+  const reloadCalendar = () => {
+    const wrap = document.getElementById('scheduleCalendarWrap');
+    if (!wrap) return;
+    const batchId = document.getElementById('scheduleFilter')?.value || '';
+    const batches = getBatches();
+    const filtered = batchId ? batches.filter((b) => b.id === batchId) : batches;
+    const weekStart = getWeekStart();
+    const sessions = getAllSessions(filtered, { includeCompleted: true, includeCancelled: true });
+    wrap.innerHTML = renderWeekCalendarHtml(sessions, weekStart);
+    bindScheduleEvents(ctx);
+  };
+
+  const reloadList = () => {
+    const list = document.getElementById('scheduleList');
+    if (!list) return;
     const batchId = document.getElementById('scheduleFilter')?.value || '';
     const tab = activeTab();
-    const sessions = scheduleTabSessions(tab, batchId || null);
-    const showComplete = tab === 'upcoming' || tab === 'all';
-    document.getElementById('scheduleList').innerHTML = scheduleListHtml(sessions, { showComplete });
-    bindScheduleEvents({ toast, refresh });
+    list.innerHTML = scheduleListHtml(scheduleTabSessions(tab, batchId || null), { showManage: true });
+    bindScheduleEvents(ctx);
   };
+
+  const reloadSchedule = () => {
+    if (activeLayout() === 'list') reloadList();
+    else reloadCalendar();
+  };
+
+  document.querySelectorAll('[data-sched-layout]').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('[data-sched-layout]').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      const isList = tab.dataset.schedLayout === 'list';
+      document.getElementById('scheduleCalendarPanel')?.classList.toggle('hidden', isList);
+      document.getElementById('scheduleListPanel')?.classList.toggle('hidden', !isList);
+      reloadSchedule();
+    });
+  });
 
   document.querySelectorAll('[data-sched-tab]').forEach((tab) => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('[data-sched-tab]').forEach((t) => t.classList.remove('active'));
       tab.classList.add('active');
-      reloadSchedule();
+      reloadList();
     });
   });
 
   document.getElementById('scheduleFilter')?.addEventListener('change', reloadSchedule);
 
+  document.querySelector('[data-action="cal-prev-week"]')?.addEventListener('click', () => {
+    const weekStart = addDays(getWeekStart(), -7);
+    const wrap = document.getElementById('scheduleCalendarWrap');
+    if (!wrap) return;
+    const batchId = document.getElementById('scheduleFilter')?.value || '';
+    const batches = getBatches();
+    const filtered = batchId ? batches.filter((b) => b.id === batchId) : batches;
+    wrap.innerHTML = renderWeekCalendarHtml(getAllSessions(filtered, { includeCompleted: true, includeCancelled: true }), weekStart);
+    bindScheduleEvents(ctx);
+  });
+
+  document.querySelector('[data-action="cal-next-week"]')?.addEventListener('click', () => {
+    const weekStart = addDays(getWeekStart(), 7);
+    const wrap = document.getElementById('scheduleCalendarWrap');
+    if (!wrap) return;
+    const batchId = document.getElementById('scheduleFilter')?.value || '';
+    const batches = getBatches();
+    const filtered = batchId ? batches.filter((b) => b.id === batchId) : batches;
+    wrap.innerHTML = renderWeekCalendarHtml(getAllSessions(filtered, { includeCompleted: true, includeCancelled: true }), weekStart);
+    bindScheduleEvents(ctx);
+  });
+
+  document.querySelector('[data-action="cal-this-week"]')?.addEventListener('click', () => {
+    const wrap = document.getElementById('scheduleCalendarWrap');
+    if (!wrap) return;
+    const batchId = document.getElementById('scheduleFilter')?.value || '';
+    const batches = getBatches();
+    const filtered = batchId ? batches.filter((b) => b.id === batchId) : batches;
+    wrap.innerHTML = renderWeekCalendarHtml(getAllSessions(filtered, { includeCompleted: true, includeCancelled: true }), getMondayOfWeek(new Date()));
+    bindScheduleEvents(ctx);
+  });
+
+  document.querySelectorAll('[data-action="open-session"]').forEach((btn) => {
+    btn.addEventListener('click', () => showSessionDetailModal(btn.dataset.batch, btn.dataset.session, ctx));
+  });
+
   document.querySelectorAll('[data-action="copy-link"]').forEach((btn) => {
     btn.addEventListener('click', async () => {
+      if (!btn.dataset.link) return toast('No meeting link', 'error');
       await navigator.clipboard.writeText(btn.dataset.link);
       toast('Meeting link copied', 'success');
     });
@@ -1557,6 +1784,24 @@ function bindScheduleEvents({ toast, refresh }) {
     btn.addEventListener('click', () => {
       markSessionComplete(btn.dataset.batch, btn.dataset.session, false);
       toast('Class marked incomplete', 'success');
+      refresh?.();
+      reloadSchedule();
+    });
+  });
+
+  document.querySelectorAll('[data-action="cancel-session"]').forEach((btn) => {
+    btn.addEventListener('click', () => showCancelSessionModal(btn.dataset.batch, btn.dataset.session, ctx));
+  });
+
+  document.querySelectorAll('[data-action="reschedule-session"]').forEach((btn) => {
+    btn.addEventListener('click', () => showRescheduleSessionModal(btn.dataset.batch, btn.dataset.session, ctx));
+  });
+
+  document.querySelectorAll('[data-action="restore-session"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const result = restoreBatchSession(btn.dataset.batch, btn.dataset.session);
+      if (!result.ok) return toast(result.error, 'error');
+      toast('Class restored to schedule', 'success');
       refresh?.();
       reloadSchedule();
     });

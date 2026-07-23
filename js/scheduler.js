@@ -39,6 +39,31 @@ export function generateMeetingLink(platform, batchName, index) {
   return `https://meet.google.com/${code}`;
 }
 
+export function normalizeSession(session) {
+  if (!session) return session;
+  const s = { ...session };
+  if (!s.status) {
+    if (s.cancelled) s.status = 'cancelled';
+    else if (s.completed) s.status = 'completed';
+    else s.status = 'scheduled';
+  }
+  s.completed = s.status === 'completed';
+  return s;
+}
+
+export function isScheduledSession(session, today = new Date().toISOString().slice(0, 10)) {
+  const s = normalizeSession(session);
+  return s.status === 'scheduled' && s.date >= today;
+}
+
+export function sessionStatusBadge(session) {
+  const s = normalizeSession(session);
+  if (s.status === 'cancelled') return '<span class="badge badge-red">Cancelled</span>';
+  if (s.status === 'completed') return '<span class="badge badge-green">Done</span>';
+  if (s.rescheduledFrom) return '<span class="badge badge-orange">Rescheduled</span>';
+  return '';
+}
+
 export function generateSchedule({
   topics,
   scheduleDays,
@@ -69,8 +94,13 @@ export function generateSchedule({
         startTime,
         endTime,
         meetingLink: existing?.meetingLink || generateMeetingLink(meetingPlatform, batchName, topicIndex),
+        status: existing?.status || (existing?.completed ? 'completed' : existing?.cancelled ? 'cancelled' : 'scheduled'),
         completed: existing?.completed || false,
+        cancelReason: existing?.cancelReason || '',
+        rescheduleReason: existing?.rescheduleReason || '',
+        rescheduledFrom: existing?.rescheduledFrom || null,
       });
+      sessions[sessions.length - 1] = normalizeSession(sessions[sessions.length - 1]);
       topicIndex++;
     }
     current.setDate(current.getDate() + 1);
@@ -82,28 +112,28 @@ export function generateSchedule({
 
 export function getUpcomingSessions(batches, limit = 20) {
   const today = new Date().toISOString().slice(0, 10);
-  return getAllSessions(batches, { includeCompleted: false })
+  return getAllSessions(batches, { includeCompleted: false, includeCancelled: false })
     .filter((s) => s.date >= today)
     .slice(0, limit);
 }
 
-export function getAllSessions(batches, { includeCompleted = true, batchId = null } = {}) {
+export function getAllSessions(batches, { includeCompleted = true, includeCancelled = true, batchId = null } = {}) {
   const list = (batchId ? batches.filter((b) => b.id === batchId) : batches).flatMap((batch) =>
-    (batch.sessions || []).map((session) => ({ ...session, batchId: batch.id, batchName: batch.name }))
+    (batch.sessions || []).map((session) => normalizeSession({ ...session, batchId: batch.id, batchName: batch.name }))
   );
-  const filtered = includeCompleted ? list : list.filter((s) => !s.completed);
-  return filtered.sort(
-    (a, b) => a.date.localeCompare(b.date) || (a.startTime || '').localeCompare(b.startTime || '')
-  );
+  return list
+    .filter((s) => (includeCompleted || s.status !== 'completed') && (includeCancelled || s.status !== 'cancelled'))
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime || '').localeCompare(b.startTime || ''));
 }
 
 export function getSessionProgress(sessions) {
-  if (!sessions?.length) return { total: 0, completed: 0, percent: 0 };
-  const completed = sessions.filter((s) => s.completed).length;
+  const list = (sessions || []).map(normalizeSession).filter((s) => s.status !== 'cancelled');
+  if (!list.length) return { total: 0, completed: 0, percent: 0 };
+  const completed = list.filter((s) => s.status === 'completed').length;
   return {
-    total: sessions.length,
+    total: list.length,
     completed,
-    percent: Math.round((completed / sessions.length) * 100),
+    percent: Math.round((completed / list.length) * 100),
   };
 }
 

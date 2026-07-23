@@ -1982,7 +1982,169 @@ tr:last-child td { border-bottom: none; }
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
+
+.schedule-cal-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 16px;
+}
+
+.schedule-cal-range {
+  flex: 1;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.schedule-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .schedule-cal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .schedule-cal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.schedule-cal-day {
+  min-height: 120px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-cal-day-today {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+.schedule-cal-day-head {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.schedule-cal-dow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.schedule-cal-date {
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
+.schedule-cal-day-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.schedule-cal-empty {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  padding: 8px 4px;
+}
+
+.schedule-cal-event {
+  width: 100%;
+  text-align: left;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  padding: 8px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.schedule-cal-event:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.schedule-cal-event-upcoming {
+  border-left: 3px solid var(--primary);
+}
+
+.schedule-cal-event-done {
+  opacity: 0.72;
+  border-left: 3px solid var(--text-muted);
+}
+
+.schedule-cal-event-cancelled {
+  opacity: 0.65;
+  border-left: 3px solid var(--danger, #c0392b);
+  text-decoration: line-through;
+}
+
+.schedule-cal-event-time {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.schedule-cal-event-topic {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.schedule-cal-event-batch {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.schedule-cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  margin-top: 14px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.schedule-cal-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.schedule-cal-legend .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.schedule-cal-legend .dot-green { background: var(--primary); }
+.schedule-cal-legend .dot-gray { background: var(--text-muted); }
+.schedule-cal-legend .dot-red { background: #c0392b; }
 
 .report-tabs {
   display: flex;

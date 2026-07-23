@@ -1,6 +1,7 @@
 import { getCenters, getTeachers, getStudents, getBatches, getLeads } from './store.js';
 import { getSession, platformViewCenter, platformExitCenterView, setCenterStatus, isPlatformOwner } from './auth.js';
 import { PLATFORM_LAYERS } from './intelligence.js';
+import { getUpcomingSessions, formatTime } from './scheduler.js';
 
 export const platformPageMeta = {
   platformDashboard: { title: 'Platform Dashboard', subtitle: 'EduOS operator — all tuition centers' },
@@ -158,15 +159,31 @@ export function bindPlatformEvents(ctx) {
 
 export function renderTeacherHome() {
   const batches = getBatches();
-  const upcoming = batches.flatMap((b) => (b.sessions || []).filter((s) => !s.completed).slice(0, 2).map((s) => ({ ...s, batchName: b.name }))).slice(0, 4);
+  const upcoming = getUpcomingSessions(batches, 6);
   return `
     <div class="vision-banner"><h3>Teacher workspace</h3><p>Your classes and ops tasks — scoped to your batches only.</p></div>
     <div class="stats-grid">
       <div class="stat-card"><div class="label">My batches</div><div class="value">${batches.length}</div></div>
       <div class="stat-card"><div class="label">My students</div><div class="value">${getStudents().length}</div></div>
     </div>
-    <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Upcoming classes</h3></div>
-    <div class="panel-body">${upcoming.length ? upcoming.map((s) => `<div class="session-row"><div class="session-info"><h4>${s.topic}</h4><p>${s.batchName} · ${s.date}</p></div></div>`).join('') : '<p class="empty-state">No upcoming classes</p>'}</div></div>`;
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-header">
+        <h3>Upcoming classes</h3>
+        <button type="button" class="btn btn-sm btn-secondary" data-view-link="schedule">Open calendar</button>
+      </div>
+      <div class="panel-body">${upcoming.length ? upcoming.map((s) => `
+        <div class="session-row">
+          <div class="session-info">
+            <h4>${s.topic}</h4>
+            <p>${s.batchName} · ${s.date} · ${formatTime(s.startTime)}–${formatTime(s.endTime)}</p>
+          </div>
+          <div class="session-actions">
+            <a href="${s.meetingLink}" target="_blank" class="btn btn-sm btn-primary">Join</a>
+            <button type="button" class="btn btn-sm btn-secondary" data-action="open-session" data-batch="${s.batchId}" data-session="${s.id}">Cancel / reschedule</button>
+          </div>
+        </div>`).join('') : '<p class="empty-state">No upcoming classes</p>'}
+      </div>
+    </div>`;
 }
 
 export function renderStudentHome() {
