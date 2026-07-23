@@ -2009,9 +2009,9 @@ function bindSettingsEvents({ toast, refresh }) {
     toast('Settings saved', 'success');
   });
 
-  document.querySelector('[data-action="reset-demo"]')?.addEventListener('click', () => {
+  document.querySelector('[data-action="reset-demo"]')?.addEventListener('click', async () => {
     if (confirm('Reset all data to demo sample?')) {
-      resetDemo();
+      await resetDemo();
       toast('Demo data restored', 'success');
       refresh();
     }

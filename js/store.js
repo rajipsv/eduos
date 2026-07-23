@@ -74,7 +74,39 @@ function migrateBatch(batch) {
   };
 }
 
-function loadData() {
+function hydrateState(raw) {
+  const data = { ...defaultData(), ...raw };
+  data.batches = (data.batches || []).map((batch) => {
+    const migrated = migrateBatch(batch);
+    if (migrated.topics?.length && !migrated.sessions?.length) {
+      migrated.sessions = generateSchedule({
+        topics: migrated.topics,
+        scheduleDays: migrated.scheduleDays,
+        startTime: migrated.startTime,
+        endTime: migrated.endTime,
+        startDate: migrated.startDate,
+        meetingPlatform: migrated.meetingPlatform,
+        batchName: migrated.name,
+      });
+      migrated.schedule = formatScheduleLabel(migrated.scheduleDays, migrated.startTime, migrated.endTime);
+    }
+    return migrated;
+  });
+  data.teachers = data.teachers || [];
+  data.leads = data.leads || [];
+  data.centers = data.centers || [];
+  data.users = data.users || [];
+  data.organization = data.organization || defaultData().organization;
+  data.students = data.students || [];
+  ensurePlatformData(data);
+  migrateMultiTenant(data);
+  migrateCenterListings(data);
+  seedPlatformDemo(data, data.students, data.batches, data.teachers);
+  if (!data.users.length) seedDemoUsers(data);
+  return data;
+}
+
+function loadFromLocalStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
@@ -83,46 +115,14 @@ function loadData() {
         if (legacy) {
           const parsed = JSON.parse(legacy);
           parsed.batches = (parsed.batches || []).map(migrateBatch);
-          const merged = { ...defaultData(), ...parsed };
-          merged.students = merged.students || [];
-          ensurePlatformData(merged);
-          seedPlatformDemo(merged, merged.students, merged.batches, merged.teachers);
-          saveData(merged);
+          const merged = hydrateState({ ...defaultData(), ...parsed });
+          saveDataLocal(merged);
           return merged;
         }
       }
       return seedDemoData();
     }
-    const data = { ...defaultData(), ...JSON.parse(raw) };
-    data.batches = (data.batches || []).map((batch) => {
-      const migrated = migrateBatch(batch);
-      if (migrated.topics?.length && !migrated.sessions?.length) {
-        migrated.sessions = generateSchedule({
-          topics: migrated.topics,
-          scheduleDays: migrated.scheduleDays,
-          startTime: migrated.startTime,
-          endTime: migrated.endTime,
-          startDate: migrated.startDate,
-          meetingPlatform: migrated.meetingPlatform,
-          batchName: migrated.name,
-        });
-        migrated.schedule = formatScheduleLabel(migrated.scheduleDays, migrated.startTime, migrated.endTime);
-      }
-      return migrated;
-    });
-    data.teachers = data.teachers || [];
-    data.leads = data.leads || [];
-    data.centers = data.centers || [];
-    data.users = data.users || [];
-    data.organization = data.organization || defaultData().organization;
-    data.students = data.students || [];
-    ensurePlatformData(data);
-    migrateMultiTenant(data);
-    migrateCenterListings(data);
-    seedPlatformDemo(data, data.students, data.batches, data.teachers);
-    if (!data.users.length) seedDemoUsers(data);
-    saveData(data);
-    return data;
+    return hydrateState(JSON.parse(raw));
   } catch (err) {
     console.error('EduOS loadData failed, resetting demo:', err);
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
@@ -130,8 +130,86 @@ function loadData() {
   }
 }
 
-function saveData(data) {
+async function loadFromDatabase() {
+  const res = await fetch('/api/state');
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Database load failed (${res.status})`);
+  const payload = await res.json();
+  return hydrateState(payload.data);
+}
+
+async function persistToDatabase(data) {
+  const res = await fetch('/api/state', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Database save failed (${res.status})`);
+}
+
+let state = null;
+let dbMode = false;
+let persistTimer = null;
+let initPromise = null;
+
+function saveDataLocal(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function saveData(data) {
+  saveDataLocal(data);
+  if (dbMode) scheduleDbPersist();
+}
+
+function scheduleDbPersist() {
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    persistToDatabase(state).catch((err) => {
+      console.warn('EduOS database save failed:', err.message);
+    });
+  }, 400);
+}
+
+export async function initStore() {
+  if (state) return state;
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    try {
+      const health = await fetch('/api/health');
+      if (health.ok) {
+        const info = await health.json();
+        if (info.db) {
+          dbMode = true;
+          const remote = await loadFromDatabase();
+          if (remote) {
+            state = remote;
+            saveDataLocal(state);
+            return state;
+          }
+          state = loadFromLocalStorage();
+          await persistToDatabase(state);
+          return state;
+        }
+      }
+    } catch (err) {
+      console.warn('EduOS using localStorage (API unavailable):', err.message);
+      dbMode = false;
+    }
+
+    state = loadFromLocalStorage();
+    return state;
+  })();
+
+  return initPromise;
+}
+
+export function isDatabaseMode() {
+  return dbMode;
+}
+
+export function getStorageLabel() {
+  return dbMode ? 'Neon PostgreSQL' : 'Browser localStorage';
 }
 
 function uid(prefix = 'id') {
@@ -319,18 +397,20 @@ function seedDemoData() {
     settings: defaultData().settings,
   };
 
-  saveData(data);
+  saveDataLocal(data);
   ensurePlatformData(data);
   migrateMultiTenant(data);
   seedPlatformDemo(data, students, [batch1, batch2], [teacher1, teacher2]);
   seedDemoUsers(data);
-  saveData(data);
   return data;
 }
 
-let state = loadData();
+function ensureState() {
+  if (!state) throw new Error('Store not initialized — call initStore() first');
+}
 
 export function getSettings() {
+  ensureState();
   const cid = getActiveCenterIdFromSession();
   if (!cid) return state.settings || defaultData().settings;
   state.centerSettings = state.centerSettings || {};
@@ -623,16 +703,32 @@ export function initCenterSettings(centerId, name) {
 }
 
 export function getState() {
+  ensureState();
   return { ...state, settings: getSettings() };
 }
 
 export function persist() {
+  ensureState();
   saveData(state);
 }
 
-export function resetDemo() {
+export async function resetDemo() {
   try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+  if (dbMode) {
+    try {
+      await fetch('/api/state', { method: 'DELETE' });
+    } catch (err) {
+      console.warn('Could not reset database state:', err.message);
+    }
+  }
   state = seedDemoData();
+  if (dbMode) {
+    try {
+      await persistToDatabase(state);
+    } catch (err) {
+      console.warn('Could not seed database:', err.message);
+    }
+  }
   return state;
 }
 
@@ -808,6 +904,7 @@ export function getTeacherReport(teacherId) {
 
 // Batches
 export function getRawState() {
+  ensureState();
   return state;
 }
 

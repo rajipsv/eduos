@@ -1,4 +1,4 @@
-import { exportAll, getRawState } from './store.js';
+import { exportAll, getRawState, initStore, getStorageLabel } from './store.js';
 import { renderView, pageMeta, initCharts, bindViewEvents } from './views.js';
 import { initAuth, getSession, logout, getSessionLabel, getCurrentRole, platformExitCenterView } from './auth.js';
 import { renderNavHtml, getDefaultView, canAccessView, getNavRole, getSectionIdForView } from './portals.js';
@@ -217,8 +217,6 @@ function mountAuth(mode = 'home') {
   }
 }
 
-initAuth();
-
 document.getElementById('menuToggle')?.addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('open');
 });
@@ -254,6 +252,11 @@ document.getElementById('logoutBtn')?.addEventListener('click', () => {
 });
 
 try {
+  await initStore();
+  const storageLabel = getStorageLabel();
+  console.info(`EduOS storage: ${storageLabel}`);
+  initAuth();
+
   const session = getSession();
   if (session) {
     showApp(session);
