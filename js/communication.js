@@ -125,6 +125,15 @@ function buildFallbackMessage(eventKey, p) {
   if (eventKey === 'intervention') return p.summary || `Intervention plan update for ${p.student}. — ${academy}`;
   if (eventKey === 'feedback') return `Feedback for ${p.student} from ${p.teacher}: ${p.message}`;
   if (eventKey === 'parent_summary') return p.summary;
+  if (eventKey === 'fee_due') {
+    return `Dear ${p.parentName || p.parent || 'Parent'}, fee reminder for ${p.student || p.studentName}: ₹${p.amount} due ${p.dueDate}. Invoice ${p.invoiceNumber || ''}. — ${academy}`;
+  }
+  if (eventKey === 'fee_overdue') {
+    return `Dear ${p.parentName || p.parent || 'Parent'}, fee OVERDUE for ${p.student || p.studentName}: ₹${p.amount} (was due ${p.dueDate}). Invoice ${p.invoiceNumber || ''}. — ${academy}`;
+  }
+  if (eventKey === 'fee_payment_reported') {
+    return p.summary || `Parent reported offline payment for ${p.studentName || p.student}. Invoice ${p.invoiceNumber || ''}. — ${academy}`;
+  }
   return `Update from ${academy} regarding ${p.student || 'your child'}.`;
 }
 

@@ -88,7 +88,14 @@ const defaultData = () => ({
     openaiApiKey: '',
     defaultCountryCode: '+91',
     defaultMeetingPlatform: 'google-meet',
+    billing: {
+      invoicePrefix: 'INV',
+      upiId: '',
+      bankDetails: '',
+      defaultDueDay: 5,
+    },
   },
+  invoices: [],
 });
 
 function migrateBatch(batch) {
@@ -101,6 +108,8 @@ function migrateBatch(batch) {
     sessions: [],
     teacherId: null,
     meetingPlatform: 'google-meet',
+    monthlyFee: 3000,
+    feeDueDay: 5,
     ...batch,
     subjects: batch.subjects || [],
     topics: batch?.topics?.length ? batch.topics : batch.subjects || [],
@@ -134,6 +143,7 @@ function hydrateState(raw) {
   data.users = data.users || [];
   data.organization = data.organization || defaultData().organization;
   data.students = data.students || [];
+  data.invoices = data.invoices || [];
   ensurePlatformData(data);
   migrateMultiTenant(data);
   migrateCenterListings(data);
@@ -306,6 +316,8 @@ function seedDemoData() {
     capacity: 20,
     notes: 'Board exam preparation batch',
     teacherId: teacher1.id,
+    monthlyFee: 4500,
+    feeDueDay: 5,
     scheduleDays: ['mon', 'wed', 'fri'],
     startTime: '16:00',
     endTime: '18:00',
@@ -322,6 +334,8 @@ function seedDemoData() {
     capacity: 15,
     notes: 'Foundation strengthening',
     teacherId: teacher2.id,
+    monthlyFee: 3500,
+    feeDueDay: 5,
     scheduleDays: ['tue', 'thu'],
     startTime: '17:00',
     endTime: '19:00',
@@ -361,6 +375,8 @@ function seedDemoData() {
       address: '12 Park Street, Mumbai',
       joinDate: '2025-06-01',
       notes: 'Strong in Physics',
+      feeStatus: 'active',
+      feeStartDate: '2025-06-01',
     },
     {
       id: uid('student'),
@@ -375,6 +391,8 @@ function seedDemoData() {
       address: '45 Lake View, Ahmedabad',
       joinDate: '2025-06-15',
       notes: 'Needs help in Chemistry',
+      feeStatus: 'active',
+      feeStartDate: '2025-06-15',
     },
     {
       id: uid('student'),
@@ -389,6 +407,8 @@ function seedDemoData() {
       address: '78 Green Avenue, Pune',
       joinDate: '2025-07-01',
       notes: '',
+      feeStatus: 'active',
+      feeStartDate: '2025-07-01',
     },
   ];
 
@@ -433,12 +453,14 @@ function seedDemoData() {
       },
     ],
     messages: [],
+    invoices: [],
     settings: defaultData().settings,
   };
 
   saveDataLocal(data);
   ensurePlatformData(data);
   migrateMultiTenant(data);
+  migrateCenterListings(data);
   seedPlatformDemo(data, students, [batch1, batch2], [teacher1, teacher2]);
   seedDemoUsers(data);
   return data;
@@ -494,7 +516,7 @@ function applyCenterListingMigration(data) {
 }
 
 export function migrateCenterListings(data) {
-  const run = (d) => applyFamilyLoginMigration(applyBranchMigration(applyTuitionCategoriesMigration(applyCenterListingMigration(d))));
+  const run = (d) => applyBillingMigration(applyFamilyLoginMigration(applyBranchMigration(applyTuitionCategoriesMigration(applyCenterListingMigration(d)))));
   if (arguments.length > 0) return run(data);
   state = run(state);
   saveData(state);
@@ -533,6 +555,60 @@ function applyFamilyLoginMigration(data) {
   data.users = users.filter((u) => !['aarav@email.com', 'rajesh@email.com'].includes(u.email));
   data._migratedV9 = true;
   return data;
+}
+
+function applyBillingMigration(data) {
+  if (data._migratedV10) return data;
+
+  data.invoices = data.invoices || [];
+  const billingDefaults = defaultData().settings.billing;
+
+  if (data.settings && !data.settings.billing) {
+    data.settings.billing = { ...billingDefaults };
+  }
+  if (data.centerSettings) {
+    for (const cid of Object.keys(data.centerSettings)) {
+      data.centerSettings[cid].billing = {
+        ...billingDefaults,
+        ...(data.centerSettings[cid].billing || {}),
+      };
+    }
+  }
+
+  for (const batch of data.batches || []) {
+    if (batch.monthlyFee == null) batch.monthlyFee = 3000;
+    if (batch.feeDueDay == null) batch.feeDueDay = 5;
+  }
+
+  for (const student of data.students || []) {
+    if (!student.feeStatus) student.feeStatus = 'active';
+    if (student.monthlyFeeOverride === undefined) student.monthlyFeeOverride = null;
+    if (!student.feeStartDate) {
+      student.feeStartDate = student.joinDate || new Date().toISOString().slice(0, 10);
+    }
+  }
+
+  const bmCenter = (data.centers || []).find((c) => c.slug === 'bright-minds');
+  if (bmCenter) {
+    data.centerSettings = data.centerSettings || {};
+    data.centerSettings[bmCenter.id] = data.centerSettings[bmCenter.id] || {};
+    data.centerSettings[bmCenter.id].billing = {
+      ...billingDefaults,
+      upiId: 'brightminds@upi',
+      bankDetails: 'Account: Bright Minds · IFSC: HDFC0001234',
+      ...(data.centerSettings[bmCenter.id].billing || {}),
+    };
+  }
+
+  data._migratedV10 = true;
+  return data;
+}
+
+export function migrateBilling(data) {
+  if (arguments.length > 0) return applyBillingMigration(data);
+  state = applyBillingMigration(state);
+  saveData(state);
+  return state;
 }
 
 function defaultBranchForCenter(data, centerId) {
@@ -979,6 +1055,9 @@ export async function resetDemo() {
 
 export function updateSettings(partial) {
   const cid = getActiveCenterIdFromSession();
+  if (partial.billing) {
+    partial = { ...partial, billing: { ...getBillingSettings(), ...partial.billing } };
+  }
   if (!cid) {
     state.settings = { ...(state.settings || defaultData().settings), ...partial };
   } else {
@@ -986,6 +1065,16 @@ export function updateSettings(partial) {
     state.centerSettings[cid] = { ...getSettings(), ...partial };
   }
   persist();
+}
+
+export function getBillingSettings() {
+  const settings = getSettings();
+  const defaults = defaultData().settings.billing;
+  return { ...defaults, ...(settings.billing || {}) };
+}
+
+export function saveBillingSettings(partial) {
+  updateSettings({ billing: { ...getBillingSettings(), ...partial } });
 }
 
 // Teachers
@@ -1102,6 +1191,8 @@ export function convertLeadToStudent(leadId, batchId) {
     parentPhone: lead.parentPhone || lead.phone || '',
     parentEmail: lead.parentEmail || lead.email || '',
     joinDate: new Date().toISOString().slice(0, 10),
+    feeStatus: 'active',
+    feeStartDate: new Date().toISOString().slice(0, 10),
     notes: lead.notes || '',
   };
   saveStudent(student);
@@ -1388,15 +1479,44 @@ export function getStudent(id) {
 }
 
 export function saveStudent(student) {
-  const idx = state.students.findIndex((s) => s.id === student.id);
-  if (idx >= 0) state.students[idx] = student;
-  else state.students.push(withTenant({ ...student, id: uid('student') }));
+  const normalized = {
+    feeStatus: student.feeStatus || 'active',
+    monthlyFeeOverride: student.monthlyFeeOverride ?? null,
+    feeStartDate: student.feeStartDate || student.joinDate || new Date().toISOString().slice(0, 10),
+    ...student,
+  };
+  const idx = state.students.findIndex((s) => s.id === normalized.id);
+  if (idx >= 0) state.students[idx] = normalized;
+  else state.students.push(withTenant({ ...normalized, id: uid('student') }));
   persist();
 }
 
 export function deleteStudent(id) {
   state.students = state.students.filter((s) => s.id !== id);
   persist();
+}
+
+// Billing / invoices
+export function getInvoices(filters = {}) {
+  let list = scopeRecords(state.invoices || []);
+  if (filters.status) list = list.filter((i) => i.status === filters.status);
+  if (filters.periodStart) list = list.filter((i) => i.periodStart === filters.periodStart);
+  if (filters.batchId) list = list.filter((i) => i.batchId === filters.batchId);
+  return list.sort((a, b) => b.periodStart.localeCompare(a.periodStart) || (b.createdAt || '').localeCompare(a.createdAt || ''));
+}
+
+export function getInvoice(id) {
+  return scopeRecords(state.invoices || []).find((i) => i.id === id);
+}
+
+export function saveInvoice(invoice) {
+  state.invoices = state.invoices || [];
+  const idx = state.invoices.findIndex((i) => i.id === invoice.id);
+  const rec = invoice.centerId ? invoice : withTenant(invoice);
+  if (idx >= 0) state.invoices[idx] = rec;
+  else state.invoices.push(rec);
+  persist();
+  return rec;
 }
 
 // Attendance

@@ -334,15 +334,18 @@ export function initAuth() {
 export function getSessionLabel() {
   const session = getSession();
   if (!session) return '';
-  const branchPart = session.branchName ? ` · ${session.branchName}` : '';
+
   if (session.role === 'platform_owner') {
+    const branchPart = session.branchName ? ` · ${session.branchName}` : '';
     return session.viewCenterId
       ? `Platform · viewing ${getCenter(session.viewCenterId)?.name || 'center'}${branchPart}`
       : 'Platform owner';
   }
-  if (session.role === 'family') {
-    const viewLabel = FAMILY_VIEWS[getFamilyView()] || FAMILY_VIEWS.parent;
-    return `${session.centerName || 'Center'}${branchPart} · ${viewLabel}`;
+
+  if (session.role === 'family' || session.role === 'parent' || session.role === 'student') {
+    return session.name || session.centerName || 'EduOS';
   }
+
+  const branchPart = session.branchName ? ` · ${session.branchName}` : '';
   return `${session.centerName || 'Center'}${branchPart} · ${ROLES[session.role] || session.role}`;
 }

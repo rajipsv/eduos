@@ -16,7 +16,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="css/app.css?v=20260723h">
+  <link rel="stylesheet" href="css/app.css?v=20260723z">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 
@@ -68,9 +68,8 @@
       <nav class="nav" id="mainNav"></nav>
 
       <div class="sidebar-footer">
-
-        <p>Tutoring operations platform</p>
-
+        <div class="sidebar-user" id="sessionLabel"></div>
+        <p class="sidebar-footer-tagline">Tutoring operations platform</p>
       </div>
 
     </aside>
@@ -93,7 +92,6 @@
 
         <div class="topbar-actions">
 
-          <span class="session-pill" id="sessionLabel"></span>
           <span class="session-pill session-pill-muted" id="storageLabel" title="Where your data is saved"></span>
           <select id="branchSelect" class="branch-select hidden" aria-label="Filter by branch"></select>
           <select id="familyViewSelect" class="family-view-select hidden" aria-label="Switch family view">
@@ -169,7 +167,7 @@
 
     if (location.protocol !== 'file:') {
 
-      import('./js/app.js?v=20260723q').catch(function (err) {
+      import('./js/app.js?v=20260723z').catch(function (err) {
 
         document.getElementById('appShell').classList.remove('hidden');
 

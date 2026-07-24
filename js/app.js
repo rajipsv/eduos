@@ -190,19 +190,30 @@ function syncFamilyViewSwitcher(session) {
   familyViewSelect.value = session?.familyView === 'student' ? 'student' : 'parent';
 }
 
+function syncTopbarForRole(session) {
+  const role = session?.role;
+  const navRole = getNavRole(session);
+  const showAdminChrome = role === 'center_admin' || role === 'platform_owner';
+
+  storageLabelEl?.classList.toggle('hidden', !showAdminChrome);
+  document.getElementById('exportBtn')?.classList.toggle('hidden', !showAdminChrome);
+  document.getElementById('quickNotifyBtn')?.classList.toggle('hidden', navRole === 'parent' || navRole === 'student');
+}
+
 function buildShellForSession(session) {
   document.querySelector('.support-banner')?.remove();
   const navRole = getNavRole(session);
   openNavSectionId = getSectionIdForView(navRole, getDefaultView(session.role)) || 'command';
   mainNav.innerHTML = renderNavHtml(navRole, { activeView: currentView, openSectionId: openNavSectionId });
   sessionLabel.textContent = getSessionLabel();
+  syncBranchSwitcher(session);
+  syncFamilyViewSwitcher(session);
+  syncTopbarForRole(session);
   if (storageLabelEl) {
     const label = getStorageLabel();
     storageLabelEl.textContent = label;
     storageLabelEl.classList.toggle('session-pill-warn', label !== 'Neon PostgreSQL');
   }
-  syncBranchSwitcher(session);
-  syncFamilyViewSwitcher(session);
   bindNavClicks();
   if (navRole === 'center_admin') syncPillarNav(currentView);
 
@@ -311,12 +322,13 @@ try {
     storageLabelEl.textContent = storageLabel;
     storageLabelEl.classList.toggle('session-pill-warn', storageLabel !== 'Neon PostgreSQL');
   }
-  if (storageLabel !== 'Neon PostgreSQL') {
-    toast(getStorageFallbackHint(), 'error');
-  }
   initAuth();
 
   const session = getSession();
+  const showAdminChrome = session?.role === 'center_admin' || session?.role === 'platform_owner';
+  if (storageLabel !== 'Neon PostgreSQL' && showAdminChrome) {
+    toast(getStorageFallbackHint(), 'error');
+  }
   if (session) {
     showApp(session);
   } else {

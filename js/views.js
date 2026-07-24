@@ -43,7 +43,20 @@ import {
   resetDemo,
   exportAll,
   importAll,
+  getInvoices,
+  getBillingSettings,
+  saveBillingSettings,
 } from './store.js';
+import {
+  generateMonthlyInvoices,
+  sendInvoiceReminder,
+  sendBulkFeeReminders,
+  markInvoicePaid,
+  voidInvoice,
+  getBillingStats,
+  invoiceStatusBadge,
+  periodLabel,
+} from './billing.js';
 import {
   sendWhatsApp,
   sendTestResultsToParents,
@@ -62,7 +75,14 @@ import {
   computeBusinessKPIs, getDropoutRiskStudents, getLeadAnalytics, getBatchAnalytics,
   generateTrendData, generatePredictions,
 } from './intelligence.js';
-import { getAIHistory, clearAIHistory } from './platform.js';
+import {
+  getAIHistory,
+  clearAIHistory,
+  getTutorAvailability,
+  formatTutorAvailabilitySummary,
+  getAvailableAvailabilitySlots,
+  getAvailabilitySlotBookings,
+} from './platform.js';
 import { renderLayerView, bindLayerEvents, layerPageMeta } from './layer-views.js';
 import {
   generateSchedule,
@@ -95,6 +115,7 @@ export const pageMeta = {
   schedule: { title: 'Class Schedule', subtitle: 'In-app week calendar — cancel, reschedule, notify parents' },
   teachers: { title: 'Teachers', subtitle: 'Tutor roster and batch assignments' },
   students: { title: 'Student Management', subtitle: 'Records, batches, parent contacts' },
+  fees: { title: 'Fees & Invoices', subtitle: 'Monthly tuition billing per student per batch — generate, remind, mark paid' },
   attendance: { title: 'Attendance Tracking', subtitle: 'Daily marking and parent notifications' },
   tests: { title: 'Tests & Marks', subtitle: 'Exam records and parent result sharing' },
   reports: { title: 'Reports', subtitle: 'Student and teacher performance reports' },
@@ -130,6 +151,7 @@ export function renderView(view, ctx, params = {}) {
     schedule: renderSchedule,
     teachers: renderTeachers,
     students: renderStudents,
+    fees: renderFees,
     attendance: renderAttendance,
     tests: renderTests,
     reports: renderReports,
@@ -623,6 +645,7 @@ function renderBatches() {
           <div class="meta">${b.schedule || 'No schedule'}</div>
           <div class="tags">${(b.subjects || []).map((s) => `<span class="tag">${s}</span>`).join('')}</div>
           <div class="meta">${teacher ? `👩‍🏫 ${teacher.name} · ` : ''}${count}/${b.capacity} students ${atCapacity ? '· <span class="badge badge-orange">Full</span>' : ''}</div>
+          <div class="meta">Fee: ₹${(b.monthlyFee || 0).toLocaleString('en-IN')}/mo · due day ${b.feeDueDay || 5}</div>
           <div class="meta">Curriculum: ${progress.completed}/${progress.total} classes (${progress.percent}%)</div>
           <div class="progress-bar"><span style="width:${progress.percent}%"></span></div>
           ${nextClass ? `<div class="meta" style="margin-top:10px">Next: ${nextClass.topic} on ${nextClass.date}</div>` : ''}
@@ -865,6 +888,99 @@ function studentRows(students) {
       </td>
     </tr>`;
   }).join('');
+}
+
+function renderFees() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const periodStart = `${year}-${String(month).padStart(2, '0')}-01`;
+  const batches = getBatches();
+  const stats = getBillingStats(getInvoices().filter((i) => i.periodStart === periodStart));
+  const invoices = getInvoices();
+
+  return `
+    ${academyBanner('Fees & Invoices', 'Bill each student per batch monthly. Generate invoices, send WhatsApp reminders with UPI, and mark offline payments.')}
+    <div class="fee-stats">
+      <div class="stat-card"><div class="stat-label">Expected this month</div><div class="stat-value">₹${stats.expected.toLocaleString('en-IN')}</div></div>
+      <div class="stat-card"><div class="stat-label">Collected</div><div class="stat-value stat-green">₹${stats.collected.toLocaleString('en-IN')}</div></div>
+      <div class="stat-card"><div class="stat-label">Overdue</div><div class="stat-value ${stats.overdue ? 'stat-red' : ''}">${stats.overdue}</div></div>
+      <div class="stat-card"><div class="stat-label">Parent reported</div><div class="stat-value">${stats.reported || 0}</div></div>
+      <div class="stat-card"><div class="stat-label">Paid / Total</div><div class="stat-value">${stats.paid} / ${stats.total}</div></div>
+    </div>
+    <div class="toolbar" style="margin-top:16px">
+      <select id="feeMonth">
+        ${[-2, -1, 0, 1].map((offset) => {
+          const d = new Date(year, month - 1 + offset, 1);
+          const y = d.getFullYear();
+          const m = d.getMonth() + 1;
+          const val = `${y}-${String(m).padStart(2, '0')}`;
+          return `<option value="${val}" ${val === `${year}-${String(month).padStart(2, '0')}` ? 'selected' : ''}>${periodLabel(y, m)}</option>`;
+        }).join('')}
+      </select>
+      <select id="feeBatchFilter">
+        <option value="">All batches</option>
+        ${batches.map((b) => `<option value="${b.id}">${b.name}</option>`).join('')}
+      </select>
+      <select id="feeStatusFilter">
+        <option value="">All statuses</option>
+        <option value="draft">Draft</option>
+        <option value="sent">Sent</option>
+        <option value="overdue">Overdue</option>
+        <option value="payment_reported">Parent reported paid</option>
+        <option value="paid">Paid</option>
+      </select>
+      <button class="btn btn-primary" data-action="generate-invoices">Generate invoices</button>
+      <button class="btn btn-secondary" data-action="send-overdue-reminders">Send overdue reminders</button>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><h3>Invoices — ${periodLabel(year, month)}</h3></div>
+      <div class="panel-body table-wrap">
+        <table class="invoice-table">
+          <thead>
+            <tr><th>Invoice</th><th>Student</th><th>Batch</th><th>Amount</th><th>Due</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="invoiceTableBody">
+            ${invoiceRows(invoices, periodStart)}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function invoiceRows(invoices, periodStart) {
+  const batchFilter = document.getElementById('feeBatchFilter')?.value;
+  const statusFilter = document.getElementById('feeStatusFilter')?.value;
+  const monthFilter = document.getElementById('feeMonth')?.value;
+
+  let list = invoices;
+  if (monthFilter) {
+    const ps = `${monthFilter}-01`;
+    list = list.filter((i) => i.periodStart === ps);
+  } else if (periodStart) {
+    list = list.filter((i) => i.periodStart === periodStart);
+  }
+  if (batchFilter) list = list.filter((i) => i.batchId === batchFilter);
+  if (statusFilter) list = list.filter((i) => i.status === statusFilter);
+
+  if (!list.length) {
+    return `<tr><td colspan="7" class="empty-state">No invoices yet. Set batch fees, then click <strong>Generate invoices</strong>.</td></tr>`;
+  }
+
+  return list.map((inv) => `
+    <tr class="${inv.status === 'payment_reported' ? 'invoice-reported' : ''}">
+      <td><strong>${inv.invoiceNumber}</strong><br><small>${inv.periodLabel || inv.periodStart?.slice(0, 7)}</small></td>
+      <td>${inv.studentName}<br><small>${inv.parentName || '—'}</small></td>
+      <td>${inv.batchName}</td>
+      <td>₹${inv.amount.toLocaleString('en-IN')}</td>
+      <td>${inv.dueDate}</td>
+      <td>${invoiceStatusBadge(inv.status)}${inv.parentReportedAt ? `<br><small>Reported ${new Date(inv.parentReportedAt).toLocaleDateString()}</small>` : ''}</td>
+      <td class="invoice-actions">
+        ${inv.status !== 'paid' && inv.status !== 'void' && inv.status !== 'payment_reported' ? `<button class="btn btn-sm btn-primary" data-action="send-invoice-reminder" data-id="${inv.id}">Send</button>` : ''}
+        ${inv.status !== 'paid' && inv.status !== 'void' ? `<button class="btn btn-sm ${inv.status === 'payment_reported' ? 'btn-primary' : 'btn-secondary'}" data-action="mark-invoice-paid" data-id="${inv.id}">${inv.status === 'payment_reported' ? 'Confirm payment' : 'Mark paid'}</button>` : ''}
+        ${inv.status === 'draft' ? `<button class="btn btn-sm btn-ghost" data-action="void-invoice" data-id="${inv.id}">Void</button>` : ''}
+      </td>
+    </tr>`).join('');
 }
 
 function renderAttendance() {
@@ -1124,6 +1240,7 @@ function insightHtml() {
 
 function renderSettings() {
   const s = getState().settings;
+  const billing = getBillingSettings();
   return `
     <div class="panel">
       <div class="panel-header"><h3>Center Details</h3></div>
@@ -1142,6 +1259,18 @@ function renderSettings() {
           <div class="form-group full"><label>Phone Number ID</label><input id="setWaPhoneId" value="${s.whatsappPhoneId}" placeholder="From Meta Developer Console"></div>
         </div>
         <p style="font-size:0.82rem;color:var(--text-muted);margin-top:10px">Get credentials from Meta Business Suite. Without these, messages are simulated locally.</p>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:20px">
+      <div class="panel-header"><h3>Billing & Invoices</h3></div>
+      <div class="panel-body">
+        <div class="form-grid">
+          <div class="form-group"><label>Invoice prefix</label><input id="setInvPrefix" value="${billing.invoicePrefix || 'INV'}"></div>
+          <div class="form-group"><label>Default due day (1–28)</label><input type="number" id="setDueDay" min="1" max="28" value="${billing.defaultDueDay || 5}"></div>
+          <div class="form-group full"><label>UPI ID (shown in fee reminders)</label><input id="setUpiId" value="${billing.upiId || ''}" placeholder="yourname@upi"></div>
+          <div class="form-group full"><label>Bank details (optional)</label><textarea id="setBankDetails" rows="2" placeholder="Account name, IFSC, account number">${billing.bankDetails || ''}</textarea></div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-top:10px">Set batch monthly fees under Batches. Per-student overrides are on the student form.</p>
       </div>
     </div>
     <div class="panel" style="margin-top:20px">
@@ -1254,7 +1383,7 @@ export function bindViewEvents(view, ctx, params = {}) {
 
   document.querySelectorAll('[data-action^="go-"]').forEach((btn) => {
     const target = btn.dataset.action.replace('go-', '');
-    if (['ai', 'students', 'schedule', 'intelligence', 'attendance', 'batches', 'teachers', 'crm', 'dashboard', 'studentSuccess', 'tutorHub', 'parentPortal', 'commHub', 'marketplace', 'publicSite', 'whatsapp', 'platformCenters', 'platformDashboard', 'tuitionMarketplace'].includes(target)) {
+    if (['ai', 'students', 'fees', 'schedule', 'intelligence', 'attendance', 'batches', 'teachers', 'crm', 'dashboard', 'studentSuccess', 'tutorHub', 'parentPortal', 'commHub', 'marketplace', 'publicSite', 'whatsapp', 'platformCenters', 'platformDashboard', 'tuitionMarketplace'].includes(target)) {
       btn.addEventListener('click', () => navigate(target));
     }
   });
@@ -1273,6 +1402,7 @@ export function bindViewEvents(view, ctx, params = {}) {
   if (view === 'teachers') bindTeacherEvents({ showModal, closeModal, toast, refresh, navigate });
   if (view === 'reports') bindReportEvents();
   if (view === 'students') bindStudentEvents({ showModal, closeModal, toast, refresh });
+  if (view === 'fees') bindFeesEvents({ showModal, closeModal, toast, refresh });
   if (view === 'attendance') bindAttendanceEvents({ toast, refresh });
   if (view === 'tests') bindTestEvents({ showModal, closeModal, toast, refresh });
   if (view === 'whatsapp' || view === 'commHub') bindLayerEvents('commHub', ctx);
@@ -1416,6 +1546,120 @@ function bindBatchEvents({ showModal, closeModal, toast, refresh }) {
   });
 }
 
+function sameDaySet(a, b) {
+  return [...(a || [])].sort().join(',') === [...(b || [])].sort().join(',');
+}
+
+function findMatchingAvailabilitySlot(batch, slots) {
+  if (!batch || !slots?.length) return null;
+  if (batch.availabilitySlotId) {
+    const byId = slots.find((s) => s.id === batch.availabilitySlotId);
+    if (byId) return byId;
+  }
+  return slots.find((s) =>
+    s.startTime === batch.startTime
+    && s.endTime === batch.endTime
+    && sameDaySet(s.days, batch.scheduleDays),
+  ) || null;
+}
+
+function batchScheduleMetaFieldsHtml(batch) {
+  return `
+    <div class="form-grid" style="margin-top:14px">
+      <div class="form-group"><label>Course start date</label><input type="date" id="fStartDate" value="${batch?.startDate || new Date().toISOString().slice(0, 10)}"></div>
+      <div class="form-group"><label>Meeting platform</label>
+        <select id="fPlatform">
+          <option value="google-meet" ${!batch?.meetingPlatform || batch?.meetingPlatform === 'google-meet' ? 'selected' : ''}>Google Meet</option>
+          <option value="zoom" ${batch?.meetingPlatform === 'zoom' ? 'selected' : ''}>Zoom</option>
+          <option value="teams" ${batch?.meetingPlatform === 'teams' ? 'selected' : ''}>Microsoft Teams</option>
+        </select>
+      </div>
+    </div>`;
+}
+
+function batchSchedulePanelHtml(teacherId, batch, excludeBatchId = null) {
+  const meta = batchScheduleMetaFieldsHtml(batch);
+  const editingBatchId = excludeBatchId ?? batch?.id ?? null;
+
+  if (!teacherId) {
+    return `<p class="empty-state" style="padding:12px 0">Select an assigned teacher to choose from their availability slots.</p>${meta}`;
+  }
+
+  const teacher = getTeacher(teacherId);
+  const allSlots = getTutorAvailability(teacherId).slots || [];
+  const slots = getAvailableAvailabilitySlots(teacherId, editingBatchId);
+  const booked = getAvailabilitySlotBookings(teacherId, editingBatchId).filter(({ batch: b }) => b);
+
+  if (!allSlots.length) {
+    return `
+      <p style="font-size:0.82rem;color:var(--text-muted);margin:0 0 12px">No availability slots for ${teacher?.name || 'this teacher'}. Add them in Tutor Success → Schedule, or set manually below.</p>
+      ${dayPickerHtml(batch?.scheduleDays || ['mon', 'wed', 'fri'], 'batchDay')}
+      <div class="form-grid" style="margin-top:14px">
+        <div class="form-group"><label>Start time</label><input type="time" id="fStartTime" value="${batch?.startTime || '16:00'}"></div>
+        <div class="form-group"><label>End time</label><input type="time" id="fEndTime" value="${batch?.endTime || '18:00'}"></div>
+      </div>
+      ${meta}`;
+  }
+
+  if (!slots.length) {
+    const bookedSummary = booked.map(({ slot, batch: b }) =>
+      `${formatTutorAvailabilitySummary({ slots: [slot] })} (${b.name})`,
+    ).join('; ');
+    return `
+      <p class="empty-state" style="padding:12px 0">All availability slots for ${teacher?.name || 'this teacher'} are already assigned.${bookedSummary ? ` In use: ${bookedSummary}.` : ''}</p>
+      ${meta}`;
+  }
+
+  const matched = findMatchingAvailabilitySlot(batch, slots);
+  const selectedId = matched?.id || slots[0]?.id || '';
+
+  return `
+    <p style="font-size:0.82rem;color:var(--text-muted);margin:0 0 12px">Choose a free slot from <strong>${teacher?.name || 'teacher'}</strong>'s availability.${booked.length ? ` ${booked.length} slot${booked.length === 1 ? '' : 's'} already in use.` : ''}</p>
+    <div class="avail-slot-picker">${slots.map((s, i) => `
+      <label class="avail-slot-option ${selectedId === s.id ? 'active' : ''}">
+        <input type="radio" name="batchAvailSlot" value="${s.id}" data-days="${(s.days || []).join(',')}" data-start="${s.startTime}" data-end="${s.endTime}" ${selectedId === s.id ? 'checked' : ''}>
+        <span><strong>Slot ${i + 1}</strong> · ${formatTutorAvailabilitySummary({ slots: [s] })}</span>
+      </label>`).join('')}
+    </div>
+    ${meta}`;
+}
+
+function readBatchScheduleFields(getDaysFallback) {
+  const slotInput = document.querySelector('input[name="batchAvailSlot"]:checked');
+  if (slotInput) {
+    return {
+      scheduleDays: slotInput.dataset.days.split(',').filter(Boolean),
+      startTime: slotInput.dataset.start,
+      endTime: slotInput.dataset.end,
+      availabilitySlotId: slotInput.value,
+    };
+  }
+  return {
+    scheduleDays: getDaysFallback(),
+    startTime: document.getElementById('fStartTime')?.value || '16:00',
+    endTime: document.getElementById('fEndTime')?.value || '18:00',
+    availabilitySlotId: null,
+  };
+}
+
+function bindBatchSchedulePanel(teacherId) {
+  let getDaysFallback = () => [];
+  const slots = teacherId ? (getTutorAvailability(teacherId).slots || []) : [];
+
+  if (!teacherId || !slots.length) {
+    getDaysFallback = bindDayPicker('batchDayPicker');
+  } else {
+    document.querySelectorAll('input[name="batchAvailSlot"]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        document.querySelectorAll('.avail-slot-option').forEach((el) => el.classList.remove('active'));
+        radio.closest('.avail-slot-option')?.classList.add('active');
+      });
+    });
+  }
+
+  return getDaysFallback;
+}
+
 function showBatchForm(batch, { showModal, closeModal, toast, refresh }) {
   const teachers = getTeachers();
   let draftSessions = batch?.sessions ? [...batch.sessions] : [];
@@ -1432,26 +1676,15 @@ function showBatchForm(batch, { showModal, closeModal, toast, refresh }) {
         </select>
       </div>
       <div class="form-group"><label>Capacity</label><input type="number" id="fCapacity" value="${batch?.capacity || 20}"></div>
+      <div class="form-group"><label>Monthly fee (₹)</label><input type="number" id="fMonthlyFee" value="${batch?.monthlyFee ?? 3000}" min="0" step="100"></div>
+      <div class="form-group"><label>Fee due day</label><input type="number" id="fFeeDueDay" value="${batch?.feeDueDay ?? 5}" min="1" max="28"></div>
       <div class="form-group"><label>Subjects (comma-separated)</label><input id="fSubjects" value="${batch?.subjects?.join(', ') || ''}"></div>
       <div class="form-group full"><label>Notes</label><textarea id="fNotes">${batch?.notes || ''}</textarea></div>
     </div>
 
     <div class="schedule-panel">
-      <h4>📅 Select Days & Time for Classes</h4>
-      <p style="margin:0 0 12px;font-size:0.82rem;color:var(--text-muted)">Pick which days this batch meets, then set the time window.</p>
-      ${dayPickerHtml(batch?.scheduleDays || ['mon', 'wed', 'fri'], 'batchDay')}
-      <div class="form-grid" style="margin-top:14px">
-        <div class="form-group"><label>Start time</label><input type="time" id="fStartTime" value="${batch?.startTime || '16:00'}"></div>
-        <div class="form-group"><label>End time</label><input type="time" id="fEndTime" value="${batch?.endTime || '18:00'}"></div>
-        <div class="form-group"><label>Course start date</label><input type="date" id="fStartDate" value="${batch?.startDate || new Date().toISOString().slice(0, 10)}"></div>
-        <div class="form-group"><label>Meeting platform</label>
-          <select id="fPlatform">
-            <option value="google-meet" ${batch?.meetingPlatform === 'google-meet' ? 'selected' : ''}>Google Meet</option>
-            <option value="zoom" ${batch?.meetingPlatform === 'zoom' ? 'selected' : ''}>Zoom</option>
-            <option value="teams" ${batch?.meetingPlatform === 'teams' ? 'selected' : ''}>Microsoft Teams</option>
-          </select>
-        </div>
-      </div>
+      <h4>📅 Class schedule from teacher availability</h4>
+      <div id="batchSchedulePanel">${batchSchedulePanelHtml(batch?.teacherId, batch, batch?.id)}</div>
     </div>
 
     <div class="form-group full" style="margin-top:16px">
@@ -1466,20 +1699,32 @@ function showBatchForm(batch, { showModal, closeModal, toast, refresh }) {
     <div id="schedulePreview">${sessionsPreviewHtml(draftSessions)}</div>`,
     footer: `<button class="btn btn-secondary" data-modal-cancel>Cancel</button><button class="btn btn-primary" id="saveBatchBtn">Save Batch</button>`,
     onMount: () => {
-      const getDays = bindDayPicker('batchDayPicker');
+      let getDaysFallback = bindBatchSchedulePanel(document.getElementById('fTeacher')?.value);
+
+      const renderSchedulePanel = () => {
+        const teacherId = document.getElementById('fTeacher')?.value;
+        const panel = document.getElementById('batchSchedulePanel');
+        const batchForSchedule = teacherId && batch?.teacherId === teacherId ? batch : null;
+        if (panel) {
+          panel.innerHTML = batchSchedulePanelHtml(teacherId, batchForSchedule, batch?.id);
+          getDaysFallback = bindBatchSchedulePanel(teacherId);
+        }
+      };
+
+      document.getElementById('fTeacher')?.addEventListener('change', renderSchedulePanel);
 
       const runGenerate = () => {
         const name = document.getElementById('fName').value.trim() || 'batch';
         const topics = document.getElementById('fTopics').value.split('\n').map((t) => t.trim()).filter(Boolean);
-        const scheduleDays = getDays();
+        const { scheduleDays, startTime, endTime } = readBatchScheduleFields(getDaysFallback);
         if (!topics.length) return toast('Add at least one topic', 'error');
-        if (!scheduleDays.length) return toast('Select at least one day', 'error');
+        if (!scheduleDays.length) return toast('Select a teacher availability slot', 'error');
 
         draftSessions = generateSchedule({
           topics,
           scheduleDays,
-          startTime: document.getElementById('fStartTime').value,
-          endTime: document.getElementById('fEndTime').value,
+          startTime,
+          endTime,
           startDate: document.getElementById('fStartDate').value,
           meetingPlatform: document.getElementById('fPlatform').value,
           batchName: name,
@@ -1497,10 +1742,20 @@ function showBatchForm(batch, { showModal, closeModal, toast, refresh }) {
         const name = document.getElementById('fName').value.trim();
         if (!name) return toast('Name is required', 'error');
 
-        const scheduleDays = getDays();
-        const startTime = document.getElementById('fStartTime').value;
-        const endTime = document.getElementById('fEndTime').value;
+        const teacherId = document.getElementById('fTeacher').value || null;
+        const { scheduleDays, startTime, endTime, availabilitySlotId } = readBatchScheduleFields(getDaysFallback);
         const topics = document.getElementById('fTopics').value.split('\n').map((t) => t.trim()).filter(Boolean);
+
+        if (teacherId && availabilitySlotId) {
+          const conflict = getAvailabilitySlotBookings(teacherId, batch?.id)
+            .find(({ slot, batch: bookedBy }) => slot.id === availabilitySlotId && bookedBy);
+          if (conflict) {
+            return toast(`That slot is already used by ${conflict.batch.name}`, 'error');
+          }
+        }
+        if (teacherId && !availabilitySlotId && !scheduleDays.length) {
+          return toast('Select a teacher availability slot', 'error');
+        }
 
         if (topics.length && scheduleDays.length && !draftSessions.length) {
           draftSessions = generateSchedule({
@@ -1517,10 +1772,11 @@ function showBatchForm(batch, { showModal, closeModal, toast, refresh }) {
         saveBatch({
           id: batch?.id,
           name,
-          teacherId: document.getElementById('fTeacher').value || null,
+          teacherId,
           scheduleDays,
           startTime,
           endTime,
+          availabilitySlotId,
           startDate: document.getElementById('fStartDate').value,
           meetingPlatform: document.getElementById('fPlatform').value,
           schedule: formatScheduleLabel(scheduleDays, startTime, endTime),
@@ -1528,6 +1784,8 @@ function showBatchForm(batch, { showModal, closeModal, toast, refresh }) {
           topics,
           sessions: draftSessions,
           capacity: Number(document.getElementById('fCapacity').value) || 20,
+          monthlyFee: Number(document.getElementById('fMonthlyFee').value) || 0,
+          feeDueDay: Number(document.getElementById('fFeeDueDay').value) || 5,
           notes: document.getElementById('fNotes').value.trim(),
         });
         closeModal();
@@ -1912,6 +2170,14 @@ function showStudentForm(student, { showModal, closeModal, toast, refresh }) {
       <div class="form-group"><label>Parent name</label><input id="sParentName" value="${student?.parentName || ''}"></div>
       <div class="form-group"><label>Parent phone (WhatsApp)</label><input id="sParentPhone" value="${student?.parentPhone || ''}"></div>
       <div class="form-group"><label>Parent email</label><input id="sParentEmail" value="${student?.parentEmail || ''}"></div>
+      <div class="form-group"><label>Monthly fee override (₹)</label><input type="number" id="sFeeOverride" value="${student?.monthlyFeeOverride ?? ''}" placeholder="Leave blank for batch fee" min="0" step="100"></div>
+      <div class="form-group"><label>Fee billing status</label>
+        <select id="sFeeStatus">
+          <option value="active" ${student?.feeStatus !== 'paused' ? 'selected' : ''}>Active</option>
+          <option value="paused" ${student?.feeStatus === 'paused' ? 'selected' : ''}>Paused</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Fee start date</label><input type="date" id="sFeeStart" value="${student?.feeStartDate || student?.joinDate || new Date().toISOString().slice(0, 10)}"></div>
       <div class="form-group full"><label>Address</label><input id="sAddress" value="${student?.address || ''}"></div>
       <div class="form-group full"><label>Notes</label><textarea id="sNotes">${student?.notes || ''}</textarea></div>
     </div>`,
@@ -1920,6 +2186,7 @@ function showStudentForm(student, { showModal, closeModal, toast, refresh }) {
       document.getElementById('saveStudentBtn').onclick = () => {
         const name = document.getElementById('sName').value.trim();
         if (!name) return toast('Name is required', 'error');
+        const feeOverrideRaw = document.getElementById('sFeeOverride').value.trim();
         saveStudent({
           id: student?.id,
           name,
@@ -1931,6 +2198,9 @@ function showStudentForm(student, { showModal, closeModal, toast, refresh }) {
           parentName: document.getElementById('sParentName').value.trim(),
           parentPhone: document.getElementById('sParentPhone').value.trim(),
           parentEmail: document.getElementById('sParentEmail').value.trim(),
+          monthlyFeeOverride: feeOverrideRaw === '' ? null : Number(feeOverrideRaw),
+          feeStatus: document.getElementById('sFeeStatus').value,
+          feeStartDate: document.getElementById('sFeeStart').value,
           address: document.getElementById('sAddress').value.trim(),
           notes: document.getElementById('sNotes').value.trim(),
         });
@@ -2242,6 +2512,100 @@ function bindAIEvents({ toast, refresh }) {
   });
 }
 
+function bindFeesEvents({ showModal, closeModal, toast, refresh }) {
+  const reloadTable = () => {
+    const now = new Date();
+    const monthVal = document.getElementById('feeMonth')?.value || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const periodStart = `${monthVal}-01`;
+    const body = document.getElementById('invoiceTableBody');
+    if (body) body.innerHTML = invoiceRows(getInvoices(), periodStart);
+    bindFeesEvents({ showModal, closeModal, toast, refresh });
+  };
+
+  document.getElementById('feeBatchFilter')?.addEventListener('change', reloadTable);
+  document.getElementById('feeStatusFilter')?.addEventListener('change', reloadTable);
+  document.getElementById('feeMonth')?.addEventListener('change', () => refresh());
+
+  document.querySelector('[data-action="generate-invoices"]')?.addEventListener('click', () => {
+    const monthVal = document.getElementById('feeMonth')?.value;
+    if (!monthVal) return toast('Select a month', 'error');
+    const [y, m] = monthVal.split('-').map(Number);
+    const result = generateMonthlyInvoices(y, m);
+    if (result.created.length) {
+      toast(`Created ${result.created.length} invoice(s) for ${result.periodLabel}`, 'success');
+    } else {
+      toast(`No new invoices — ${result.skipped.length} skipped (already billed, paused, or no fee)`, 'info');
+    }
+    refresh();
+  });
+
+  document.querySelector('[data-action="send-overdue-reminders"]')?.addEventListener('click', async () => {
+    const results = await sendBulkFeeReminders({ status: 'overdue' });
+    const sent = results.filter((r) => r.ok).length;
+    toast(sent ? `Sent ${sent} overdue reminder(s)` : 'No overdue invoices with parent phone', sent ? 'success' : 'info');
+    refresh();
+  });
+
+  document.querySelectorAll('[data-action="send-invoice-reminder"]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const result = await sendInvoiceReminder(btn.dataset.id);
+      if (result.ok) toast('Reminder sent via WhatsApp', 'success');
+      else toast(result.error || 'Could not send', 'error');
+      refresh();
+    });
+  });
+
+  document.querySelectorAll('[data-action="mark-invoice-paid"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const inv = getInvoices().find((i) => i.id === btn.dataset.id);
+      const reported = inv?.status === 'payment_reported';
+      const method = inv?.parentPaymentMethod || 'cash';
+      showModal({
+        title: reported ? 'Confirm parent-reported payment' : 'Mark invoice paid',
+        body: `${reported ? `<p style="margin:0 0 12px;font-size:0.88rem;color:var(--text-muted)">Parent reported payment on ${inv.parentReportedAt ? new Date(inv.parentReportedAt).toLocaleString() : '—'}${inv.parentPaymentRef ? ` · ref ${inv.parentPaymentRef}` : ''}</p>` : ''}
+        <div class="form-grid">
+          <div class="form-group"><label>Amount received (₹)</label><input type="number" id="paidAmount" value="${inv?.amount || 0}"></div>
+          <div class="form-group"><label>Payment method</label>
+            <select id="paidMethod">
+              <option value="cash" ${method === 'cash' ? 'selected' : ''}>Cash</option>
+              <option value="upi" ${method === 'upi' ? 'selected' : ''}>UPI</option>
+              <option value="bank" ${method === 'bank' ? 'selected' : ''}>Bank transfer</option>
+              <option value="cheque" ${method === 'cheque' ? 'selected' : ''}>Cheque</option>
+            </select>
+          </div>
+          <div class="form-group full"><label>Reference / notes</label><input id="paidRef" value="${inv?.parentPaymentRef || ''}" placeholder="UPI ref, receipt no."></div>
+        </div>`,
+        footer: `<button class="btn btn-secondary" data-modal-cancel>Cancel</button><button class="btn btn-primary" id="confirmPaidBtn">${reported ? 'Confirm payment' : 'Mark paid'}</button>`,
+        onMount: () => {
+          document.getElementById('confirmPaidBtn').onclick = () => {
+            const result = markInvoicePaid(btn.dataset.id, {
+              paidAmount: Number(document.getElementById('paidAmount').value),
+              paymentMethod: document.getElementById('paidMethod').value,
+              paymentRef: document.getElementById('paidRef').value.trim(),
+            });
+            if (result.ok) {
+              closeModal();
+              toast('Invoice marked paid', 'success');
+              refresh();
+            } else toast(result.error || 'Failed', 'error');
+          };
+        },
+      });
+    });
+  });
+
+  document.querySelectorAll('[data-action="void-invoice"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Void this draft invoice?')) return;
+      const result = voidInvoice(btn.dataset.id);
+      if (result.ok) {
+        toast('Invoice voided', 'success');
+        refresh();
+      } else toast(result.error || 'Failed', 'error');
+    });
+  });
+}
+
 function bindSettingsEvents({ toast, refresh }) {
   document.querySelector('[data-action="save-settings"]')?.addEventListener('click', () => {
     updateSettings({
@@ -2250,6 +2614,12 @@ function bindSettingsEvents({ toast, refresh }) {
       whatsappApiKey: document.getElementById('setWaKey').value.trim(),
       whatsappPhoneId: document.getElementById('setWaPhoneId').value.trim(),
       openaiApiKey: document.getElementById('setOpenAI').value.trim(),
+    });
+    saveBillingSettings({
+      invoicePrefix: document.getElementById('setInvPrefix').value.trim() || 'INV',
+      defaultDueDay: Number(document.getElementById('setDueDay').value) || 5,
+      upiId: document.getElementById('setUpiId').value.trim(),
+      bankDetails: document.getElementById('setBankDetails').value.trim(),
     });
     toast('Settings saved', 'success');
   });

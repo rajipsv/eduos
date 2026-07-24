@@ -215,13 +215,14 @@ function defaultMarketplace() {
     {
       id: 'mp_partner_books',
       type: 'partner',
-      title: 'Tutoring Center Bookkeeping',
+      title: 'Teacher Payroll & Bookkeeping',
       author: 'EduBooks India',
       price: 'Contact',
       rating: 4.9,
       installs: 45,
-      description: 'GST, payroll, and fee reconciliation for independent tutoring businesses.',
+      description: 'External partner for tutor salaries, GST filing, and reconciling student fee collections with teacher payouts. EduOS handles academy ops — payroll and accounts stay with your bookkeeper.',
       contact: 'ops@edubooks.example',
+      tags: ['payroll', 'teachers', 'gst', 'bookkeeping'],
     },
   ];
 }
@@ -230,6 +231,18 @@ function mergeMarketplaceDefaults(state) {
   const legacy = (state.marketplace || []).some((i) => LEGACY_MARKETPLACE_TYPES.includes(i.type));
   if (legacy || !state.marketplace?.length) {
     state.marketplace = defaultMarketplace();
+    return;
+  }
+  for (const item of defaultMarketplace()) {
+    const idx = state.marketplace.findIndex((i) => i.id === item.id);
+    if (idx < 0) state.marketplace.push({ ...item });
+    else {
+      state.marketplace[idx] = {
+        ...item,
+        installed: state.marketplace[idx].installed,
+        installedAt: state.marketplace[idx].installedAt,
+      };
+    }
   }
 }
 
@@ -243,7 +256,7 @@ export function getMarketplaceInstallHint(item) {
   if (item.type === 'integration' && item.sdkId) return 'Finish OAuth/setup in Extensions → Connections.';
   if (item.type === 'integration' && item.linkView === 'commHub') return 'Configure channels in Communication Hub.';
   if (item.type === 'integration' && item.linkView === 'schedule') return 'Join links appear on Class Schedule sessions.';
-  if (item.type === 'partner') return 'Contact the partner directly — EduOS connects ops, not classroom content.';
+  if (item.type === 'partner') return 'Contact the partner directly — EduOS does not process payroll or GST in-app.';
   return 'Active in your academy operations.';
 }
 
@@ -258,7 +271,7 @@ export function getMarketplaceInstallMessage(item) {
 export function getMarketplaceActionLabel(item, installed = false) {
   if (installed) return 'Connected';
   if (item?.type === 'template') return 'Add template';
-  if (item?.type === 'partner') return 'Save';
+  if (item?.type === 'partner') return 'Save partner';
   return 'Connect';
 }
 
@@ -314,8 +327,18 @@ export function seedPlatformDemo(state, students = [], batches = [], teachers = 
   ];
 
   state.tutorAvailability = {
-    [t1.id]: { days: ['mon', 'wed', 'fri'], hours: '14:00-20:00' },
-    [t2.id]: { days: ['tue', 'thu', 'sat'], hours: '15:00-21:00' },
+    [t1.id]: {
+      slots: [
+        { id: uid('slot'), days: ['mon', 'wed', 'fri'], startTime: '14:00', endTime: '17:00' },
+        { id: uid('slot'), days: ['mon', 'wed', 'fri'], startTime: '18:00', endTime: '20:00' },
+      ],
+    },
+    [t2.id]: {
+      slots: [
+        { id: uid('slot'), days: ['tue', 'thu'], startTime: '15:00', endTime: '18:00' },
+        { id: uid('slot'), days: ['sat'], startTime: '10:00', endTime: '13:00' },
+      ],
+    },
   };
 
   state.tutorPd = [
@@ -499,10 +522,23 @@ export function searchMarketplace(query, type) {
   let items = getMarketplace(type || undefined);
   if (query) {
     const q = query.toLowerCase();
-    items = items.filter((i) => i.title.toLowerCase().includes(q) || i.description.toLowerCase().includes(q) || i.author.toLowerCase().includes(q));
+    items = items.filter((i) => {
+      const tags = (i.tags || []).join(' ');
+      return i.title.toLowerCase().includes(q)
+        || i.description.toLowerCase().includes(q)
+        || i.author.toLowerCase().includes(q)
+        || tags.toLowerCase().includes(q);
+    });
   }
   return items;
 }
+
+function marketplaceBrowseOrder(items) {
+  const rank = { partner: 0, integration: 1, template: 2 };
+  return [...items].sort((a, b) => (rank[a.type] ?? 9) - (rank[b.type] ?? 9) || a.title.localeCompare(b.title));
+}
+
+export { marketplaceBrowseOrder };
 
 export function rateMarketplaceItem(id, rating) {
   const item = ensurePlatformData(getState()).marketplace.find((i) => i.id === id);
@@ -643,12 +679,95 @@ export function getDeveloperStats() {
 }
 
 export function getTutorAvailability(teacherId) {
-  return ensurePlatformData(getState()).tutorAvailability[teacherId] || { days: [], hours: '' };
+  const raw = ensurePlatformData(getState()).tutorAvailability[teacherId];
+  return normalizeTutorAvailability(raw);
+}
+
+const AVAIL_DAY_SHORT = { sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat' };
+
+function parseLegacyAvailabilityHours(hours = '') {
+  const m = String(hours).match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+  if (m) return { startTime: m[1], endTime: m[2] };
+  if (hours) return { startTime: String(hours).trim(), endTime: '' };
+  return { startTime: '', endTime: '' };
+}
+
+export function normalizeTutorAvailability(data) {
+  if (!data) return { slots: [] };
+  if (Array.isArray(data.slots)) {
+    return {
+      slots: data.slots.map((s) => ({
+        id: s.id || uid('slot'),
+        days: [...(s.days || [])],
+        startTime: s.startTime || '',
+        endTime: s.endTime || '',
+        label: s.label || '',
+      })),
+    };
+  }
+  const { startTime, endTime } = parseLegacyAvailabilityHours(data.hours);
+  if ((data.days || []).length || startTime || endTime) {
+    return {
+      slots: [{
+        id: uid('slot'),
+        days: [...(data.days || [])],
+        startTime,
+        endTime,
+      }],
+    };
+  }
+  return { slots: [] };
+}
+
+export function formatTutorAvailabilitySummary(data) {
+  const { slots } = normalizeTutorAvailability(data);
+  if (!slots.length) return 'Not set';
+  return slots.map((s) => {
+    const days = (s.days || []).map((d) => AVAIL_DAY_SHORT[d] || d).join(', ') || 'Any day';
+    const time = s.startTime && s.endTime ? `${s.startTime}–${s.endTime}` : (s.startTime || s.endTime || '—');
+    return `${days} · ${time}`;
+  }).join(' · ');
+}
+
+function sharedAvailabilityDays(daysA, daysB) {
+  const setB = new Set(daysB || []);
+  return (daysA || []).filter((d) => setB.has(d));
+}
+
+function availabilityTimesOverlap(startA, endA, startB, endB) {
+  if (!startA || !endA || !startB || !endB) return false;
+  return startA < endB && startB < endA;
+}
+
+export function doesBatchBookAvailabilitySlot(batch, slot) {
+  if (!batch || !slot) return false;
+  if (batch.availabilitySlotId && slot.id) {
+    return batch.availabilitySlotId === slot.id;
+  }
+  if (!sharedAvailabilityDays(batch.scheduleDays, slot.days).length) return false;
+  return availabilityTimesOverlap(batch.startTime, batch.endTime, slot.startTime, slot.endTime);
+}
+
+export function getAvailabilitySlotBookings(teacherId, excludeBatchId = null) {
+  const slots = getTutorAvailability(teacherId).slots || [];
+  const batches = getBatches().filter((b) => b.teacherId === teacherId && b.id !== excludeBatchId);
+  return slots.map((slot) => ({
+    slot,
+    batch: batches.find((b) => doesBatchBookAvailabilitySlot(b, slot)) || null,
+  }));
+}
+
+export function getAvailableAvailabilitySlots(teacherId, excludeBatchId = null) {
+  return getAvailabilitySlotBookings(teacherId, excludeBatchId)
+    .filter(({ batch }) => !batch)
+    .map(({ slot }) => slot);
 }
 
 export function saveTutorAvailability(teacherId, data) {
-  ensurePlatformData(getState()).tutorAvailability[teacherId] = data;
+  const normalized = normalizeTutorAvailability(data);
+  ensurePlatformData(getState()).tutorAvailability[teacherId] = normalized;
   persist();
+  return normalized;
 }
 
 export function getPublicSite() {

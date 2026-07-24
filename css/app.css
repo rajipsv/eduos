@@ -534,10 +534,21 @@ button, input, select, textarea {
 }
 
 .sidebar-footer {
+  margin-top: auto;
   padding: 16px 20px;
   border-top: 1px solid var(--border);
 }
 
+.sidebar-user {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+
+.sidebar-footer-tagline,
 .sidebar-footer p {
   margin: 0;
   font-size: 0.75rem;
@@ -623,6 +634,8 @@ button, input, select, textarea {
   color: var(--primary);
 }
 
+.stat-card .value.stat-red { color: var(--danger); }
+
 .stat-card .hint {
   margin-top: 6px;
   font-size: 0.78rem;
@@ -649,6 +662,13 @@ button, input, select, textarea {
 .panel-header h3 {
   font-size: 1rem;
   font-weight: 600;
+}
+
+.parent-fee-alert .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .panel-body { padding: 20px; }
@@ -741,6 +761,119 @@ tr:last-child td { border-bottom: none; }
 .badge-orange { background: var(--accent-soft); color: var(--accent); }
 .badge-red { background: var(--danger-soft); color: var(--danger); }
 .badge-gray { background: var(--surface-2); color: var(--text-muted); }
+
+.fee-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.fee-stats .stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.fee-stats .stat-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.fee-stats .stat-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.fee-stats .stat-green { color: var(--primary); }
+.fee-stats .stat-red { color: var(--danger); }
+
+.invoice-table td { vertical-align: middle; }
+.invoice-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+tr.invoice-reported { background: color-mix(in srgb, var(--accent, #e67700) 6%, transparent); }
+
+.mp-partner-banner {
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent, #e67700) 6%, var(--surface));
+}
+
+.mp-partner-banner h4 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.mp-partner-banner p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.avail-slots-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.avail-slot-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 0.88rem;
+}
+
+.avail-slot-edit-row {
+  margin-bottom: 8px;
+}
+
+.avail-slot-label {
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.avail-slot-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.avail-slot-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 0.88rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.avail-slot-option:hover {
+  border-color: var(--primary);
+}
+
+.avail-slot-option.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.avail-slot-option input {
+  flex-shrink: 0;
+}
 
 .form-grid {
   display: grid;

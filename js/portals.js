@@ -49,6 +49,7 @@ export const PORTAL_CONFIG = {
         { view: 'schedule', label: 'Class Schedule' },
         { view: 'teachers', label: 'Teachers' },
         { view: 'students', label: 'Students' },
+        { view: 'fees', label: 'Fees & Invoices' },
         { view: 'attendance', label: 'Attendance' },
         { view: 'tests', label: 'Tests & Marks' },
       ]},

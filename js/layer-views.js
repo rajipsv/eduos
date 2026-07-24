@@ -11,10 +11,10 @@ import {
   computeSuccessScore,
   getCommTemplates, getCommAutomations, toggleAutomation,
   getMarketplace, installMarketplaceItem, uninstallMarketplaceItem, getInstalledMarketplaceItems,
-  getMarketplaceStats, searchMarketplace, rateMarketplaceItem,
+  getMarketplaceStats, searchMarketplace, rateMarketplaceItem, marketplaceBrowseOrder,
   getMarketplaceTypeLabel, getMarketplaceInstallHint, getMarketplaceInstallMessage, getMarketplaceActionLabel,
   getSdkIntegrations, toggleSdkIntegration,
-  getTutorAvailability, saveTutorAvailability, getPublicSite, savePublicSite,
+  getTutorAvailability, saveTutorAvailability, formatTutorAvailabilitySummary, getPublicSite, savePublicSite,
   getInterventions, saveIntervention, resolveIntervention, buildLearningJourney,
   submitAssignment, gradeAssignment, generateInterventionPlan, applyInterventionPlan,
   generateParentSummary, sendParentSummary, getAllStudentsSuccessOverview,
@@ -28,8 +28,7 @@ import {
   getCommStats, saveCommSettings, getCommSettings, saveCommTemplate, saveCommAutomation,
   sendViaChannel, runClassReminders, broadcastToParents, COMM_EVENTS,
 } from './communication.js';
-import { formatTime } from './scheduler.js';
-import { dayPickerHtml, bindDayPicker } from './scheduler.js';
+import { formatTime, dayPickerHtml, bindDayPicker, getSelectedDays } from './scheduler.js';
 import { getRecentWebInquiries } from './crm.js';
 import { academyBanner } from './academy.js';
 import { getEffectiveRole } from './auth.js';
@@ -52,7 +51,7 @@ function studentSuccessManageToolbar(students, selectedId, selectId = 'ssStudent
 export const layerPageMeta = {
   studentSuccess: { title: 'Student Success', subtitle: 'Learning journey, skills, interventions' },
   tutorHub: { title: 'Tutor Success', subtitle: 'Performance, lesson plans, homework review, PD' },
-  parentPortal: { title: 'Parent Portal', subtitle: 'Progress, homework, attendance, messages' },
+  parentPortal: { title: 'Parent Portal', subtitle: 'Progress, homework, attendance, fees, messages' },
   commHub: { title: 'Communication Hub', subtitle: 'Email, SMS, WhatsApp, push automations' },
   marketplace: { title: 'Extensions & Partners', subtitle: 'Connect tools, ops templates, and partner services' },
   publicSite: { title: 'Public Website', subtitle: 'Marketing page and inquiry capture to CRM' },
@@ -339,6 +338,17 @@ function tutorOverview(selectedId) {
     <div id="tutorDetail">${tutorProfileCard(detailId)}</div>`;
 }
 
+function availabilitySlotsDisplayHtml(slots) {
+  if (!slots?.length) {
+    return '<p class="empty-state" style="padding:8px 0">No availability slots yet.</p>';
+  }
+  return `<ul class="avail-slots-list">${slots.map((s, i) => `
+    <li class="avail-slot-item">
+      <span class="avail-slot-label">Slot ${i + 1}</span>
+      <span>${formatTutorAvailabilitySummary({ slots: [s] })}</span>
+    </li>`).join('')}</ul>`;
+}
+
 function tutorProfileCard(teacherId) {
   if (!teacherId) return '';
   const teacher = getTeacher(teacherId);
@@ -355,7 +365,7 @@ function tutorProfileCard(teacherId) {
           <div class="stat-card"><div class="label">Curriculum</div><div class="value">${perf.breakdown.curriculum}%</div></div>
           <div class="stat-card"><div class="label">HW Review Rate</div><div class="value">${perf.breakdown.hwReviewRate}%</div></div>
         </div>
-        <p style="margin-top:12px;font-size:0.85rem"><strong>Availability:</strong> ${(avail.days || []).join(', ') || 'Not set'} · ${avail.hours || 'Not set'}</p>
+        <p style="margin-top:12px;font-size:0.85rem"><strong>Availability:</strong> ${formatTutorAvailabilitySummary(avail)}</p>
       </div>
     </div>`;
 }
@@ -442,10 +452,10 @@ function tutorScheduleView(teacherId) {
           <div class="session-row"><div class="session-info"><h4>${s.topic}</h4><p>${s.batchName} · ${s.date} · ${formatTime(s.startTime)}</p></div>
           <a href="${s.meetingLink}" target="_blank" class="btn btn-sm btn-primary">Join</a></div>`).join('') : '<p class="empty-state">No upcoming classes scheduled</p>'}
       </div></div>
-      <div class="panel"><div class="panel-header"><h3>Availability</h3><button class="btn btn-sm btn-secondary" data-action="edit-avail">Edit</button></div>
+      <div class="panel"><div class="panel-header"><h3>Availability</h3><button class="btn btn-sm btn-secondary" data-action="edit-avail">Manage slots</button></div>
       <div class="panel-body">
-        <p><strong>Days:</strong> ${(avail.days || []).join(', ') || 'Not set'}</p>
-        <p><strong>Hours:</strong> ${avail.hours || 'Not set'}</p>
+        ${availabilitySlotsDisplayHtml(avail.slots)}
+        <p style="margin-top:10px;font-size:0.82rem;color:var(--text-muted)">Add multiple time windows — e.g. morning and evening batches on different days.</p>
       </div></div>
     </div>`;
 }
@@ -480,6 +490,7 @@ function renderParentPortal() {
       <button class="report-tab" data-parent-tab="progress">Progress</button>
       <button class="report-tab" data-parent-tab="homework">Homework</button>
       <button class="report-tab" data-parent-tab="attendance">Attendance</button>
+      <button class="report-tab" data-parent-tab="fees">Fees</button>
       <button class="report-tab" data-parent-tab="feedback">Feedback</button>
       <button class="report-tab" data-parent-tab="messages">Messages</button>
       <button class="report-tab" data-parent-tab="settings">Settings</button>
@@ -492,6 +503,7 @@ function parentTabContent(tab, studentId) {
   if (tab === 'progress') return parentProgressView(studentId);
   if (tab === 'homework') return parentHomeworkView(studentId);
   if (tab === 'attendance') return parentAttendanceView(studentId);
+  if (tab === 'fees') return parentFeesView(studentId);
   if (tab === 'feedback') return parentFeedbackView(studentId);
   if (tab === 'messages') return parentMessagesView(studentId);
   if (tab === 'settings') return parentSettingsView(studentId);
@@ -502,13 +514,29 @@ function parentHomeView(studentId) {
   const dash = getParentDashboard(studentId);
   if (!dash) return '<div class="empty-state">No students</div>';
   const { student, success, batch, teacher, upcoming, pendingHw, certificates } = dash;
+  const fees = getStudentFeeSummary(studentId);
+  const billing = getBillingSettings();
+  const feeAlert = fees.outstanding > 0 ? `
+    <div class="panel parent-fee-alert" style="margin-top:16px">
+      <div class="panel-header"><h3>Fee due</h3><button class="btn btn-sm btn-secondary" data-parent-tab-link="fees">View all invoices</button></div>
+      <div class="panel-body">
+        <p><strong>₹${fees.outstanding.toLocaleString('en-IN')}</strong> outstanding
+          ${fees.nextDue ? ` · next due <strong>${fees.nextDue.dueDate}</strong> (${fees.nextDue.batchName})` : ''}
+          ${fees.overdue.length ? ` · <span class="badge badge-red">${fees.overdue.length} overdue</span>` : ''}
+        </p>
+        ${billing.upiId ? `<p style="font-size:0.88rem;color:var(--text-muted);margin-top:8px">Pay via UPI: <strong>${billing.upiId}</strong></p>` : ''}
+        ${fees.nextDue && canParentReportPayment(fees.nextDue) ? `<button class="btn btn-primary" style="margin-top:12px" data-action="parent-report-payment" data-id="${fees.nextDue.id}">I've paid — notify center</button>` : ''}
+        ${fees.nextDue?.status === 'payment_reported' ? `<p style="margin-top:10px;font-size:0.88rem;color:var(--text-muted)">Payment reported — center will confirm shortly.</p>` : ''}
+      </div>
+    </div>` : '';
   return `
     <div class="stats-grid">
       <div class="stat-card"><div class="label">Success Score</div><div class="value">${success.score}</div></div>
       <div class="stat-card"><div class="label">Attendance</div><div class="value">${success.breakdown.attendance}%</div></div>
       <div class="stat-card"><div class="label">Pending Homework</div><div class="value">${pendingHw}</div></div>
-      <div class="stat-card"><div class="label">Teacher</div><div class="value" style="font-size:1.1rem">${teacher?.name?.split(' ')[0] || '—'}</div></div>
+      <div class="stat-card"><div class="label">${fees.outstanding > 0 ? 'Fee due' : 'Fees'}</div><div class="value ${fees.overdue.length ? 'stat-red' : ''}">${fees.outstanding > 0 ? `₹${fees.outstanding.toLocaleString('en-IN')}` : 'Clear'}</div></div>
     </div>
+    ${feeAlert}
     <div class="grid-2" style="margin-top:16px">
       <div class="panel"><div class="panel-header"><h3>Next Class</h3></div><div class="panel-body">
         ${upcoming[0] ? `<div class="session-row"><div class="session-info"><h4>${upcoming[0].topic}</h4><p>${batch?.name} · ${upcoming[0].date} · ${formatTime(upcoming[0].startTime)}</p></div>
@@ -586,6 +614,41 @@ function parentAttendanceView(studentId) {
     <div class="panel-body table-wrap">
       <table><thead><tr><th>Date</th><th>Status</th></tr></thead>
       <tbody>${records.map((r) => `<tr><td>${r.date}</td><td><span class="badge ${r.status === 'present' ? 'badge-green' : r.status === 'absent' ? 'badge-red' : 'badge-orange'}">${r.status}</span></td></tr>`).join('') || '<tr><td colspan="2">No records yet</td></tr>'}</tbody></table>
+    </div></div>`;
+}
+
+function parentFeesView(studentId) {
+  const student = getStudent(studentId);
+  const fees = getStudentFeeSummary(studentId);
+  const billing = getBillingSettings();
+  if (!fees.invoices.length) {
+    return `<div class="panel"><div class="panel-body empty-state"><h4>No invoices yet</h4><p>When the center generates a fee invoice and sends a reminder, it will appear here.</p></div></div>`;
+  }
+  return `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">Outstanding</div><div class="value ${fees.outstanding ? 'stat-red' : ''}">₹${fees.outstanding.toLocaleString('en-IN')}</div></div>
+      <div class="stat-card"><div class="label">Overdue</div><div class="value">${fees.overdue.length}</div></div>
+      <div class="stat-card"><div class="label">Paid invoices</div><div class="value">${fees.invoices.filter((i) => i.status === 'paid').length}</div></div>
+    </div>
+    ${billing.upiId || billing.bankDetails ? `<div class="panel" style="margin-top:16px"><div class="panel-header"><h3>How to pay</h3></div><div class="panel-body">
+      ${billing.upiId ? `<p><strong>UPI:</strong> ${billing.upiId}</p>` : ''}
+      ${billing.bankDetails ? `<p style="margin-top:8px;font-size:0.88rem;color:var(--text-muted)">${billing.bankDetails}</p>` : ''}
+      <p style="margin-top:10px;font-size:0.82rem;color:var(--text-muted)">After paying offline, tap <strong>I've paid — notify center</strong>. The center verifies and confirms in EduOS.</p>
+    </div></div>` : ''}
+    <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Invoices — ${student?.name || 'Student'}</h3></div>
+    <div class="panel-body table-wrap">
+      <table class="invoice-table">
+        <thead><tr><th>Invoice</th><th>Batch</th><th>Period</th><th>Amount</th><th>Due</th><th>Status</th><th></th></tr></thead>
+        <tbody>${fees.invoices.map((inv) => `<tr>
+          <td><strong>${inv.invoiceNumber}</strong></td>
+          <td>${inv.batchName}</td>
+          <td>${inv.periodLabel || inv.periodStart?.slice(0, 7)}</td>
+          <td>₹${inv.amount.toLocaleString('en-IN')}</td>
+          <td>${inv.dueDate}</td>
+          <td>${parentInvoiceStatusLabel(inv.status)}</td>
+          <td>${canParentReportPayment(inv) ? `<button class="btn btn-sm btn-primary" data-action="parent-report-payment" data-id="${inv.id}">I've paid — notify center</button>` : (inv.status === 'payment_reported' ? '<small>Awaiting confirmation</small>' : '')}</td>
+        </tr>`).join('')}</tbody>
+      </table>
     </div></div>`;
 }
 
@@ -774,12 +837,17 @@ function renderMarketplace() {
 }
 
 function mpBrowseHtml() {
+  const items = marketplaceBrowseOrder(getMarketplace());
   return `
-    <div class="toolbar" style="margin-top:12px">
-      <input id="mpSearch" placeholder="Search extensions…" style="flex:1;max-width:280px">
-      <select id="mpFilter"><option value="">All types</option><option value="integration">Integrations</option><option value="template">Ops templates</option><option value="partner">Partner services</option></select>
+    <div class="mp-partner-banner" style="margin-top:12px">
+      <h4>Need tutor payroll or GST?</h4>
+      <p>Partner services below handle salaries, tax filing, and fee reconciliation. EduOS tracks student fees — payroll stays with your bookkeeper or partner.</p>
     </div>
-    <div class="card-grid" id="mpGrid">${marketplaceCards(getMarketplace())}</div>`;
+    <div class="toolbar" style="margin-top:12px">
+      <input id="mpSearch" placeholder="Search extensions… (try payroll, GST)" style="flex:1;max-width:280px">
+      <select id="mpFilter"><option value="">All types</option><option value="partner">Partner services</option><option value="integration">Integrations</option><option value="template">Ops templates</option></select>
+    </div>
+    <div class="card-grid" id="mpGrid">${marketplaceCards(items)}</div>`;
 }
 
 function mpInstalledHtml() {
@@ -1050,6 +1118,76 @@ function bindStudentSuccessEvents({ showModal, closeModal, toast, refresh }) {
   bindStudentSuccessManageActions({ showModal, closeModal, toast, refresh, studentId });
 }
 
+function openManageAvailabilityModal(tid, { showModal, closeModal, toast, refresh }) {
+  if (!tid) return toast('Select a teacher first', 'error');
+  let draftSlots = [...(getTutorAvailability(tid).slots || [])];
+
+  const renderSlotsList = () => {
+    const el = document.getElementById('availDraftList');
+    if (!el) return;
+    if (!draftSlots.length) {
+      el.innerHTML = '<p class="empty-state" style="padding:8px 0">No slots yet — add one below.</p>';
+      return;
+    }
+    el.innerHTML = draftSlots.map((s, i) => `
+      <div class="avail-slot-item avail-slot-edit-row">
+        <div><strong>Slot ${i + 1}</strong> · ${formatTutorAvailabilitySummary({ slots: [s] })}</div>
+        <button type="button" class="btn btn-sm btn-ghost" data-remove-slot="${i}">Remove</button>
+      </div>`).join('');
+    el.querySelectorAll('[data-remove-slot]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        draftSlots.splice(Number(btn.dataset.removeSlot), 1);
+        renderSlotsList();
+      });
+    });
+  };
+
+  showModal({
+    title: 'Manage availability slots',
+    wide: true,
+    body: `
+      <p style="margin:0 0 12px;font-size:0.88rem;color:var(--text-muted)">Add one or more windows when you are available for classes or demos.</p>
+      <div id="availDraftList"></div>
+      <div class="avail-add-slot" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <h4 style="margin:0 0 10px;font-size:0.92rem">Add time slot</h4>
+        ${dayPickerHtml([], 'newAvailDay')}
+        <div class="form-grid" style="margin-top:12px">
+          <div class="form-group"><label>Start time</label><input type="time" id="newAvailStart" value="16:00"></div>
+          <div class="form-group"><label>End time</label><input type="time" id="newAvailEnd" value="18:00"></div>
+        </div>
+        <button type="button" class="btn btn-secondary" id="addAvailSlotBtn" style="margin-top:10px">+ Add slot</button>
+      </div>`,
+    footer: `<button class="btn btn-secondary" data-modal-cancel>Cancel</button><button class="btn btn-primary" id="saveAvailSlots">Save availability</button>`,
+    onMount: () => {
+      bindDayPicker('newAvailDayPicker');
+      renderSlotsList();
+      document.getElementById('addAvailSlotBtn')?.addEventListener('click', () => {
+        const days = getSelectedDays('newAvailDayPicker');
+        const startTime = document.getElementById('newAvailStart')?.value;
+        const endTime = document.getElementById('newAvailEnd')?.value;
+        if (!days.length) return toast('Select at least one day', 'error');
+        if (!startTime || !endTime) return toast('Start and end time required', 'error');
+        if (startTime >= endTime) return toast('End time must be after start time', 'error');
+        draftSlots.push({
+          id: `slot_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          days,
+          startTime,
+          endTime,
+        });
+        document.querySelectorAll('#newAvailDayPicker .day-chip.active').forEach((c) => c.classList.remove('active'));
+        renderSlotsList();
+        toast('Slot added — click Save availability when done', 'success');
+      });
+      document.getElementById('saveAvailSlots')?.addEventListener('click', () => {
+        saveTutorAvailability(tid, { slots: draftSlots });
+        closeModal();
+        toast('Availability saved', 'success');
+        refresh();
+      });
+    },
+  });
+}
+
 function bindTutorHubEvents({ showModal, closeModal, toast, refresh }) {
   const teacherId = () => document.getElementById('tutorSel')?.value;
   const reloadTab = () => {
@@ -1149,20 +1287,7 @@ function bindTutorHubEvents({ showModal, closeModal, toast, refresh }) {
   });
 
   document.querySelector('[data-action="edit-avail"]')?.addEventListener('click', () => {
-    const tid = teacherId();
-    const avail = getTutorAvailability(tid);
-    showModal({
-      title: 'Edit Availability',
-      body: `${dayPickerHtml(avail.days || [], 'availDay')}<div class="form-group" style="margin-top:14px"><label>Hours (e.g. 14:00-20:00)</label><input id="availHours" value="${avail.hours || ''}"></div>`,
-      footer: `<button class="btn btn-secondary" data-modal-cancel>Cancel</button><button class="btn btn-primary" id="saveAvail">Save</button>`,
-      onMount: () => {
-        const getDays = bindDayPicker('availDayPicker');
-        document.getElementById('saveAvail').onclick = () => {
-          saveTutorAvailability(tid, { days: getDays(), hours: document.getElementById('availHours').value });
-          closeModal(); toast('Availability saved', 'success'); refresh();
-        };
-      },
-    });
+    openManageAvailabilityModal(teacherId(), { showModal, closeModal, toast, refresh });
   });
 
   document.querySelector('[data-action="add-pd"]')?.addEventListener('click', () => {
@@ -1196,12 +1321,12 @@ function bindTutorHubEvents({ showModal, closeModal, toast, refresh }) {
   }
 }
 
-function bindParentPortalEvents({ toast, refresh }) {
+function bindParentPortalEvents({ toast, refresh, showModal, closeModal }) {
   const studentId = () => document.getElementById('parentStudent')?.value;
   const reloadTab = () => {
     const tab = document.querySelector('[data-parent-tab].active')?.dataset.parentTab || 'home';
     document.getElementById('parentContent').innerHTML = parentTabContent(tab, studentId());
-    bindParentPortalEvents({ toast, refresh });
+    bindParentPortalEvents({ toast, refresh, showModal, closeModal });
   };
 
   document.getElementById('parentStudent')?.addEventListener('change', reloadTab);
@@ -1211,8 +1336,60 @@ function bindParentPortalEvents({ toast, refresh }) {
       document.querySelectorAll('[data-parent-tab]').forEach((t) => t.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById('parentContent').innerHTML = parentTabContent(tab.dataset.parentTab, studentId());
-      bindParentPortalEvents({ toast, refresh });
+      bindParentPortalEvents({ toast, refresh, showModal, closeModal });
     });
+  });
+
+  document.querySelectorAll('[data-parent-tab-link]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.parentTabLink;
+      document.querySelectorAll('[data-parent-tab]').forEach((t) => {
+        t.classList.toggle('active', t.dataset.parentTab === target);
+      });
+      document.getElementById('parentContent').innerHTML = parentTabContent(target, studentId());
+      bindParentPortalEvents({ toast, refresh, showModal, closeModal });
+    });
+  });
+
+  const openReportPaymentModal = (invoiceId) => {
+    if (!showModal || !closeModal) return;
+    showModal({
+      title: 'Report offline payment',
+      body: `<p style="margin:0 0 12px;font-size:0.88rem;color:var(--text-muted)">Tell the center you've paid outside EduOS. They will verify and confirm — this does not process payment in the app.</p>
+      <div class="form-grid">
+        <div class="form-group"><label>Payment method</label>
+          <select id="parentPayMethod">
+            <option value="upi">UPI</option>
+            <option value="cash">Cash</option>
+            <option value="bank">Bank transfer</option>
+            <option value="cheque">Cheque</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Reference (optional)</label><input id="parentPayRef" placeholder="UPI ref, receipt no."></div>
+        <div class="form-group full"><label>Note (optional)</label><textarea id="parentPayNote" rows="2" placeholder="Paid on 23 Jul, etc."></textarea></div>
+      </div>`,
+      footer: `<button class="btn btn-secondary" data-modal-cancel>Cancel</button><button class="btn btn-primary" id="parentPaySubmitBtn">Notify center</button>`,
+      onMount: () => {
+        document.getElementById('parentPaySubmitBtn').onclick = async () => {
+          const result = await reportParentPayment(invoiceId, {
+            paymentMethod: document.getElementById('parentPayMethod').value,
+            paymentRef: document.getElementById('parentPayRef').value.trim(),
+            note: document.getElementById('parentPayNote').value.trim(),
+          });
+          if (result.ok) {
+            closeModal();
+            toast('Center notified — they will confirm after verifying payment', 'success');
+            refresh();
+          } else {
+            toast(result.error || 'Could not report payment', 'error');
+          }
+        };
+      },
+    });
+  };
+
+  document.querySelectorAll('[data-action="parent-report-payment"]').forEach((btn) => {
+    btn.addEventListener('click', () => openReportPaymentModal(btn.dataset.id));
   });
 
   const sendParentMessage = async () => {
@@ -1451,7 +1628,7 @@ function bindMarketplaceEvents({ showModal, closeModal, toast, refresh, navigate
     const q = document.getElementById('mpSearch')?.value.trim();
     const type = document.getElementById('mpFilter')?.value;
     const grid = document.getElementById('mpGrid');
-    if (grid) grid.innerHTML = marketplaceCards(searchMarketplace(q, type || undefined));
+    if (grid) grid.innerHTML = marketplaceCards(marketplaceBrowseOrder(searchMarketplace(q, type || undefined)));
     bindMarketplaceEvents({ showModal, closeModal, toast, refresh, navigate });
   };
 
@@ -1498,7 +1675,7 @@ function bindMarketplaceEvents({ showModal, closeModal, toast, refresh, navigate
           <p style="margin-top:12px;font-size:0.82rem;color:var(--text-muted)">${hint}</p>
           ${item.installed ? `<p style="margin-top:12px"><span class="badge badge-green">Connected${item.installedAt ? ' since ' + item.installedAt : ''}</span></p>` : ''}
         </div>`,
-        footer: `<button class="btn btn-secondary" data-modal-cancel>Close</button>${!item.installed ? `<button class="btn btn-primary" id="modalInstallMp">${getMarketplaceActionLabel(item)}</button>` : (item.linkView || item.sdkId ? `<button class="btn btn-primary" id="modalGoMp">Open ${item.linkView === 'commHub' ? 'Communication Hub' : item.linkView === 'schedule' ? 'Class Schedule' : 'Connections'}</button>` : '')}`,
+        footer: `<button class="btn btn-secondary" data-modal-cancel>Close</button>${item.type === 'partner' && item.contact ? `<a class="btn btn-secondary" href="mailto:${item.contact}">Email partner</a>` : ''}${!item.installed ? `<button class="btn btn-primary" id="modalInstallMp">${getMarketplaceActionLabel(item)}</button>` : (item.linkView || item.sdkId ? `<button class="btn btn-primary" id="modalGoMp">Open ${item.linkView === 'commHub' ? 'Communication Hub' : item.linkView === 'schedule' ? 'Class Schedule' : 'Connections'}</button>` : '')}`,
         onMount: () => {
           document.getElementById('modalInstallMp')?.addEventListener('click', () => {
             installMarketplaceItem(item.id);
