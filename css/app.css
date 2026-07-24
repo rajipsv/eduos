@@ -762,6 +762,20 @@ tr:last-child td { border-bottom: none; }
 .badge-red { background: var(--danger-soft); color: var(--danger); }
 .badge-gray { background: var(--surface-2); color: var(--text-muted); }
 
+.admin-teach-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.admin-teach-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+
 .fee-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

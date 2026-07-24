@@ -1011,6 +1011,55 @@ export function createUser(user) {
   return entry;
 }
 
+export function updateUser(userId, fields) {
+  ensureState();
+  const idx = (state.users || []).findIndex((u) => u.id === userId);
+  if (idx < 0) return null;
+  state.users[idx] = { ...state.users[idx], ...fields };
+  persist();
+  return state.users[idx];
+}
+
+export function linkCenterAdminTeacherProfile(userId, { enabled, teacherId, subjects = [] } = {}) {
+  const user = (state.users || []).find((u) => u.id === userId);
+  if (!user) return { ok: false, error: 'User not found' };
+
+  if (!enabled) {
+    updateUser(userId, { linkedTeacherId: null });
+    return { ok: true, linkedTeacherId: null };
+  }
+
+  let tid = teacherId || null;
+  if (tid) {
+    const teacher = getTeacher(tid);
+    if (!teacher) return { ok: false, error: 'Teacher not found' };
+    saveTeacher({ ...teacher, userId });
+  } else {
+    const existing = scopeRecords(state.teachers).find(
+      (t) => t.userId === userId || (user.email && t.email === user.email),
+    );
+    if (existing) {
+      tid = existing.id;
+      saveTeacher({ ...existing, userId });
+    } else {
+      saveTeacher({
+        name: user.name,
+        email: user.email || '',
+        phone: '',
+        subjects,
+        bio: 'Center admin & tutor',
+        userId,
+      });
+      tid = scopeRecords(state.teachers).find((t) => t.userId === userId)?.id
+        || state.teachers.find((t) => t.userId === userId)?.id;
+    }
+  }
+
+  if (!tid) return { ok: false, error: 'Could not create teacher profile' };
+  updateUser(userId, { linkedTeacherId: tid });
+  return { ok: true, linkedTeacherId: tid, teacher: getTeacher(tid) };
+}
+
 export function persistRaw() {
   persist();
 }

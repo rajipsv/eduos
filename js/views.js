@@ -104,6 +104,7 @@ import {
   renderTeacherHome, renderStudentHome, bindPlatformEvents,
 } from './platform-views.js';
 import { renderTuitionMarketplace, bindTuitionMarketplaceEvents } from './tuition-marketplace.js';
+import { getCurrentUser, saveCenterAdminTeacherLink } from './auth.js';
 
 let chartInstance = null;
 
@@ -761,6 +762,7 @@ function scheduleListHtml(sessions, { showManage = false } = {}) {
 
 function renderTeachers() {
   const teachers = getTeachers();
+  const adminUser = getCurrentUser();
   return `
     ${academyBanner('Teachers', 'Manage your tutor roster and see batch load at a glance.')}
     ${academyStatsGrid(['teachers', 'batches', 'students'])}
@@ -770,8 +772,9 @@ function renderTeachers() {
     <div class="card-grid">
       ${teachers.map((t) => {
         const report = getTeacherReport(t.id);
+        const isYou = adminUser?.linkedTeacherId === t.id;
         return `<div class="batch-card">
-          <h4>${t.name}</h4>
+          <h4>${t.name}${isYou ? ' <span class="badge badge-green">You</span>' : ''}</h4>
           <div class="meta">${t.email} · ${t.phone}</div>
           <div class="tags">${(t.subjects || []).map((s) => `<span class="tag">${s}</span>`).join('')}</div>
           <div class="meta">${report.batchCount} batches · ${report.studentCount} students · ${report.completionRate}% curriculum done</div>
@@ -1239,6 +1242,45 @@ function insightHtml() {
     : '<p class="empty-state">Add more data to unlock insights.</p>';
 }
 
+function renderAdminTeacherProfileSettings() {
+  const user = getCurrentUser();
+  if (!user || user.role !== 'center_admin') return '';
+
+  const teachers = getTeachers();
+  const linkedId = user.linkedTeacherId || '';
+  const linked = linkedId ? getTeacher(linkedId) : null;
+  const enabled = Boolean(linkedId);
+
+  return `
+    <div class="panel" style="margin-top:20px">
+      <div class="panel-header"><h3>My teaching profile</h3></div>
+      <div class="panel-body">
+        <p style="font-size:0.88rem;color:var(--text-muted);margin:0 0 14px">Many center owners also teach. Link your admin login to a teacher profile so you can assign yourself to batches and manage your availability in Tutor Success.</p>
+        <label class="admin-teach-toggle">
+          <input type="checkbox" id="adminAlsoTeaches" ${enabled ? 'checked' : ''}>
+          <span>I also teach classes</span>
+        </label>
+        <div id="adminTeachOptions" style="margin-top:14px;${enabled ? '' : 'display:none'}">
+          <div class="form-group full">
+            <label>Teacher profile</label>
+            <select id="adminTeacherLink">
+              <option value="" ${!linkedId || linked?.userId === user.id ? 'selected' : ''}>Use my account (${user.name})</option>
+              ${teachers.filter((t) => t.userId !== user.id).map((t) =>
+                `<option value="${t.id}" ${linkedId === t.id ? 'selected' : ''}>${t.name}</option>`,
+              ).join('')}
+            </select>
+          </div>
+          <div class="form-group full" id="adminTeachSubjectsWrap">
+            <label>Subjects (comma-separated)</label>
+            <input id="adminTeachSubjects" value="${(linked?.subjects || []).join(', ')}" placeholder="Mathematics, Science">
+          </div>
+          ${linked ? `<p style="font-size:0.82rem;color:var(--text-muted);margin:8px 0 0">Currently linked as <strong>${linked.name}</strong>. Set availability under Tutor Success → Schedule.</p>` : ''}
+        </div>
+        <button class="btn btn-secondary" style="margin-top:14px" data-action="save-admin-teacher-link">Save teaching profile</button>
+      </div>
+    </div>`;
+}
+
 function renderSettings() {
   const s = getState().settings;
   const billing = getBillingSettings();
@@ -1282,6 +1324,7 @@ function renderSettings() {
         <button class="btn btn-primary" style="margin-top:16px" data-action="save-settings">Save Settings</button>
       </div>
     </div>
+    ${renderAdminTeacherProfileSettings()}
     <div class="panel" style="margin-top:20px">
       <div class="panel-header"><h3>Data Management</h3></div>
       <div class="panel-body" style="display:flex;gap:10px;flex-wrap:wrap">
@@ -2596,6 +2639,24 @@ function bindFeesEvents({ showModal, closeModal, toast, refresh }) {
 }
 
 function bindSettingsEvents({ toast, refresh }) {
+  document.getElementById('adminAlsoTeaches')?.addEventListener('change', (e) => {
+    const wrap = document.getElementById('adminTeachOptions');
+    if (wrap) wrap.style.display = e.target.checked ? '' : 'none';
+  });
+
+  document.querySelector('[data-action="save-admin-teacher-link"]')?.addEventListener('click', () => {
+    const enabled = document.getElementById('adminAlsoTeaches')?.checked;
+    const teacherId = document.getElementById('adminTeacherLink')?.value || '';
+    const subjects = document.getElementById('adminTeachSubjects')?.value
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean) || [];
+    const result = saveCenterAdminTeacherLink({ enabled, teacherId, subjects });
+    if (!result.ok) return toast(result.error || 'Could not save teaching profile', 'error');
+    toast(enabled ? 'Teaching profile linked' : 'Teaching profile removed', 'success');
+    refresh();
+  });
+
   document.querySelector('[data-action="save-settings"]')?.addEventListener('click', () => {
     updateSettings({
       tutorName: document.getElementById('setTutorName').value.trim(),

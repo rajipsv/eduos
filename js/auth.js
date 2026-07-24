@@ -1,5 +1,6 @@
 import {
-  getCenters, getCenter, saveCenter, getUsers, findUserByEmail, createUser, persistRaw,
+  getCenters, getCenter, saveCenter, getUsers, findUserByEmail, createUser, updateUser,
+  linkCenterAdminTeacherProfile, persistRaw,
   getState, seedDemoUsers, migrateMultiTenant, migrateCenterListings, initCenterSettings,
   getDefaultBranch, getBranch, getStudent, getTeacher,
 } from './store.js';
@@ -171,6 +172,26 @@ export function isPlatformOwner() {
 
 export function getLinkedTeacherId() {
   return getSession()?.linkedTeacherId || getCurrentUser()?.linkedTeacherId || null;
+}
+
+export function syncSessionFromUser(user) {
+  const session = getSession();
+  if (!session || !user || session.userId !== user.id) return;
+  session.linkedTeacherId = user.linkedTeacherId || null;
+  setSession(resolveSessionBranch(session, user));
+}
+
+export function saveCenterAdminTeacherLink({ enabled, teacherId, subjects = [] } = {}) {
+  const user = getCurrentUser();
+  if (!user || user.role !== 'center_admin') {
+    return { ok: false, error: 'Only center admins can link a teaching profile' };
+  }
+  const result = linkCenterAdminTeacherProfile(user.id, { enabled, teacherId, subjects });
+  if (result.ok) {
+    const updated = getUsers().find((u) => u.id === user.id);
+    if (updated) syncSessionFromUser(updated);
+  }
+  return result;
 }
 
 export function getLinkedStudentId() {
