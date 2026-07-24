@@ -46,6 +46,8 @@ import {
   getInvoices,
   getBillingSettings,
   saveBillingSettings,
+  getStorageLabel,
+  getStorageBackendReason,
 } from './store.js';
 import {
   generateMonthlyInvoices,
@@ -1284,6 +1286,13 @@ function renderAdminTeacherProfileSettings() {
 function renderSettings() {
   const s = getState().settings;
   const billing = getBillingSettings();
+  const storageLabel = getStorageLabel();
+  const onNeon = storageLabel === 'Neon PostgreSQL';
+  const storageNote = onNeon
+    ? 'Your center data is synced to Neon PostgreSQL.'
+    : (getStorageBackendReason() === 'DATABASE_URL not configured'
+      ? 'Running in browser-only mode. Add DATABASE_URL to .env and run start.bat for Neon sync.'
+      : 'Running in browser-only mode. Start the API server with start.bat and configure DATABASE_URL for Neon sync.');
   return `
     <div class="panel">
       <div class="panel-header"><h3>Center Details</h3></div>
@@ -1327,9 +1336,12 @@ function renderSettings() {
     ${renderAdminTeacherProfileSettings()}
     <div class="panel" style="margin-top:20px">
       <div class="panel-header"><h3>Data Management</h3></div>
-      <div class="panel-body" style="display:flex;gap:10px;flex-wrap:wrap">
+      <div class="panel-body">
+        <p style="font-size:0.88rem;color:var(--text-muted);margin:0 0 14px">Data storage: <strong>${storageLabel}</strong>. ${storageNote}</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-secondary" data-action="reset-demo">Reset Demo Data</button>
         <button class="btn btn-secondary" data-action="import-data">Import JSON</button>
+        </div>
       </div>
     </div>`;
 }

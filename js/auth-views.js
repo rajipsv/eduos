@@ -1,4 +1,12 @@
-import { login, registerCenter, DEMO_PASSWORD } from './auth.js';
+import {
+  login,
+  registerCenter,
+  requestPasswordReset,
+  resetPasswordWithToken,
+  getPasswordResetTokenInfo,
+  validatePassword,
+  DEMO_PASSWORD,
+} from './auth.js';
 import { getRawState } from './store.js';
 import { renderTuitionMarketplace, bindTuitionMarketplaceEvents, TUITION_PENDING_KEY } from './tuition-marketplace.js';
 import {
@@ -12,8 +20,10 @@ import {
   LOGIN_PORTALS,
 } from './home-landing.js';
 
-export function renderAuthScreen(mode = 'home') {
+export function renderAuthScreen(mode = 'home', params = {}) {
   if (mode === 'register') return renderRegisterPage();
+  if (mode === 'forgot-password') return renderForgotPasswordPage();
+  if (mode === 'reset-password') return renderResetPasswordPage(params.token);
   if (mode.startsWith('login-')) return renderLoginPage(mode.replace('login-', ''));
   return renderAuthHome();
 }
@@ -78,7 +88,8 @@ export function renderLoginFormHtml(portal, { compact = false } = {}) {
       <div class="form-group full"><label>Email</label><input id="authEmail" type="email" placeholder="${meta.hint}" autocomplete="username"></div>
       <div class="form-group full"><label>Password</label><input id="authPassword" type="password" value="${DEMO_PASSWORD}" autocomplete="current-password"></div>
     </div>
-    <button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-submit="${portal}">Sign in</button>`;
+    <p class="auth-forgot-row"><button type="button" class="btn btn-ghost auth-forgot-link" data-auth-forgot>Forgot password?</button></p>
+    <button class="btn btn-primary" type="button" style="width:100%;margin-top:8px" data-auth-submit="${portal}">Sign in</button>`;
 }
 
 export function renderRegisterFormHtml() {
@@ -93,6 +104,55 @@ export function renderRegisterFormHtml() {
       <div class="form-group"><label>Password *</label><input id="regPassword" type="password"></div>
     </div>
     <button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-register>Create center</button>`;
+}
+
+function renderForgotPasswordPage() {
+  return `
+    <div class="auth-shell auth-shell-form">
+      <div class="auth-card">
+        <button class="btn btn-ghost auth-back" type="button" data-auth-mode="home">← Back to home</button>
+        <h2 style="margin-top:16px;font-family:var(--font-display)">Forgot password</h2>
+        ${renderForgotPasswordFormHtml()}
+      </div>
+    </div>`;
+}
+
+export function renderForgotPasswordFormHtml() {
+  return `
+    <p class="auth-sub">Enter the email on your account. We will send a reset link (valid for 1 hour).</p>
+    <div class="form-grid" style="margin-top:16px">
+      <div class="form-group full"><label>Email</label><input id="forgotEmail" type="email" placeholder="you@example.com" autocomplete="username"></div>
+    </div>
+    <button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-forgot-submit>Send reset link</button>
+    <div id="forgotPasswordResult" class="auth-reset-result hidden"></div>`;
+}
+
+function renderResetPasswordPage(token) {
+  const info = token ? getPasswordResetTokenInfo(token) : { ok: false };
+  return `
+    <div class="auth-shell auth-shell-form">
+      <div class="auth-card">
+        <button class="btn btn-ghost auth-back" type="button" data-auth-mode="home">← Back to home</button>
+        <h2 style="margin-top:16px;font-family:var(--font-display)">Choose a new password</h2>
+        ${info.ok ? renderResetPasswordFormHtml(token, info) : renderResetPasswordInvalidHtml(info.error)}
+      </div>
+    </div>`;
+}
+
+function renderResetPasswordInvalidHtml(message) {
+  return `
+    <p class="auth-sub auth-reset-error">${message || 'This reset link is invalid or has expired.'}</p>
+    <button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-mode="forgot-password">Request a new link</button>`;
+}
+
+function renderResetPasswordFormHtml(token, info) {
+  return `
+    <p class="auth-sub">Resetting password for <strong>${info.email}</strong></p>
+    <div class="form-grid" style="margin-top:16px">
+      <div class="form-group full"><label>New password</label><input id="resetPassword" type="password" autocomplete="new-password" minlength="6"></div>
+      <div class="form-group full"><label>Confirm password</label><input id="resetPasswordConfirm" type="password" autocomplete="new-password" minlength="6"></div>
+    </div>
+    <button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-reset-submit data-reset-token="${token}">Update password</button>`;
 }
 
 function renderLoginPage(portal) {
@@ -128,6 +188,42 @@ function bindLoginSubmit(onAuthed, toast, closeModal) {
     closeModal?.();
     toast(`Welcome, ${result.session.name}`, 'success');
     onAuthed(result.session);
+  });
+}
+
+function bindForgotPasswordSubmit(toast, { closeModal, onModeChange, compact = false } = {}) {
+  document.querySelector('[data-auth-forgot-submit]')?.addEventListener('click', async () => {
+    const email = document.getElementById('forgotEmail')?.value;
+    const result = await requestPasswordReset(email);
+    if (!result.ok) return toast(result.error, 'error');
+
+    const resultEl = document.getElementById('forgotPasswordResult');
+    if (resultEl) {
+      resultEl.classList.remove('hidden');
+      resultEl.innerHTML = `
+        <p>${result.message}</p>
+        ${result.demoResetUrl ? `<p class="auth-demo-reset"><strong>Demo reset link:</strong> <a href="${result.demoResetUrl}">${result.demoResetUrl}</a></p><p style="font-size:0.82rem;color:var(--text-muted);margin:8px 0 0">In production this link is emailed only. It is also logged under Communication Hub when email is simulated.</p>` : ''}`;
+    }
+
+    toast(result.message, 'success');
+    onModeChange?.('forgot-password');
+  });
+}
+
+function bindResetPasswordSubmit(toast, onModeChange) {
+  document.querySelector('[data-auth-reset-submit]')?.addEventListener('click', async () => {
+    const token = document.querySelector('[data-auth-reset-submit]')?.dataset.resetToken;
+    const password = document.getElementById('resetPassword')?.value;
+    const confirm = document.getElementById('resetPasswordConfirm')?.value;
+    if (password !== confirm) return toast('Passwords do not match', 'error');
+    const weak = validatePassword(password);
+    if (weak) return toast(weak, 'error');
+
+    const result = await resetPasswordWithToken(token, password);
+    if (!result.ok) return toast(result.error, 'error');
+    toast(result.message, 'success');
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    onModeChange?.('home');
   });
 }
 
@@ -168,6 +264,18 @@ export function bindAuthEvents({ onAuthed, toast, onModeChange, showModal, close
     });
   };
 
+  const showForgotPassword = () => {
+    showModal({
+      title: 'Forgot password',
+      body: renderForgotPasswordFormHtml(),
+      footer: '<button type="button" class="btn btn-ghost" data-auth-back-chooser>← Sign in</button><button type="button" class="btn btn-secondary" data-modal-cancel>Close</button>',
+      onMount: () => {
+        document.querySelector('[data-auth-back-chooser]')?.addEventListener('click', showLoginChooser);
+        bindForgotPasswordSubmit(toast, { closeModal, compact: true });
+      },
+    });
+  };
+
   const showLoginPortal = (portal) => {
     const meta = PORTAL_META[portal] || { title: 'Login' };
     showModal({
@@ -176,6 +284,7 @@ export function bindAuthEvents({ onAuthed, toast, onModeChange, showModal, close
       footer: '<button type="button" class="btn btn-ghost" data-auth-back-chooser>← All portals</button><button type="button" class="btn btn-secondary" data-modal-cancel>Close</button>',
       onMount: () => {
         document.querySelector('[data-auth-back-chooser]')?.addEventListener('click', showLoginChooser);
+        document.querySelector('[data-auth-forgot]')?.addEventListener('click', showForgotPassword);
         bindLoginSubmit(onAuthed, toast, closeModal);
       },
     });
@@ -233,6 +342,11 @@ export function bindAuthEvents({ onAuthed, toast, onModeChange, showModal, close
   if (!isLanding()) {
     bindLoginSubmit(onAuthed, toast, closeModal);
     bindRegisterSubmit(onAuthed, toast, closeModal);
+    bindForgotPasswordSubmit(toast, { onModeChange });
+    bindResetPasswordSubmit(toast, onModeChange);
+    document.querySelectorAll('[data-auth-forgot]').forEach((btn) => {
+      btn.addEventListener('click', () => onModeChange?.('forgot-password'));
+    });
   }
 }
 

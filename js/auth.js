@@ -3,7 +3,9 @@ import {
   linkCenterAdminTeacherProfile, persistRaw,
   getState, seedDemoUsers, migrateMultiTenant, migrateCenterListings, initCenterSettings,
   getDefaultBranch, getBranch, getStudent, getTeacher,
+  createPasswordResetToken, findValidPasswordResetToken, markPasswordResetTokenUsed, updateUserPassword,
 } from './store.js';
+import { sendViaChannel } from './communication.js';
 
 export const SESSION_KEY = 'tutorhub_session';
 export const DEMO_PASSWORD = 'demo123';
@@ -216,6 +218,85 @@ export function getLinkedStudentIds() {
   return user?.linkedStudentIds || (user?.linkedStudentId ? [user.linkedStudentId] : []);
 }
 
+export function validatePassword(password) {
+  if (!password || String(password).length < 6) {
+    return 'Password must be at least 6 characters';
+  }
+  return null;
+}
+
+export function buildPasswordResetUrl(token) {
+  const base = `${location.origin}${location.pathname}`;
+  return `${base}#reset-password/${encodeURIComponent(token)}`;
+}
+
+export function parsePasswordResetTokenFromLocation() {
+  const hash = (location.hash || '').replace(/^#/, '');
+  if (hash.startsWith('reset-password/')) {
+    return decodeURIComponent(hash.slice('reset-password/'.length));
+  }
+  try {
+    return new URLSearchParams(location.search).get('reset') || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function requestPasswordReset(email) {
+  migrateMultiTenant();
+  const normEmail = email.trim().toLowerCase();
+  if (!normEmail) return { ok: false, error: 'Email is required' };
+
+  const user = findUserByEmail(normEmail);
+  let demoResetUrl = null;
+
+  if (user) {
+    const { token } = createPasswordResetToken(user.id, normEmail);
+    demoResetUrl = buildPasswordResetUrl(token);
+    const academy = getState().settings?.tutorName || 'EduOS';
+    await sendViaChannel('email', {
+      to: normEmail,
+      message: `Hello ${user.name},
+
+We received a request to reset your EduOS password.
+
+Open this link to choose a new password (valid for 1 hour):
+${demoResetUrl}
+
+If you did not request this, you can ignore this email.
+
+— ${academy}`,
+      type: 'password_reset',
+      meta: { subject: 'Reset your EduOS password', email: normEmail, resetUrl: demoResetUrl },
+    });
+  }
+
+  return {
+    ok: true,
+    message: 'If an account exists for that email, password reset instructions have been sent.',
+    demoResetUrl,
+  };
+}
+
+export function getPasswordResetTokenInfo(token) {
+  const entry = findValidPasswordResetToken(token);
+  if (!entry) return { ok: false, error: 'This reset link is invalid or has expired.' };
+  const user = getUsers().find((u) => u.id === entry.userId);
+  return { ok: true, email: entry.email, name: user?.name || entry.email };
+}
+
+export async function resetPasswordWithToken(token, newPassword) {
+  const passwordError = validatePassword(newPassword);
+  if (passwordError) return { ok: false, error: passwordError };
+
+  const entry = findValidPasswordResetToken(token);
+  if (!entry) return { ok: false, error: 'This reset link is invalid or has expired.' };
+
+  updateUserPassword(entry.userId, newPassword);
+  markPasswordResetTokenUsed(token);
+  return { ok: true, message: 'Password updated. You can sign in now.' };
+}
+
 export function login(email, password, expectedPortal) {
   migrateMultiTenant();
   migrateCenterListings();
@@ -276,6 +357,8 @@ export function registerCenter({ centerName, ownerName, email, phone, city, pass
   if (!centerName?.trim() || !ownerName?.trim() || !normEmail || !password) {
     return { ok: false, error: 'Please fill all required fields' };
   }
+  const passwordError = validatePassword(password);
+  if (passwordError) return { ok: false, error: passwordError };
 
   const slug = centerName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
   const center = saveCenter({

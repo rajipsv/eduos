@@ -96,6 +96,7 @@ const defaultData = () => ({
     },
   },
   invoices: [],
+  passwordResetTokens: [],
 });
 
 function migrateBatch(batch) {
@@ -144,6 +145,7 @@ function hydrateState(raw) {
   data.organization = data.organization || defaultData().organization;
   data.students = data.students || [];
   data.invoices = data.invoices || [];
+  data.passwordResetTokens = data.passwordResetTokens || [];
   ensurePlatformData(data);
   migrateMultiTenant(data);
   migrateCenterListings(data);
@@ -195,6 +197,7 @@ async function persistToDatabase(data) {
 
 let state = null;
 let dbMode = false;
+let storageBackendReason = null;
 let persistTimer = null;
 let initPromise = null;
 
@@ -221,12 +224,14 @@ export async function initStore() {
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
+    storageBackendReason = null;
     try {
       const health = await fetch('/api/health');
       if (health.ok) {
         const info = await health.json();
         if (info.db) {
           dbMode = true;
+          storageBackendReason = null;
           const remote = await loadFromDatabase();
           if (remote) {
             state = remote;
@@ -237,11 +242,14 @@ export async function initStore() {
           await persistToDatabase(state);
           return state;
         }
-        console.warn('EduOS: API server running but database not connected.', info.reason || '');
-      } else {
-        console.warn('EduOS: /api/health returned', health.status, '— API routes missing. On Vercel, deploy api/ folder and set DATABASE_URL.');
+        storageBackendReason = info.reason || 'database_not_connected';
+        console.warn('EduOS: API server running but database not connected.', storageBackendReason);
+      } else if (health.status !== 404) {
+        storageBackendReason = `health_${health.status}`;
+        console.warn('EduOS: /api/health returned', health.status);
       }
     } catch (err) {
+      storageBackendReason = 'api_unavailable';
       console.warn('EduOS using localStorage (API unavailable):', err.message);
       dbMode = false;
     }
@@ -259,6 +267,10 @@ export function isDatabaseMode() {
 
 export function getStorageLabel() {
   return dbMode ? 'Neon PostgreSQL' : 'Browser localStorage';
+}
+
+export function getStorageBackendReason() {
+  return storageBackendReason;
 }
 
 function uid(prefix = 'id') {
@@ -1018,6 +1030,46 @@ export function updateUser(userId, fields) {
   state.users[idx] = { ...state.users[idx], ...fields };
   persist();
   return state.users[idx];
+}
+
+export function updateUserPassword(userId, password) {
+  return updateUser(userId, { password });
+}
+
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
+
+export function createPasswordResetToken(userId, email) {
+  ensureState();
+  state.passwordResetTokens = state.passwordResetTokens || [];
+  state.passwordResetTokens = state.passwordResetTokens.filter((t) => t.userId !== userId || t.used);
+  const token = `rst_${Date.now()}_${Math.random().toString(36).slice(2, 14)}`;
+  const entry = {
+    token,
+    userId,
+    email: email.trim().toLowerCase(),
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS).toISOString(),
+    used: false,
+  };
+  state.passwordResetTokens.push(entry);
+  persist();
+  return entry;
+}
+
+export function findValidPasswordResetToken(token) {
+  ensureState();
+  const entry = (state.passwordResetTokens || []).find((t) => t.token === token && !t.used);
+  if (!entry) return null;
+  if (new Date(entry.expiresAt) < new Date()) return null;
+  return entry;
+}
+
+export function markPasswordResetTokenUsed(token) {
+  ensureState();
+  const entry = (state.passwordResetTokens || []).find((t) => t.token === token);
+  if (!entry) return;
+  entry.used = true;
+  persist();
 }
 
 export function linkCenterAdminTeacherProfile(userId, { enabled, teacherId, subjects = [] } = {}) {

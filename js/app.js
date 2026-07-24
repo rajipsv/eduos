@@ -1,6 +1,6 @@
-import { exportAll, getRawState, initStore, getStorageLabel } from './store.js';
+import { exportAll, getRawState, initStore } from './store.js';
 import { renderView, pageMeta, initCharts, bindViewEvents } from './views.js';
-import { initAuth, getSession, logout, getSessionLabel, platformExitCenterView, canSwitchBranch, setActiveBranch, getActiveBranchId, setFamilyView, isFamilyAccount } from './auth.js';
+import { initAuth, getSession, logout, getSessionLabel, platformExitCenterView, canSwitchBranch, setActiveBranch, getActiveBranchId, setFamilyView, isFamilyAccount, parsePasswordResetTokenFromLocation } from './auth.js';
 import { renderNavHtml, getDefaultView, canAccessView, getNavRole, getSectionIdForView } from './portals.js';
 import { renderAuthScreen, bindAuthEvents } from './auth-views.js';
 import { platformPageMeta } from './platform-views.js';
@@ -18,7 +18,6 @@ const pageTitle = document.getElementById('pageTitle');
 const pageSubtitle = document.getElementById('pageSubtitle');
 const mainNav = document.getElementById('mainNav');
 const sessionLabel = document.getElementById('sessionLabel');
-const storageLabelEl = document.getElementById('storageLabel');
 const branchSelect = document.getElementById('branchSelect');
 const familyViewSelect = document.getElementById('familyViewSelect');
 const modalOverlay = document.getElementById('modalOverlay');
@@ -42,14 +41,6 @@ const ctx = {
   },
   rawState: null,
 };
-
-function getStorageFallbackHint() {
-  const host = location.hostname || '';
-  if (host.endsWith('.vercel.app') || host.includes('vercel')) {
-    return 'Set DATABASE_URL in Vercel env vars and redeploy (api/health must return db: true)';
-  }
-  return 'Data is in browser only — restart via start.bat for Neon sync';
-}
 
 function toast(message, type = 'default') {
   const el = document.createElement('div');
@@ -191,11 +182,9 @@ function syncFamilyViewSwitcher(session) {
 }
 
 function syncTopbarForRole(session) {
-  const role = session?.role;
   const navRole = getNavRole(session);
-  const showAdminChrome = role === 'center_admin' || role === 'platform_owner';
+  const showAdminChrome = session?.role === 'center_admin' || session?.role === 'platform_owner';
 
-  storageLabelEl?.classList.toggle('hidden', !showAdminChrome);
   document.getElementById('exportBtn')?.classList.toggle('hidden', !showAdminChrome);
   document.getElementById('quickNotifyBtn')?.classList.toggle('hidden', navRole === 'parent' || navRole === 'student');
 }
@@ -209,11 +198,6 @@ function buildShellForSession(session) {
   syncBranchSwitcher(session);
   syncFamilyViewSwitcher(session);
   syncTopbarForRole(session);
-  if (storageLabelEl) {
-    const label = getStorageLabel();
-    storageLabelEl.textContent = label;
-    storageLabelEl.classList.toggle('session-pill-warn', label !== 'Neon PostgreSQL');
-  }
   bindNavClicks();
   if (navRole === 'center_admin') syncPillarNav(currentView);
 
@@ -249,11 +233,11 @@ function showApp(session) {
   navigate(getDefaultView(session.role));
 }
 
-function mountAuth(mode = 'home') {
+function mountAuth(mode = 'home', params = {}) {
   authRoot.classList.remove('hidden');
   appShell.classList.add('hidden');
   try {
-    authRoot.innerHTML = renderAuthScreen(mode);
+    authRoot.innerHTML = renderAuthScreen(mode, params);
     bindAuthEvents({
       onAuthed: () => showApp(getSession()),
       toast,
@@ -265,6 +249,12 @@ function mountAuth(mode = 'home') {
     console.error('Auth screen failed:', err);
     authRoot.innerHTML = `<div class="auth-shell"><div class="auth-card"><h2>Could not load sign-in</h2><p>${err.message}</p></div></div>`;
   }
+}
+
+function resolveInitialAuthMode() {
+  const resetToken = parsePasswordResetTokenFromLocation();
+  if (resetToken) return { mode: 'reset-password', params: { token: resetToken } };
+  return { mode: 'home', params: {} };
 }
 
 document.getElementById('menuToggle')?.addEventListener('click', () => {
@@ -316,24 +306,21 @@ familyViewSelect?.addEventListener('change', () => {
 
 try {
   await initStore();
-  const storageLabel = getStorageLabel();
-  console.info(`EduOS storage: ${storageLabel}`);
-  if (storageLabelEl) {
-    storageLabelEl.textContent = storageLabel;
-    storageLabelEl.classList.toggle('session-pill-warn', storageLabel !== 'Neon PostgreSQL');
-  }
   initAuth();
 
   const session = getSession();
-  const showAdminChrome = session?.role === 'center_admin' || session?.role === 'platform_owner';
-  if (storageLabel !== 'Neon PostgreSQL' && showAdminChrome) {
-    toast(getStorageFallbackHint(), 'error');
-  }
   if (session) {
     showApp(session);
   } else {
-    mountAuth('home');
+    const initial = resolveInitialAuthMode();
+    mountAuth(initial.mode, initial.params);
   }
+
+  window.addEventListener('hashchange', () => {
+    if (getSession()) return;
+    const initial = resolveInitialAuthMode();
+    if (initial.mode === 'reset-password') mountAuth(initial.mode, initial.params);
+  });
 } catch (err) {
   console.error(err);
   if (content) {
