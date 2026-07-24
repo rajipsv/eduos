@@ -31,7 +31,7 @@ import {
 import { formatTime, dayPickerHtml, bindDayPicker, getSelectedDays } from './scheduler.js';
 import { getRecentWebInquiries } from './crm.js';
 import { academyBanner } from './academy.js';
-import { getEffectiveRole } from './auth.js';
+import { getEffectiveRole, getLinkedTeacherId } from './auth.js';
 
 function canManageStudentSuccess() {
   const role = getEffectiveRole();
@@ -282,7 +282,10 @@ function ssTabContent(tab, studentId) {
 function renderTutorHub() {
   const teachers = getTeachers();
   const students = getStudents();
-  const sel = teachers[0]?.id || '';
+  const linkedTeacherId = getLinkedTeacherId();
+  const sel = (linkedTeacherId && teachers.some((t) => t.id === linkedTeacherId))
+    ? linkedTeacherId
+    : (teachers[0]?.id || '');
   const studentSel = students[0]?.id || '';
   const manage = canManageStudentSuccess()
     ? studentSuccessManageToolbar(students, studentSel, 'tutorStudent')

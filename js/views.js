@@ -82,6 +82,7 @@ import {
   formatTutorAvailabilitySummary,
   getAvailableAvailabilitySlots,
   getAvailabilitySlotBookings,
+  findBatchAvailabilitySlot,
 } from './platform.js';
 import { renderLayerView, bindLayerEvents, layerPageMeta } from './layer-views.js';
 import {
@@ -1546,21 +1547,9 @@ function bindBatchEvents({ showModal, closeModal, toast, refresh }) {
   });
 }
 
-function sameDaySet(a, b) {
-  return [...(a || [])].sort().join(',') === [...(b || [])].sort().join(',');
-}
-
 function findMatchingAvailabilitySlot(batch, slots) {
   if (!batch || !slots?.length) return null;
-  if (batch.availabilitySlotId) {
-    const byId = slots.find((s) => s.id === batch.availabilitySlotId);
-    if (byId) return byId;
-  }
-  return slots.find((s) =>
-    s.startTime === batch.startTime
-    && s.endTime === batch.endTime
-    && sameDaySet(s.days, batch.scheduleDays),
-  ) || null;
+  return findBatchAvailabilitySlot(batch, slots);
 }
 
 function batchScheduleMetaFieldsHtml(batch) {

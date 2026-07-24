@@ -734,26 +734,75 @@ function sharedAvailabilityDays(daysA, daysB) {
   return (daysA || []).filter((d) => setB.has(d));
 }
 
+function sameAvailabilityDaySet(daysA, daysB) {
+  return [...(daysA || [])].sort().join(',') === [...(daysB || [])].sort().join(',');
+}
+
 function availabilityTimesOverlap(startA, endA, startB, endB) {
   if (!startA || !endA || !startB || !endB) return false;
   return startA < endB && startB < endA;
 }
 
-export function doesBatchBookAvailabilitySlot(batch, slot) {
-  if (!batch || !slot) return false;
-  if (batch.availabilitySlotId && slot.id) {
-    return batch.availabilitySlotId === slot.id;
+export function findBatchAvailabilitySlot(batch, slots = []) {
+  if (!batch || !slots.length) return null;
+
+  if (batch.availabilitySlotId) {
+    const byId = slots.find((s) => s.id === batch.availabilitySlotId);
+    if (byId) return byId;
   }
-  if (!sharedAvailabilityDays(batch.scheduleDays, slot.days).length) return false;
-  return availabilityTimesOverlap(batch.startTime, batch.endTime, slot.startTime, slot.endTime);
+
+  const sharesDays = (slot) => sharedAvailabilityDays(batch.scheduleDays, slot.days).length > 0;
+
+  const exact = slots.find((s) =>
+    sharesDays(s)
+    && sameAvailabilityDaySet(s.days, batch.scheduleDays)
+    && s.startTime === batch.startTime
+    && s.endTime === batch.endTime,
+  );
+  if (exact) return exact;
+
+  const batchInsideSlot = slots.filter((s) =>
+    sharesDays(s)
+    && s.startTime <= batch.startTime
+    && s.endTime >= batch.endTime,
+  );
+  if (batchInsideSlot.length === 1) return batchInsideSlot[0];
+
+  const slotInsideBatch = slots.filter((s) =>
+    sharesDays(s)
+    && batch.startTime <= s.startTime
+    && batch.endTime >= s.endTime,
+  );
+  if (slotInsideBatch.length === 1) return slotInsideBatch[0];
+
+  const overlapping = slots.filter((s) =>
+    sharesDays(s)
+    && availabilityTimesOverlap(batch.startTime, batch.endTime, s.startTime, s.endTime),
+  );
+  if (overlapping.length === 1) return overlapping[0];
+
+  return null;
+}
+
+export function doesBatchBookAvailabilitySlot(batch, slot, slots) {
+  if (!batch || !slot) return false;
+  const teacherSlots = slots || getTutorAvailability(batch.teacherId).slots || [];
+  return findBatchAvailabilitySlot(batch, teacherSlots)?.id === slot.id;
 }
 
 export function getAvailabilitySlotBookings(teacherId, excludeBatchId = null) {
   const slots = getTutorAvailability(teacherId).slots || [];
   const batches = getBatches().filter((b) => b.teacherId === teacherId && b.id !== excludeBatchId);
+  const bookedBySlotId = new Map();
+
+  for (const batch of batches) {
+    const bookedSlot = findBatchAvailabilitySlot(batch, slots);
+    if (bookedSlot?.id) bookedBySlotId.set(bookedSlot.id, batch);
+  }
+
   return slots.map((slot) => ({
     slot,
-    batch: batches.find((b) => doesBatchBookAvailabilitySlot(b, slot)) || null,
+    batch: bookedBySlotId.get(slot.id) || null,
   }));
 }
 
