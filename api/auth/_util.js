@@ -7,7 +7,7 @@ import {
   handleForgotPassword,
   handleResetPasswordInfo,
   handleResetPassword,
-} from '../server/auth/handlers.js';
+} from '../../server/auth/handlers.js';
 
 export function readJsonBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;

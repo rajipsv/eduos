@@ -7,7 +7,7 @@ import {
   normalizeSession,
 } from './scheduler.js';
 import { ensurePlatformData, seedPlatformDemo, findBatchAvailabilitySlot, getTutorAvailability } from './platform.js';
-import { apiFetch, isServerAuthEnabled, setServerAuthEnabled } from './api-client.js';
+import { apiFetch, getAccessToken, isServerAuthEnabled, setServerAuthEnabled } from './api-client.js';
 
 const STORAGE_KEY = 'tutorhub_data_v5';
 const SESSION_KEY = 'tutorhub_session';
@@ -208,9 +208,13 @@ function saveDataLocal(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
+function canPersistToDatabase() {
+  return dbMode && (!isServerAuthEnabled() || getAccessToken());
+}
+
 function saveData(data) {
   saveDataLocal(data);
-  if (dbMode) scheduleDbPersist();
+  if (canPersistToDatabase()) scheduleDbPersist();
 }
 
 function scheduleDbPersist() {
@@ -1164,7 +1168,7 @@ export async function resetDemo() {
     }
   }
   state = seedDemoData();
-  if (dbMode) {
+  if (canPersistToDatabase()) {
     try {
       await persistToDatabase(state);
     } catch (err) {
