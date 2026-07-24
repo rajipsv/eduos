@@ -4,10 +4,17 @@ import {
   getState, seedDemoUsers, migrateMultiTenant, migrateCenterListings, initCenterSettings,
   getDefaultBranch, getBranch, getStudent, getTeacher,
   createPasswordResetToken, findValidPasswordResetToken, markPasswordResetTokenUsed, updateUserPassword,
+  reloadStoreFromServer,
 } from './store.js';
 import { sendViaChannel } from './communication.js';
-
-export const SESSION_KEY = 'tutorhub_session';
+import {
+  authPost,
+  authGet,
+  setAccessToken,
+  getAccessToken,
+  refreshAccessToken,
+  isServerAuthEnabled,
+} from './api-client.js';
 export const DEMO_PASSWORD = 'demo123';
 
 export const ROLES = {
@@ -218,13 +225,33 @@ export function getLinkedStudentIds() {
   return user?.linkedStudentIds || (user?.linkedStudentId ? [user.linkedStudentId] : []);
 }
 
+export { isServerAuthEnabled };
+
+function applyServerSession(session, accessToken) {
+  setAccessToken(accessToken);
+  const user = getUsers().find((u) => u.id === session.userId) || session;
+  setSession(resolveSessionBranch(session, user));
+}
+
+export async function initAuthSession() {
+  if (!isServerAuthEnabled()) return { ok: false };
+  const data = await refreshAccessToken();
+  if (!data?.ok || !data.accessToken || !data.session) {
+    clearSession();
+    setAccessToken(null);
+    return { ok: false };
+  }
+  applyServerSession(data.session, data.accessToken);
+  await reloadStoreFromServer();
+  return { ok: true };
+}
+
 export function validatePassword(password) {
-  if (!password || String(password).length < 6) {
-    return 'Password must be at least 6 characters';
+  if (!password || String(password).length < 8) {
+    return 'Password must be at least 8 characters';
   }
   return null;
 }
-
 export function buildPasswordResetUrl(token) {
   const base = `${location.origin}${location.pathname}`;
   return `${base}#reset-password/${encodeURIComponent(token)}`;
@@ -243,10 +270,19 @@ export function parsePasswordResetTokenFromLocation() {
 }
 
 export async function requestPasswordReset(email) {
-  migrateMultiTenant();
   const normEmail = email.trim().toLowerCase();
   if (!normEmail) return { ok: false, error: 'Email is required' };
 
+  if (isServerAuthEnabled()) {
+    const result = await authPost('/api/auth/forgot-password', { email: normEmail });
+    return {
+      ok: true,
+      message: result.message || 'If an account exists for that email, password reset instructions have been sent.',
+      demoResetUrl: result.demoResetUrl || null,
+    };
+  }
+
+  migrateMultiTenant();
   const user = findUserByEmail(normEmail);
   let demoResetUrl = null;
 
@@ -278,7 +314,13 @@ If you did not request this, you can ignore this email.
   };
 }
 
-export function getPasswordResetTokenInfo(token) {
+export async function getPasswordResetTokenInfo(token) {
+  if (isServerAuthEnabled()) {
+    const result = await authGet(`/api/auth/reset-password-info?token=${encodeURIComponent(token)}`);
+    if (!result.ok) return { ok: false, error: result.error || 'This reset link is invalid or has expired.' };
+    return { ok: true, email: result.email, name: result.name };
+  }
+
   const entry = findValidPasswordResetToken(token);
   if (!entry) return { ok: false, error: 'This reset link is invalid or has expired.' };
   const user = getUsers().find((u) => u.id === entry.userId);
@@ -289,6 +331,12 @@ export async function resetPasswordWithToken(token, newPassword) {
   const passwordError = validatePassword(newPassword);
   if (passwordError) return { ok: false, error: passwordError };
 
+  if (isServerAuthEnabled()) {
+    const result = await authPost('/api/auth/reset-password', { token, password: newPassword });
+    if (!result.ok) return { ok: false, error: result.error || 'Reset failed' };
+    return { ok: true, message: result.message || 'Password updated. You can sign in now.' };
+  }
+
   const entry = findValidPasswordResetToken(token);
   if (!entry) return { ok: false, error: 'This reset link is invalid or has expired.' };
 
@@ -297,7 +345,21 @@ export async function resetPasswordWithToken(token, newPassword) {
   return { ok: true, message: 'Password updated. You can sign in now.' };
 }
 
-export function login(email, password, expectedPortal) {
+export async function login(email, password, expectedPortal) {
+  if (isServerAuthEnabled()) {
+    const result = await authPost('/api/auth/login', {
+      email: email.trim().toLowerCase(),
+      password,
+      portal: expectedPortal,
+    });
+    if (!result.ok) {
+      return { ok: false, error: result.error || 'Invalid email or password' };
+    }
+    applyServerSession(result.session, result.accessToken);
+    await reloadStoreFromServer();
+    return { ok: true, session: getSession() };
+  }
+
   migrateMultiTenant();
   migrateCenterListings();
   const user = findUserByEmail(email.trim().toLowerCase());
@@ -343,22 +405,48 @@ export function login(email, password, expectedPortal) {
   return { ok: true, session: getSession() };
 }
 
-export function logout() {
+export async function logout() {
+  if (isServerAuthEnabled()) {
+    try {
+      await authPost('/api/auth/logout', {});
+    } catch {
+      /* ignore */
+    }
+    setAccessToken(null);
+  }
   clearSession();
 }
 
-export function registerCenter({ centerName, ownerName, email, phone, city, password }) {
-  migrateMultiTenant();
-  migrateCenterListings();
+export async function registerCenter({ centerName, ownerName, email, phone, city, password }) {
   const normEmail = email.trim().toLowerCase();
-  if (findUserByEmail(normEmail)) {
-    return { ok: false, error: 'An account with this email already exists' };
-  }
   if (!centerName?.trim() || !ownerName?.trim() || !normEmail || !password) {
     return { ok: false, error: 'Please fill all required fields' };
   }
   const passwordError = validatePassword(password);
   if (passwordError) return { ok: false, error: passwordError };
+
+  if (isServerAuthEnabled()) {
+    const result = await authPost('/api/auth/register-center', {
+      centerName,
+      ownerName,
+      email: normEmail,
+      phone,
+      city,
+      password,
+    });
+    if (!result.ok) return { ok: false, error: result.error || 'Registration failed' };
+    applyServerSession(result.session, result.accessToken);
+    await reloadStoreFromServer();
+    const center = getCenter(result.session.centerId);
+    const user = getCurrentUser();
+    return { ok: true, center, user };
+  }
+
+  migrateMultiTenant();
+  migrateCenterListings();
+  if (findUserByEmail(normEmail)) {
+    return { ok: false, error: 'An account with this email already exists' };
+  }
 
   const slug = centerName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
   const center = saveCenter({

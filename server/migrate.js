@@ -1,7 +1,7 @@
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getPool, testConnection } from './db.js';
+import { runAuthMigrations } from './auth/handlers.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -11,9 +11,8 @@ async function migrate() {
     process.exit(1);
   }
 
-  const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-  await getPool().query(sql);
-  console.log('Database schema applied.');
+  await runAuthMigrations();
+  console.log('Database schema applied (app_state + auth tables).');
   await getPool().end();
 }
 

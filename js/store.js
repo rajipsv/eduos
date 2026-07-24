@@ -7,6 +7,7 @@ import {
   normalizeSession,
 } from './scheduler.js';
 import { ensurePlatformData, seedPlatformDemo, findBatchAvailabilitySlot, getTutorAvailability } from './platform.js';
+import { apiFetch, isServerAuthEnabled, setServerAuthEnabled } from './api-client.js';
 
 const STORAGE_KEY = 'tutorhub_data_v5';
 const SESSION_KEY = 'tutorhub_session';
@@ -179,19 +180,21 @@ function loadFromLocalStorage() {
 }
 
 async function loadFromDatabase() {
-  const res = await fetch('/api/state');
+  const res = await apiFetch('/api/state');
   if (res.status === 404) return null;
+  if (res.status === 401) return null;
   if (!res.ok) throw new Error(`Database load failed (${res.status})`);
   const payload = await res.json();
   return hydrateState(payload.data);
 }
 
 async function persistToDatabase(data) {
-  const res = await fetch('/api/state', {
+  const res = await apiFetch('/api/state', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
+  if (res.status === 401) throw new Error('Not authenticated');
   if (!res.ok) throw new Error(`Database save failed (${res.status})`);
 }
 
@@ -232,6 +235,11 @@ export async function initStore() {
         if (info.db) {
           dbMode = true;
           storageBackendReason = null;
+          if (info.auth) {
+            setServerAuthEnabled(true);
+            state = loadFromLocalStorage();
+            return state;
+          }
           const remote = await loadFromDatabase();
           if (remote) {
             state = remote;
@@ -261,9 +269,21 @@ export async function initStore() {
   return initPromise;
 }
 
+export async function reloadStoreFromServer() {
+  if (!dbMode) return getState();
+  const remote = await loadFromDatabase();
+  if (remote) {
+    state = remote;
+    saveDataLocal(state);
+  }
+  return state;
+}
+
 export function isDatabaseMode() {
   return dbMode;
 }
+
+export { isServerAuthEnabled };
 
 export function getStorageLabel() {
   return dbMode ? 'Neon PostgreSQL' : 'Browser localStorage';
@@ -1138,7 +1158,7 @@ export async function resetDemo() {
   try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
   if (dbMode) {
     try {
-      await fetch('/api/state', { method: 'DELETE' });
+      await apiFetch('/api/state', { method: 'DELETE' });
     } catch (err) {
       console.warn('Could not reset database state:', err.message);
     }

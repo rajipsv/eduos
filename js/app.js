@@ -1,6 +1,6 @@
 import { exportAll, getRawState, initStore } from './store.js';
 import { renderView, pageMeta, initCharts, bindViewEvents } from './views.js';
-import { initAuth, getSession, logout, getSessionLabel, platformExitCenterView, canSwitchBranch, setActiveBranch, getActiveBranchId, setFamilyView, isFamilyAccount, parsePasswordResetTokenFromLocation } from './auth.js';
+import { initAuth, getSession, logout, getSessionLabel, platformExitCenterView, canSwitchBranch, setActiveBranch, getActiveBranchId, setFamilyView, isFamilyAccount, parsePasswordResetTokenFromLocation, initAuthSession } from './auth.js';
 import { renderNavHtml, getDefaultView, canAccessView, getNavRole, getSectionIdForView } from './portals.js';
 import { renderAuthScreen, bindAuthEvents } from './auth-views.js';
 import { platformPageMeta } from './platform-views.js';
@@ -287,8 +287,8 @@ document.getElementById('quickNotifyBtn')?.addEventListener('click', () => {
   navigate(canAccessView(navRole, 'commHub') ? 'commHub' : getDefaultView(session.role));
 });
 
-document.getElementById('logoutBtn')?.addEventListener('click', () => {
-  logout();
+document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+  await logout();
   mountAuth('home');
 });
 
@@ -306,6 +306,7 @@ familyViewSelect?.addEventListener('change', () => {
 
 try {
   await initStore();
+  await initAuthSession();
   initAuth();
 
   const session = getSession();

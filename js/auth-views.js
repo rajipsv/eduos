@@ -128,15 +128,30 @@ export function renderForgotPasswordFormHtml() {
 }
 
 function renderResetPasswordPage(token) {
-  const info = token ? getPasswordResetTokenInfo(token) : { ok: false };
   return `
     <div class="auth-shell auth-shell-form">
       <div class="auth-card">
         <button class="btn btn-ghost auth-back" type="button" data-auth-mode="home">← Back to home</button>
         <h2 style="margin-top:16px;font-family:var(--font-display)">Choose a new password</h2>
-        ${info.ok ? renderResetPasswordFormHtml(token, info) : renderResetPasswordInvalidHtml(info.error)}
+        <div id="resetPasswordContent" data-reset-token="${token || ''}">
+          <p class="auth-sub">Checking reset link…</p>
+        </div>
       </div>
     </div>`;
+}
+
+async function hydrateResetPasswordPage(toast, onModeChange) {
+  const host = document.getElementById('resetPasswordContent');
+  const token = host?.dataset.resetToken;
+  if (!host || !token) {
+    if (host) host.innerHTML = renderResetPasswordInvalidHtml('Missing reset token.');
+    return;
+  }
+  const info = await getPasswordResetTokenInfo(token);
+  host.innerHTML = info.ok
+    ? renderResetPasswordFormHtml(token, info)
+    : renderResetPasswordInvalidHtml(info.error);
+  bindResetPasswordSubmit(toast, onModeChange);
 }
 
 function renderResetPasswordInvalidHtml(message) {
@@ -149,8 +164,8 @@ function renderResetPasswordFormHtml(token, info) {
   return `
     <p class="auth-sub">Resetting password for <strong>${info.email}</strong></p>
     <div class="form-grid" style="margin-top:16px">
-      <div class="form-group full"><label>New password</label><input id="resetPassword" type="password" autocomplete="new-password" minlength="6"></div>
-      <div class="form-group full"><label>Confirm password</label><input id="resetPasswordConfirm" type="password" autocomplete="new-password" minlength="6"></div>
+      <div class="form-group full"><label>New password</label><input id="resetPassword" type="password" autocomplete="new-password" minlength="8"></div>
+      <div class="form-group full"><label>Confirm password</label><input id="resetPasswordConfirm" type="password" autocomplete="new-password" minlength="8"></div>
     </div>
     <button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-reset-submit data-reset-token="${token}">Update password</button>`;
 }
@@ -179,11 +194,11 @@ function renderRegisterPage() {
 }
 
 function bindLoginSubmit(onAuthed, toast, closeModal) {
-  document.querySelector('[data-auth-submit]')?.addEventListener('click', () => {
+  document.querySelector('[data-auth-submit]')?.addEventListener('click', async () => {
     const portal = document.querySelector('[data-auth-submit]')?.dataset.authSubmit;
     const email = document.getElementById('authEmail')?.value;
     const password = document.getElementById('authPassword')?.value;
-    const result = login(email, password, portal);
+    const result = await login(email, password, portal);
     if (!result.ok) return toast(result.error, 'error');
     closeModal?.();
     toast(`Welcome, ${result.session.name}`, 'success');
@@ -228,8 +243,8 @@ function bindResetPasswordSubmit(toast, onModeChange) {
 }
 
 function bindRegisterSubmit(onAuthed, toast, closeModal) {
-  document.querySelector('[data-auth-register]')?.addEventListener('click', () => {
-    const result = registerCenter({
+  document.querySelector('[data-auth-register]')?.addEventListener('click', async () => {
+    const result = await registerCenter({
       centerName: document.getElementById('regCenter')?.value,
       ownerName: document.getElementById('regOwner')?.value,
       email: document.getElementById('regEmail')?.value,
@@ -343,7 +358,11 @@ export function bindAuthEvents({ onAuthed, toast, onModeChange, showModal, close
     bindLoginSubmit(onAuthed, toast, closeModal);
     bindRegisterSubmit(onAuthed, toast, closeModal);
     bindForgotPasswordSubmit(toast, { onModeChange });
-    bindResetPasswordSubmit(toast, onModeChange);
+    if (document.getElementById('resetPasswordContent')) {
+      hydrateResetPasswordPage(toast, onModeChange);
+    } else {
+      bindResetPasswordSubmit(toast, onModeChange);
+    }
     document.querySelectorAll('[data-auth-forgot]').forEach((btn) => {
       btn.addEventListener('click', () => onModeChange?.('forgot-password'));
     });
