@@ -6,7 +6,7 @@ import {
   getUpcomingSessions,
   normalizeSession,
 } from './scheduler.js';
-import { ensurePlatformData, seedPlatformDemo } from './platform.js';
+import { ensurePlatformData, seedPlatformDemo, findBatchAvailabilitySlot, getTutorAvailability } from './platform.js';
 
 const STORAGE_KEY = 'tutorhub_data_v5';
 const SESSION_KEY = 'tutorhub_session';
@@ -1397,11 +1397,22 @@ export function getBatch(id) {
   return scopeRecords(state.batches).find((b) => b.id === id);
 }
 
+function syncBatchAvailabilitySlotId(batch) {
+  if (!batch?.teacherId) return batch;
+  const slots = getTutorAvailability(batch.teacherId).slots || [];
+  if (!slots.length) return batch;
+  if (batch.availabilitySlotId && slots.some((s) => s.id === batch.availabilitySlotId)) return batch;
+  const matched = findBatchAvailabilitySlot(batch, slots);
+  if (matched?.id) batch.availabilitySlotId = matched.id;
+  return batch;
+}
+
 export function saveBatch(batch) {
   const normalized = migrateBatch(batch);
   normalized.schedule =
     normalized.schedule ||
     formatScheduleLabel(normalized.scheduleDays, normalized.startTime, normalized.endTime);
+  syncBatchAvailabilitySlotId(normalized);
 
   const idx = state.batches.findIndex((b) => b.id === normalized.id);
   if (idx >= 0) state.batches[idx] = normalized;

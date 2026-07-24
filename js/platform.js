@@ -738,9 +738,65 @@ function sameAvailabilityDaySet(daysA, daysB) {
   return [...(daysA || [])].sort().join(',') === [...(daysB || [])].sort().join(',');
 }
 
+function availabilityTimeToMinutes(time) {
+  const [hours, minutes] = String(time || '0:0').split(':').map(Number);
+  return (hours * 60) + (minutes || 0);
+}
+
+function availabilityOverlapMinutes(startA, endA, startB, endB) {
+  const start = Math.max(availabilityTimeToMinutes(startA), availabilityTimeToMinutes(startB));
+  const end = Math.min(availabilityTimeToMinutes(endA), availabilityTimeToMinutes(endB));
+  return Math.max(0, end - start);
+}
+
+function availabilitySlotSpanMinutes(slot) {
+  return availabilityTimeToMinutes(slot.endTime) - availabilityTimeToMinutes(slot.startTime);
+}
+
 function availabilityTimesOverlap(startA, endA, startB, endB) {
   if (!startA || !endA || !startB || !endB) return false;
   return startA < endB && startB < endA;
+}
+
+function pickBestSlotForBatch(batch, slots = []) {
+  if (!batch || !slots.length) return null;
+
+  const candidates = slots.filter((s) =>
+    sharedAvailabilityDays(batch.scheduleDays, s.days).length
+    && availabilityTimesOverlap(batch.startTime, batch.endTime, s.startTime, s.endTime),
+  );
+  if (!candidates.length) return null;
+
+  const exact = candidates.find((s) =>
+    sameAvailabilityDaySet(s.days, batch.scheduleDays)
+    && s.startTime === batch.startTime
+    && s.endTime === batch.endTime,
+  );
+  if (exact) return exact;
+
+  const containing = candidates.filter((s) =>
+    s.startTime <= batch.startTime && s.endTime >= batch.endTime,
+  );
+  if (containing.length) {
+    return containing.reduce((best, slot) =>
+      (availabilitySlotSpanMinutes(slot) < availabilitySlotSpanMinutes(best) ? slot : best),
+    );
+  }
+
+  const contained = candidates.filter((s) =>
+    batch.startTime <= s.startTime && batch.endTime >= s.endTime,
+  );
+  if (contained.length) {
+    return contained.reduce((best, slot) =>
+      (availabilitySlotSpanMinutes(slot) > availabilitySlotSpanMinutes(best) ? slot : best),
+    );
+  }
+
+  return candidates.reduce((best, slot) => {
+    const score = availabilityOverlapMinutes(batch.startTime, batch.endTime, slot.startTime, slot.endTime);
+    const bestScore = availabilityOverlapMinutes(batch.startTime, batch.endTime, best.startTime, best.endTime);
+    return score > bestScore ? slot : best;
+  });
 }
 
 export function findBatchAvailabilitySlot(batch, slots = []) {
@@ -751,37 +807,7 @@ export function findBatchAvailabilitySlot(batch, slots = []) {
     if (byId) return byId;
   }
 
-  const sharesDays = (slot) => sharedAvailabilityDays(batch.scheduleDays, slot.days).length > 0;
-
-  const exact = slots.find((s) =>
-    sharesDays(s)
-    && sameAvailabilityDaySet(s.days, batch.scheduleDays)
-    && s.startTime === batch.startTime
-    && s.endTime === batch.endTime,
-  );
-  if (exact) return exact;
-
-  const batchInsideSlot = slots.filter((s) =>
-    sharesDays(s)
-    && s.startTime <= batch.startTime
-    && s.endTime >= batch.endTime,
-  );
-  if (batchInsideSlot.length === 1) return batchInsideSlot[0];
-
-  const slotInsideBatch = slots.filter((s) =>
-    sharesDays(s)
-    && batch.startTime <= s.startTime
-    && batch.endTime >= s.endTime,
-  );
-  if (slotInsideBatch.length === 1) return slotInsideBatch[0];
-
-  const overlapping = slots.filter((s) =>
-    sharesDays(s)
-    && availabilityTimesOverlap(batch.startTime, batch.endTime, s.startTime, s.endTime),
-  );
-  if (overlapping.length === 1) return overlapping[0];
-
-  return null;
+  return pickBestSlotForBatch(batch, slots);
 }
 
 export function doesBatchBookAvailabilitySlot(batch, slot, slots) {
