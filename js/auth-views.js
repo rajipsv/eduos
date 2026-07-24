@@ -67,12 +67,12 @@ export function renderLoginChooserHtml() {
     </div>
     <div class="auth-modal-footer">
       <button type="button" class="btn btn-primary" data-auth-register-modal>Register your tuition center</button>
-      <p class="auth-demo">Demo password for all accounts: <code>${DEMO_PASSWORD}</code></p>
+      <p class="auth-demo">Demo password for center, teacher, and family accounts: <code>${DEMO_PASSWORD}</code></p>
     </div>`;
 }
 
 const PORTAL_META = {
-  platform: { title: 'Platform owner login', hint: 'owner@eduos.app' },
+  platform: { title: 'Platform owner login', hint: 'your email', hideDemoHints: true },
   center: { title: 'Center admin login', hint: 'admin@brightminds.demo' },
   teacher: { title: 'Teacher login', hint: 'anita@tutorhub.com' },
   family: { title: 'Family login', hint: 'sharma@family.demo' },
@@ -82,11 +82,17 @@ const PORTAL_META = {
 
 export function renderLoginFormHtml(portal, { compact = false } = {}) {
   const meta = PORTAL_META[portal] || { title: 'Login', hint: 'your email' };
+  const hideDemo = Boolean(meta.hideDemoHints);
+  const subtitle = hideDemo
+    ? '<p class="auth-sub">Sign in with your platform owner credentials.</p>'
+    : `<p class="auth-sub">Try <code>${meta.hint}</code> · password <code>${DEMO_PASSWORD}</code></p>`;
+  const emailPlaceholder = hideDemo ? 'your email' : meta.hint;
+  const passwordValue = hideDemo ? '' : DEMO_PASSWORD;
   return `
-    <p class="auth-sub">Try <code>${meta.hint}</code> · password <code>${DEMO_PASSWORD}</code></p>
+    ${subtitle}
     <div class="form-grid" style="margin-top:${compact ? 12 : 20}px">
-      <div class="form-group full"><label>Email</label><input id="authEmail" type="email" placeholder="${meta.hint}" autocomplete="username"></div>
-      <div class="form-group full"><label>Password</label><input id="authPassword" type="password" value="${DEMO_PASSWORD}" autocomplete="current-password"></div>
+      <div class="form-group full"><label>Email</label><input id="authEmail" type="email" placeholder="${emailPlaceholder}" autocomplete="username"></div>
+      <div class="form-group full"><label>Password</label><input id="authPassword" type="password" value="${passwordValue}" autocomplete="current-password"></div>
     </div>
     <p class="auth-forgot-row"><button type="button" class="btn btn-ghost auth-forgot-link" data-auth-forgot>Forgot password?</button></p>
     <button class="btn btn-primary" type="button" style="width:100%;margin-top:8px" data-auth-submit="${portal}">Sign in</button>`;
