@@ -24,11 +24,8 @@ import {
   buildClientSessionFromDbUser,
   validatePassword,
 } from './session.js';
-import {
-  loadAppStateData,
-  registerCenterInAppState,
-  syncAuthUsersFromAppState,
-} from './state-sync.js';
+import { loadAppStateData, registerCenterInAppState } from './state-sync.js';
+import { ensureNeonDemoSeeded } from '../demo-seed.js';
 import { getPool } from '../db.js';
 import { authenticateRequest } from './middleware.js';
 
@@ -62,7 +59,9 @@ export async function handleLogin(req, res) {
   const { email, password, portal } = req.body || {};
   if (!email || !password) return json(res, 400, { ok: false, error: 'Email and password required' });
 
-  await syncAuthUsersFromAppState().catch(() => {});
+  await ensureNeonDemoSeeded().catch((err) => {
+    console.warn('Demo seed on login skipped:', err.message);
+  });
 
   const row = await findUserWithPasswordByEmail(email);
   if (!row || !verifyPassword(password, row.password_hash)) {
@@ -224,7 +223,7 @@ export async function handleSyncAuthUsers(req, res) {
     return json(res, 403, { ok: false, error: 'Platform owner only' });
   }
 
-  const result = await syncAuthUsersFromAppState();
+  const result = await ensureNeonDemoSeeded();
   return json(res, 200, { ok: true, ...result });
 }
 
@@ -239,9 +238,12 @@ function methodNotAllowed(res, method) {
 
 export async function runAuthMigrations() {
   if (!process.env.DATABASE_URL) return;
-  const sql = await import('fs').then((fs) => fs.promises.readFile(new URL('../schema.sql', import.meta.url), 'utf8'));
+  const fs = await import('fs');
+  const sql = await fs.promises.readFile(new URL('../schema.sql', import.meta.url), 'utf8');
   await getPool().query(sql);
-  await syncAuthUsersFromAppState().catch((err) => {
-    console.warn('Auth user sync skipped:', err.message);
+  const seed = await ensureNeonDemoSeeded().catch((err) => {
+    console.warn('Demo seed after migrate skipped:', err.message);
+    return null;
   });
+  if (seed?.ok) console.log('Demo accounts ready:', seed.demoEmails?.join(', '));
 }

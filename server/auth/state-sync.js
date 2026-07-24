@@ -1,8 +1,8 @@
-import { loadAppState, saveAppState, STATE_ID } from '../state-api.js';
-import { getPool } from '../db.js';
-import { DEMO_PASSWORD } from './config.js';
+import { loadAppState, saveAppState } from '../state-api.js';
 import { hashPassword, uid } from './crypto.js';
-import { findUserByEmail, insertUser } from './users.js';
+import { findUserByEmail, upsertAuthUser } from './users.js';
+import { ensureNeonDemoSeeded } from '../demo-seed.js';
+import { DEMO_PASSWORD } from '../demo-accounts.js';
 
 export async function loadAppStateData() {
   const result = await loadAppState();
@@ -20,38 +20,9 @@ function stripPasswordsFromUsers(data) {
   return data;
 }
 
+/** Legacy sync — delegates to full Neon demo seed (app_state + auth_users). */
 export async function syncAuthUsersFromAppState() {
-  const data = await loadAppStateData();
-  if (!data?.users?.length) return { synced: 0 };
-
-  let synced = 0;
-  for (const u of data.users) {
-    if (!u.email || !u.password) continue;
-    const existing = await findUserByEmail(u.email);
-    if (existing) continue;
-
-    await insertUser({
-      id: u.id || uid('user'),
-      email: u.email,
-      passwordHash: hashPassword(u.password),
-      role: u.role,
-      name: u.name || u.email,
-      centerId: u.centerId || null,
-      linkedTeacherId: u.linkedTeacherId || null,
-      linkedStudentId: u.linkedStudentId || null,
-      linkedStudentIds: u.linkedStudentIds || [],
-      parentName: u.parentName || null,
-    });
-    synced += 1;
-  }
-
-  const cleaned = stripPasswordsFromUsers({ ...data });
-  const hasPlaintext = data.users.some((u) => u.password);
-  if (hasPlaintext) {
-    await saveAppStateData(cleaned);
-  }
-
-  return { synced, strippedPasswords: hasPlaintext };
+  return ensureNeonDemoSeeded();
 }
 
 export async function registerCenterInAppState({ centerName, ownerName, email, phone, city }) {
@@ -129,11 +100,7 @@ export async function registerCenterInAppState({ centerName, ownerName, email, p
 }
 
 export async function ensureDemoAuthUsers() {
-  const data = await loadAppStateData();
-  if (!data) return;
-  const hasDemo = await findUserByEmail('admin@brightminds.demo');
-  if (hasDemo) return;
-  await syncAuthUsersFromAppState();
+  return ensureNeonDemoSeeded();
 }
 
 export { DEMO_PASSWORD };

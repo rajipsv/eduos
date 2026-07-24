@@ -23,6 +23,7 @@ import {
   runAuthMigrations,
 } from './auth/handlers.js';
 import { isAuthConfigured } from './auth/config.js';
+import { ensureNeonDemoSeeded } from './demo-seed.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -109,6 +110,11 @@ app.listen(port, host, async () => {
     if (dbReady) {
       try {
         await runAuthMigrations();
+        if (isAuthConfigured()) {
+          await ensureNeonDemoSeeded().catch((err) => {
+            console.warn('Demo seed on startup skipped:', err.message);
+          });
+        }
       } catch (err) {
         console.warn('Auth migration warning:', err.message);
       }

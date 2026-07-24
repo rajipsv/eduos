@@ -71,3 +71,41 @@ export async function updateUserPassword(userId, passwordHash) {
     [userId, passwordHash],
   );
 }
+
+export async function upsertAuthUser(user) {
+  const email = user.email.trim().toLowerCase();
+  await getPool().query(
+    `INSERT INTO auth_users (
+      id, email, password_hash, role, name, center_id,
+      linked_teacher_id, linked_student_id, linked_student_ids, parent_name
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    ON CONFLICT (email) DO UPDATE SET
+      password_hash = EXCLUDED.password_hash,
+      role = EXCLUDED.role,
+      name = EXCLUDED.name,
+      center_id = EXCLUDED.center_id,
+      linked_teacher_id = EXCLUDED.linked_teacher_id,
+      linked_student_id = EXCLUDED.linked_student_id,
+      linked_student_ids = EXCLUDED.linked_student_ids,
+      parent_name = EXCLUDED.parent_name,
+      updated_at = NOW()`,
+    [
+      user.id,
+      email,
+      user.passwordHash,
+      user.role,
+      user.name,
+      user.centerId || null,
+      user.linkedTeacherId || null,
+      user.linkedStudentId || null,
+      JSON.stringify(user.linkedStudentIds || []),
+      user.parentName || null,
+    ],
+  );
+  return findUserByEmail(email);
+}
+
+export async function countAuthUsers() {
+  const result = await getPool().query('SELECT COUNT(*)::int AS n FROM auth_users');
+  return result.rows[0]?.n || 0;
+}
