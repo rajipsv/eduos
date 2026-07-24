@@ -224,12 +224,6 @@ export function renderLandingPricing() {
             <ul class="landing-pricing-features">
               ${tier.features.map((f) => `<li>${f}</li>`).join('')}
             </ul>
-            <a
-              class="btn ${tier.featured ? 'btn-primary' : 'btn-secondary'} btn-sm landing-pricing-cta"
-              href="${buildPricingWhatsAppUrl(tier.name)}"
-              target="_blank"
-              rel="noopener noreferrer"
-            >Contact via WhatsApp</a>
           </article>`).join('')}
       </div>
       <div class="landing-pricing-foot">

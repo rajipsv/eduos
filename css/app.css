@@ -1598,6 +1598,7 @@ tr.invoice-reported { background: color-mix(in srgb, var(--accent, #e67700) 6%, 
   justify-content: center;
   text-align: center;
   text-decoration: none;
+  margin-top: auto;
 }
 
 .landing-pricing-foot {
