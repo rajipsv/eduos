@@ -15,6 +15,8 @@ import {
   refreshAccessToken,
   isServerAuthEnabled,
 } from './api-client.js';
+
+export const SESSION_KEY = 'tutorhub_session';
 export const DEMO_PASSWORD = 'demo123';
 
 export const ROLES = {
