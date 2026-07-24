@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pillar 7 — AI Assistants</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1a2e1a;
+      line-height: 1.55;
+      font-size: 10pt;
+      margin: 0;
+      padding: 0 4mm;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover {
+      min-height: 240mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 18mm 12mm;
+      background: linear-gradient(145deg, #1b4332, #2d6a4f 55%, #40916c);
+      color: white;
+      page-break-after: always;
+      margin: -4mm -4mm 0;
+    }
+    .cover .badge {
+      font-size: 9pt;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin-bottom: 16px;
+    }
+    .cover h1 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 32pt;
+      font-weight: 400;
+      margin: 0 0 12px;
+    }
+    .cover p { font-size: 11pt; opacity: 0.92; max-width: 520px; margin: 0 0 8px; }
+    .cover .meta { margin-top: 32px; font-size: 9pt; opacity: 0.75; }
+    section { padding: 4mm 0; page-break-inside: avoid; }
+    section.break { page-break-before: always; padding-top: 0; }
+    section.break:first-of-type { page-break-before: auto; }
+    h1 { font-size: 22pt; color: #1b4332; margin: 0 0 12px; }
+    h2 {
+      font-family: Georgia, serif;
+      font-size: 16pt;
+      color: #1b4332;
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #40916c;
+    }
+    h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #2d6a4f;
+      margin: 14px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    p, li { color: #3d4f3d; margin: 0 0 6px; }
+    ul, ol { margin: 6px 0 10px 18px; padding: 0; }
+    ul.checklist { list-style: none; margin-left: 0; padding-left: 0; }
+    ul.checklist li.check::before { content: "☐ "; color: #2d6a4f; font-weight: 700; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+      margin: 10px 0 14px;
+    }
+    th, td {
+      border: 1px solid #dde8e0;
+      padding: 7px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #2d6a4f; color: white; font-weight: 600; }
+    tr:nth-child(even) td { background: #f4f9f6; }
+    code {
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 0.9em;
+      background: #eef5f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    pre {
+      background: #1b4332;
+      color: #e8f5e9;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 8.5pt;
+      overflow-x: auto;
+      margin: 10px 0 14px;
+      white-space: pre-wrap;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+    hr { border: none; border-top: 1px solid #dde8e0; margin: 14px 0; }
+    a { color: #2d6a4f; }
+    .muted { font-size: 9pt; color: #5a6b5a; }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <div class="badge">EduOS Operations Guide</div>
+    <h1>Pillar 7 — AI Assistants</h1>
+    <p>Step-by-step setup for new tuition center administrators — register, teaching profile, batches, and class scheduling.</p>
+    <div class="meta">Generated 2026-07-24 · tutor-hub / EduOS</div>
+  </div>
+  <h1>Pillar 7 — AI Assistants</h1>
+<p><strong>Product:</strong> EduOS · <strong>Layer:</strong> 7 · <strong>Sidebar:</strong> AI Assistants</p>
+<hr>
+<section class="break"><h2>Purpose</h2>
+<p>AI Assistants provide <strong>role-aware help</strong> for owners, tutors, parents, and students: chat Q&amp;A, one-click actions (lesson plans, parent messages, quizzes), and auto insights from your center data.</p>
+<p>Works <strong>offline with rule-based AI</strong> by default; add an OpenAI key in Settings for GPT-powered responses.</p>
+<hr>
+<section class="break"><h2>Who uses it</h2>
+<table><thead><tr><th>Role</th><th>Typical use</th></tr></thead><tbody><tr><td>Center admin</td><td>Operations chat, insights, owner actions</td></tr><tr><td>Teacher</td><td>Lesson plans, quizzes, homework ideas</td></tr><tr><td>Parent</td><td>Explain scores, attendance, how to help at home</td></tr><tr><td>Student</td><td>Topic explanations and study help</td></tr></tbody></table>
+<p>All roles access <strong>AI Assistants</strong> from the sidebar when logged in with appropriate portal.</p>
+<hr>
+<section class="break"><h2>Modules &amp; functionalities</h2>
+<p><strong>Path:</strong> AI Assistants</p>
+<p><strong>Main tabs:</strong></p>
+<table><thead><tr><th>Tab</th><th>Function</th></tr></thead><tbody><tr><td>Chat</td><td>Conversational AI with role switcher (Owner / Tutor / Parent / Student)</td></tr><tr><td>Actions</td><td>One-click generators — lesson plan, parent message, quiz, decisions, dropout risk, study plan</td></tr><tr><td>Insights</td><td>Auto-generated alerts from attendance, tests, capacity</td></tr><tr><td>History</td><td>Past conversations — filter by role, clear history</td></tr></tbody></table>
+<p><strong>Chat roles:</strong></p>
+<table><thead><tr><th>Role</th><th>Assistant name</th><th>Example prompts</th></tr></thead><tbody><tr><td>Academy Owner</td><td>AI Academy Manager</td><td>&quot;Show me today's problems&quot;, &quot;How is attendance?&quot;</td></tr><tr><td>Tutor</td><td>AI Lesson Assistant</td><td>&quot;Generate lesson plan for tomorrow&quot;, &quot;Create a quiz on algebra&quot;</td></tr><tr><td>Parent</td><td>AI Parent Assistant</td><td>&quot;Why did my child score lower?&quot;, &quot;How can I help at home?&quot;</td></tr><tr><td>Student</td><td>AI Tutor</td><td>&quot;Explain Newton's Laws&quot;, &quot;Help with quadratic equations&quot;</td></tr></tbody></table>
+<p><strong>Mode badge:</strong> Shows <strong>GPT enabled</strong> or <strong>Rule-based</strong> depending on Settings.</p>
+<hr>
+<section class="break"><h2>How to use — step by step</h2>
+<h3>A. Enable GPT (optional)</h3>
+<ol><li><strong>Settings → AI Assistant (OpenAI)</strong>.</li><li>Paste OpenAI API key (<code>sk-...</code>) → <strong>Save Settings</strong>.</li><li>Return to AI Assistants — badge should show <strong>GPT enabled</strong>.</li></ol>
+<h3>B. Chat as academy owner</h3>
+<ol><li><strong>AI Assistants → Chat tab</strong>.</li><li>Ensure <strong>Academy Owner</strong> role tab is selected.</li><li>Click a suggestion chip or type a question → <strong>Send</strong>.</li><li>Review answer in chat panel; check <strong>Auto Insights</strong> panel on the right.</li></ol>
+<h3>C. Run one-click actions</h3>
+<ol><li><strong>Actions tab</strong>.</li><li>Select role (Owner, Tutor, Parent, Student).</li><li>Optionally pick a student and topic.</li><li>Click <strong>Run</strong> on an action card (e.g. Lesson plan, Parent message, Quiz).</li><li>Read result in <strong>Action Result</strong> panel below.</li></ol>
+<h3>D. Refresh insights</h3>
+<ol><li><strong>Insights tab</strong> (or Auto Insights in Chat).</li><li>Click <strong>Refresh</strong> after new attendance/test data.</li><li>Insights surface at-risk students, low attendance, capacity issues.</li></ol>
+<h3>E. Review history</h3>
+<ol><li><strong>History tab</strong> — filter by role.</li><li>Review past Q&amp;A for audit or reuse.</li><li><strong>Clear History</strong> when resetting demo data.</li></ol>
+<hr>
+<section class="break"><h2>What AI can and cannot do</h2>
+<table><thead><tr><th>Can do</th><th>Cannot do</th></tr></thead><tbody><tr><td>Draft lesson plans and parent messages</td><td>Host live video classes</td></tr><tr><td>Summarize attendance and test trends</td><td>Replace fee collection (see Academy Fees)</td></tr><tr><td>Suggest interventions and quizzes</td><td>Auto-enroll CRM leads without your action</td></tr><tr><td>Explain topics to students</td><td>Send WhatsApp without Communication Hub</td></tr></tbody></table>
+<hr>
+<section class="break"><h2>Verify</h2>
+<ul><li>[ ] Chat responds to owner prompt (rule-based or GPT)</li><li>[ ] Actions tab generates a lesson plan or quiz result</li><li>[ ] Insights refresh after data changes</li><li>[ ] History records the conversation</li><li>[ ] With OpenAI key saved, mode badge shows GPT enabled</li></ul>
+<hr>
+<section class="break"><h2>Demo tip</h2>
+<p>Without API key: ask <strong>&quot;Show insights&quot;</strong> or <strong>&quot;How is attendance?&quot;</strong> — rule-based engine uses live center data.</p>
+<hr>
+<p class="muted"><em>Related: Settings (OpenAI key) · Pillar 8 (Business Intelligence) for structured decisions.</em></p>
+</body>
+</html>

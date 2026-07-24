@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pillar 9 — Extensions &amp; Partners</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1a2e1a;
+      line-height: 1.55;
+      font-size: 10pt;
+      margin: 0;
+      padding: 0 4mm;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover {
+      min-height: 240mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 18mm 12mm;
+      background: linear-gradient(145deg, #1b4332, #2d6a4f 55%, #40916c);
+      color: white;
+      page-break-after: always;
+      margin: -4mm -4mm 0;
+    }
+    .cover .badge {
+      font-size: 9pt;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin-bottom: 16px;
+    }
+    .cover h1 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 32pt;
+      font-weight: 400;
+      margin: 0 0 12px;
+    }
+    .cover p { font-size: 11pt; opacity: 0.92; max-width: 520px; margin: 0 0 8px; }
+    .cover .meta { margin-top: 32px; font-size: 9pt; opacity: 0.75; }
+    section { padding: 4mm 0; page-break-inside: avoid; }
+    section.break { page-break-before: always; padding-top: 0; }
+    section.break:first-of-type { page-break-before: auto; }
+    h1 { font-size: 22pt; color: #1b4332; margin: 0 0 12px; }
+    h2 {
+      font-family: Georgia, serif;
+      font-size: 16pt;
+      color: #1b4332;
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #40916c;
+    }
+    h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #2d6a4f;
+      margin: 14px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    p, li { color: #3d4f3d; margin: 0 0 6px; }
+    ul, ol { margin: 6px 0 10px 18px; padding: 0; }
+    ul.checklist { list-style: none; margin-left: 0; padding-left: 0; }
+    ul.checklist li.check::before { content: "☐ "; color: #2d6a4f; font-weight: 700; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+      margin: 10px 0 14px;
+    }
+    th, td {
+      border: 1px solid #dde8e0;
+      padding: 7px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #2d6a4f; color: white; font-weight: 600; }
+    tr:nth-child(even) td { background: #f4f9f6; }
+    code {
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 0.9em;
+      background: #eef5f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    pre {
+      background: #1b4332;
+      color: #e8f5e9;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 8.5pt;
+      overflow-x: auto;
+      margin: 10px 0 14px;
+      white-space: pre-wrap;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+    hr { border: none; border-top: 1px solid #dde8e0; margin: 14px 0; }
+    a { color: #2d6a4f; }
+    .muted { font-size: 9pt; color: #5a6b5a; }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <div class="badge">EduOS Operations Guide</div>
+    <h1>Pillar 9 — Extensions &amp; Partners</h1>
+    <p>Step-by-step setup for new tuition center administrators — register, teaching profile, batches, and class scheduling.</p>
+    <div class="meta">Generated 2026-07-24 · tutor-hub / EduOS</div>
+  </div>
+  <h1>Pillar 9 — Extensions &amp; Partners</h1>
+<p><strong>Product:</strong> EduOS · <strong>Layer:</strong> 9 · <strong>Sidebar:</strong> Extensions → Extensions &amp; Partners</p>
+<hr>
+<section class="break"><h2>Purpose</h2>
+<p>Extensions connect EduOS to <strong>tools you already use</strong> for teaching and business ops — Zoom, Google Calendar, WhatsApp, payroll partners, GST services, and message templates. EduOS remains the <strong>operations hub</strong>; lesson content stays on external platforms.</p>
+<p>This is <strong>not</strong> a course content marketplace.</p>
+<hr>
+<section class="break"><h2>Who uses it</h2>
+<table><thead><tr><th>Role</th><th>Access</th></tr></thead><tbody><tr><td>Center admin</td><td>Browse, connect, disconnect extensions</td></tr><tr><td>Other roles</td><td>No marketplace access</td></tr></tbody></table>
+<hr>
+<section class="break"><h2>Modules &amp; functionalities</h2>
+<p><strong>Path:</strong> Extensions &amp; Partners</p>
+<p><strong>Stats:</strong> Integrations count, ops templates, partner services, active connections.</p>
+<table><thead><tr><th>Tab</th><th>Function</th></tr></thead><tbody><tr><td>Browse</td><td>Search/filter integrations, templates, partner services — install or view details</td></tr><tr><td>Connected</td><td>Extensions already active in your academy</td></tr><tr><td>Connections</td><td>SDK-style tools (Zoom, Calendar, Twilio, etc.) — Connect / Disconnect toggles</td></tr></tbody></table>
+<p><strong>Extension types:</strong></p>
+<table><thead><tr><th>Type</th><th>Examples</th></tr></thead><tbody><tr><td>Integration</td><td>Zoom Class Connector, Google Calendar sync</td></tr><tr><td>Ops template</td><td>Fee reminder packs, announcement templates</td></tr><tr><td>Partner service</td><td>Payroll, GST filing, fee reconciliation partners</td></tr></tbody></table>
+<p><strong>Note:</strong> OpenAI and WhatsApp API credentials are configured in <strong>Settings</strong>, not here — but Connections tab links you to that reminder.</p>
+<hr>
+<section class="break"><h2>How to use — step by step</h2>
+<h3>A. Browse extensions</h3>
+<ol><li>Open <strong>Extensions &amp; Partners → Browse</strong>.</li><li>Search (e.g. &quot;payroll&quot;, &quot;GST&quot;, &quot;Zoom&quot;) or filter by type.</li><li>Read description, author, price, and install count.</li><li>Click <strong>Details</strong> for full information.</li></ol>
+<h3>B. Connect an integration</h3>
+<ol><li>On a card, click <strong>Connect</strong> (or <strong>Install</strong>).</li><li>Item moves to <strong>Connected</strong> tab with green badge.</li><li>Follow install hint on card (e.g. configure meeting platform on batches).</li></ol>
+<h3>C. Manage connected items</h3>
+<ol><li><strong>Connected tab</strong> — list of active extensions.</li><li>Click <strong>Disconnect</strong> to remove if no longer needed.</li></ol>
+<h3>D. SDK connections</h3>
+<ol><li><strong>Connections tab</strong> — see Zoom, Google Calendar, Twilio, etc.</li><li>Click <strong>Connect</strong> per tool — toggles installed state.</li><li>Use connected Zoom/Meet links when generating batch schedules (Academy → Batches).</li></ol>
+<h3>E. Partner services</h3>
+<ol><li>Browse <strong>Partner services</strong> filter for payroll/GST help.</li><li>Partner handles salaries and tax — EduOS tracks <strong>student fees</strong> separately.</li><li>Contact partner via details on card if offered.</li></ol>
+<h3>F. Rate an extension</h3>
+<ol><li>On Browse, click <strong>Rate</strong> (non-partner items).</li><li>Submit rating to help other academies choose.</li></ol>
+<hr>
+<section class="break"><h2>Recommended connections for new centers</h2>
+<table><thead><tr><th>Priority</th><th>Extension / setting</th><th>Why</th></tr></thead><tbody><tr><td>1</td><td>WhatsApp (Settings)</td><td>Parent reminders and fee nudges</td></tr><tr><td>2</td><td>Zoom or Google Meet (batch platform)</td><td>Live class links in schedule</td></tr><tr><td>3</td><td>Google Calendar (Connections)</td><td>Sync sessions externally</td></tr><tr><td>4</td><td>Fee Reminder template pack</td><td>Pre-built comms templates</td></tr><tr><td>5</td><td>Payroll partner (optional)</td><td>Staff salaries outside EduOS</td></tr></tbody></table>
+<hr>
+<section class="break"><h2>Verify</h2>
+<ul><li>[ ] Browse tab loads extension cards</li><li>[ ] Connect adds item to Connected tab</li><li>[ ] Disconnect removes from Connected</li><li>[ ] Connections tab toggles SDK tools</li><li>[ ] Batch meeting links use chosen platform after integration</li></ul>
+<hr>
+<section class="break"><h2>Demo tip</h2>
+<p><strong>Extensions &amp; Partners → Browse</strong> — connect <strong>Zoom Class Connector</strong> or an ops template, then verify under <strong>Connected</strong>.</p>
+<hr>
+<p class="muted"><em>Related: Settings (WhatsApp, OpenAI) · Pillar 3 (Communication templates) · Pillar 2 (Batch meeting platform).</em></p>
+</body>
+</html>

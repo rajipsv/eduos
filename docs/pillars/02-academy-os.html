@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pillar 2 — Academy OS</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1a2e1a;
+      line-height: 1.55;
+      font-size: 10pt;
+      margin: 0;
+      padding: 0 4mm;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover {
+      min-height: 240mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 18mm 12mm;
+      background: linear-gradient(145deg, #1b4332, #2d6a4f 55%, #40916c);
+      color: white;
+      page-break-after: always;
+      margin: -4mm -4mm 0;
+    }
+    .cover .badge {
+      font-size: 9pt;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin-bottom: 16px;
+    }
+    .cover h1 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 32pt;
+      font-weight: 400;
+      margin: 0 0 12px;
+    }
+    .cover p { font-size: 11pt; opacity: 0.92; max-width: 520px; margin: 0 0 8px; }
+    .cover .meta { margin-top: 32px; font-size: 9pt; opacity: 0.75; }
+    section { padding: 4mm 0; page-break-inside: avoid; }
+    section.break { page-break-before: always; padding-top: 0; }
+    section.break:first-of-type { page-break-before: auto; }
+    h1 { font-size: 22pt; color: #1b4332; margin: 0 0 12px; }
+    h2 {
+      font-family: Georgia, serif;
+      font-size: 16pt;
+      color: #1b4332;
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #40916c;
+    }
+    h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #2d6a4f;
+      margin: 14px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    p, li { color: #3d4f3d; margin: 0 0 6px; }
+    ul, ol { margin: 6px 0 10px 18px; padding: 0; }
+    ul.checklist { list-style: none; margin-left: 0; padding-left: 0; }
+    ul.checklist li.check::before { content: "☐ "; color: #2d6a4f; font-weight: 700; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+      margin: 10px 0 14px;
+    }
+    th, td {
+      border: 1px solid #dde8e0;
+      padding: 7px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #2d6a4f; color: white; font-weight: 600; }
+    tr:nth-child(even) td { background: #f4f9f6; }
+    code {
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 0.9em;
+      background: #eef5f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    pre {
+      background: #1b4332;
+      color: #e8f5e9;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 8.5pt;
+      overflow-x: auto;
+      margin: 10px 0 14px;
+      white-space: pre-wrap;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+    hr { border: none; border-top: 1px solid #dde8e0; margin: 14px 0; }
+    a { color: #2d6a4f; }
+    .muted { font-size: 9pt; color: #5a6b5a; }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <div class="badge">EduOS Operations Guide</div>
+    <h1>Pillar 2 — Academy OS</h1>
+    <p>Step-by-step setup for new tuition center administrators — register, teaching profile, batches, and class scheduling.</p>
+    <div class="meta">Generated 2026-07-24 · tutor-hub / EduOS</div>
+  </div>
+  <h1>Pillar 2 — Academy OS</h1>
+<p><strong>Product:</strong> EduOS · <strong>Layer:</strong> 2 · <strong>Sidebar:</strong> Academy</p>
+<hr>
+<section class="break"><h2>Purpose</h2>
+<p>Academy OS runs the <strong>core teaching operations</strong> of your center: tutors, batches, auto-generated schedules, students, fees, attendance, and tests. Live classes happen on Zoom/Meet/Teams — EduOS coordinates <strong>when</strong>, <strong>who</strong>, and <strong>what's next</strong>.</p>
+<hr>
+<section class="break"><h2>Who uses it</h2>
+<table><thead><tr><th>Role</th><th>Access</th></tr></thead><tbody><tr><td>Center admin</td><td>All Academy modules</td></tr><tr><td>Teacher</td><td>Own batches, schedule, attendance, students</td></tr><tr><td>Student / Parent</td><td>Read-only schedule (via their portals)</td></tr></tbody></table>
+<hr>
+<section class="break"><h2>Modules &amp; functionalities</h2>
+<table><thead><tr><th>Module</th><th>Path</th><th>Key features</th></tr></thead><tbody><tr><td>Batches</td><td>Academy → Batches</td><td>Create batches, assign teacher, pick availability slot, topics → auto-schedule</td></tr><tr><td>Class Schedule</td><td>Academy → Class Schedule</td><td>Week calendar, cancel/reschedule, mark done, meeting links</td></tr><tr><td>Teachers</td><td>Academy → Teachers</td><td>Tutor roster, subjects, batch load, reports</td></tr><tr><td>Students</td><td>Academy → Students</td><td>Records, batch assignment, parent contacts, fee overrides</td></tr><tr><td>Fees &amp; Invoices</td><td>Academy → Fees &amp; Invoices</td><td>Monthly billing, generate invoices, reminders, mark paid</td></tr><tr><td>Attendance</td><td>Academy → Attendance</td><td>Present / absent / late, optional parent WhatsApp</td></tr><tr><td>Tests &amp; Marks</td><td>Academy → Tests &amp; Marks</td><td>Record scores, averages, share with parents</td></tr></tbody></table>
+<hr>
+<section class="break"><h2>How to use — step by step</h2>
+<h3>1. Teachers</h3>
+<ol><li><strong>Academy → Teachers → + Add Teacher</strong> — name, email, phone, subjects.</li><li>If you (owner) also teach: use <strong>Settings → My teaching profile</strong> instead of a separate login.</li><li>Set availability in <strong>Tutor Success → Schedule → Manage slots</strong> (required for slot-based batch scheduling).</li></ol>
+<h3>2. Create a batch</h3>
+<ol><li><strong>Academy → Batches → + New Batch</strong>.</li><li>Set name, <strong>Assigned teacher</strong>, capacity, monthly fee, fee due day, subjects.</li><li>Under <strong>Class schedule from teacher availability</strong>, pick a <strong>free slot</strong> (or manual days/times if no slots).</li><li>Set course start date and meeting platform (Google Meet / Zoom / Teams).</li><li>Enter <strong>topics</strong> — one per line (one class per topic).</li><li>Click <strong>⚡ Auto-Generate Schedule</strong>, review preview, <strong>Save Batch</strong>.</li></ol>
+<p><strong>Rules:</strong> Each teacher availability slot can only be assigned to one batch. Booked slots are hidden when creating another batch.</p>
+<h3>3. Add students</h3>
+<ol><li><strong>Academy → Students → + Add Student</strong>.</li><li>Assign batch; enter parent name and phone (used for fees and comms).</li><li>Optional: override monthly fee on student record.</li></ol>
+<h3>4. Daily schedule management</h3>
+<ol><li><strong>Academy → Class Schedule</strong> — Calendar or List view.</li><li>Filter by batch; click a session.</li><li>Actions: <strong>Join Meeting</strong>, <strong>Copy Link</strong>, <strong>Reschedule</strong>, <strong>Cancel</strong>, <strong>Mark done</strong>.</li></ol>
+<h3>5. Mark attendance</h3>
+<ol><li><strong>Academy → Attendance</strong> — select batch and date.</li><li>Toggle each student: Present / Absent / Late.</li><li>Check <strong>Notify parents via WhatsApp</strong> if desired → <strong>Save Attendance</strong>.</li></ol>
+<h3>6. Record tests</h3>
+<ol><li><strong>Academy → Tests &amp; Marks → + Record Test</strong>.</li><li>Enter test name, batch, subject, date, max marks.</li><li>Enter each student's score → save.</li><li>Results feed reports and parent notifications.</li></ol>
+<h3>7. Fees &amp; invoices</h3>
+<ol><li>Configure defaults in <strong>Settings → Billing &amp; Invoices</strong> (prefix, UPI, due day).</li><li>Set batch <strong>Monthly fee</strong> on each batch.</li><li><strong>Academy → Fees &amp; Invoices → Generate invoices</strong> for the month.</li><li><strong>Send</strong> reminders; <strong>Mark paid</strong> or <strong>Confirm payment</strong> when parent reports UPI transfer.</li></ol>
+<hr>
+<section class="break"><h2>Verify</h2>
+<ul><li>[ ] Teacher has availability slots; batch uses a free slot</li><li>[ ] Auto-generated schedule shows dated sessions with meeting links</li><li>[ ] Students enrolled; dashboard shows upcoming classes</li><li>[ ] Attendance saved and visible in history</li><li>[ ] Invoices generated with correct amounts</li><li>[ ] Second batch for same teacher cannot reuse a booked slot</li></ul>
+<hr>
+<section class="break"><h2>Demo tip</h2>
+<p><strong>Center admin:</strong> <code>admin@brightminds.demo</code> · <strong>Teacher:</strong> <code>anita@tutorhub.com</code> — compare full Academy view vs teacher-scoped schedule.</p>
+<hr>
+<p class="muted"><em>Related: Pillar 5 (Tutor Success) for availability · Pillar 3 (Communication) for parent alerts.</em></p>
+</body>
+</html>

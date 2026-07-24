@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Center Admin Onboarding Guide</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1a2e1a;
+      line-height: 1.55;
+      font-size: 10pt;
+      margin: 0;
+      padding: 0 4mm;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover {
+      min-height: 240mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 18mm 12mm;
+      background: linear-gradient(145deg, #1b4332, #2d6a4f 55%, #40916c);
+      color: white;
+      page-break-after: always;
+      margin: -4mm -4mm 0;
+    }
+    .cover .badge {
+      font-size: 9pt;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin-bottom: 16px;
+    }
+    .cover h1 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 32pt;
+      font-weight: 400;
+      margin: 0 0 12px;
+    }
+    .cover p { font-size: 11pt; opacity: 0.92; max-width: 520px; margin: 0 0 8px; }
+    .cover .meta { margin-top: 32px; font-size: 9pt; opacity: 0.75; }
+    section { padding: 4mm 0; page-break-inside: avoid; }
+    section.break { page-break-before: always; padding-top: 0; }
+    section.break:first-of-type { page-break-before: auto; }
+    h1 { font-size: 22pt; color: #1b4332; margin: 0 0 12px; }
+    h2 {
+      font-family: Georgia, serif;
+      font-size: 16pt;
+      color: #1b4332;
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #40916c;
+    }
+    h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #2d6a4f;
+      margin: 14px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    p, li { color: #3d4f3d; margin: 0 0 6px; }
+    ul, ol { margin: 6px 0 10px 18px; padding: 0; }
+    ul.checklist { list-style: none; margin-left: 0; padding-left: 0; }
+    ul.checklist li.check::before { content: "☐ "; color: #2d6a4f; font-weight: 700; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+      margin: 10px 0 14px;
+    }
+    th, td {
+      border: 1px solid #dde8e0;
+      padding: 7px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #2d6a4f; color: white; font-weight: 600; }
+    tr:nth-child(even) td { background: #f4f9f6; }
+    code {
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 0.9em;
+      background: #eef5f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    pre {
+      background: #1b4332;
+      color: #e8f5e9;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 8.5pt;
+      overflow-x: auto;
+      margin: 10px 0 14px;
+      white-space: pre-wrap;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+    hr { border: none; border-top: 1px solid #dde8e0; margin: 14px 0; }
+    a { color: #2d6a4f; }
+    .muted { font-size: 9pt; color: #5a6b5a; }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <div class="badge">EduOS Operations Guide</div>
+    <h1>Center Admin Onboarding Guide</h1>
+    <p>Step-by-step setup for new tuition center administrators — register, teaching profile, batches, and class scheduling.</p>
+    <div class="meta">Generated 2026-07-24 · tutor-hub / EduOS</div>
+  </div>
+  <h1>Center Admin Onboarding Guide</h1>
+<p><strong>Product:</strong> EduOS (tutor-hub)  </p>
+<p><strong>Audience:</strong> New tuition center owners and managers  </p>
+<p><strong>Goal:</strong> Set up a center from scratch — register, configure settings, link yourself as a teacher (if you teach), create batches, and run class scheduling.</p>
+<hr>
+<section class="break"><h2>Before you start</h2>
+<table><thead><tr><th>Item</th><th>What you need</th></tr></thead><tbody><tr><td><strong>Login URL</strong></td><td>Open the app (local: run <code>start.bat</code>, then open the URL shown in the terminal)</td></tr><tr><td><strong>Role</strong></td><td>Use the <strong>Center admin</strong> portal tile on the login screen</td></tr><tr><td><strong>Password rules</strong></td><td>At least 8 characters (enforced at registration)</td></tr><tr><td><strong>Demo reference</strong></td><td>See <code>docs/qa/accounts.csv</code> — e.g. <code>admin@brightminds.demo</code> / <code>demo123</code></td></tr></tbody></table>
+<p><strong>Recommended order:</strong> Register → Settings → Teaching profile (if you teach) → Availability slots → Teachers (staff) → Batches → Students → Class Schedule → Fees.</p>
+<hr>
+<section class="break"><h2>Step 1 — Register your tuition center</h2>
+<h3>Actions</h3>
+<ol><li>On the login home screen, click <strong>Register your tuition center</strong> (or open the register page directly).</li><li>Fill in:</li></ol>
+<p>   - <strong>Center name</strong> — displayed across the workspace</p>
+<p>   - <strong>Your name</strong> — center owner / admin</p>
+<p>   - <strong>Email</strong> — becomes your login (must be unique)</p>
+<p>   - <strong>Phone</strong> and <strong>City</strong> — optional but recommended</p>
+<p>   - <strong>Password</strong> — your admin password</p>
+<ol><li>Click <strong>Create center</strong>.</li></ol>
+<h3>What the system does</h3>
+<ul><li>Creates a new <strong>center</strong> (tenant) with status <code>active</code> and plan <code>trial</code></li><li>Creates a <strong>center admin</strong> user linked to that center</li><li>Initializes empty center settings</li><li>Logs you in automatically to the <strong>Command Dashboard</strong></li></ul>
+<h3>Verify</h3>
+<ul><li>[ ] You land on the <strong>Dashboard</strong> (not the login screen)</li><li>[ ] Top bar shows your name and center name</li><li>[ ] Sidebar shows Academy, CRM, Tutor Success, Settings, etc.</li><li>[ ] <strong>Academy → Batches</strong> shows “No batches yet” (empty workspace)</li></ul>
+<h3>Alternative: Platform owner view</h3>
+<p>If EduOS platform staff onboard you, they log in as <strong>Platform owner</strong> → <strong>All centers</strong> → open your center → <strong>Support view</strong>. That mirrors your admin workspace for troubleshooting. Day-to-day work should still use your own <strong>Center admin</strong> login.</p>
+<hr>
+<section class="break"><h2>Step 2 — Orient the admin workspace</h2>
+<p>Key sidebar sections for daily operations:</p>
+<table><thead><tr><th>Section</th><th>Use for</th></tr></thead><tbody><tr><td><strong>Overview → Dashboard</strong></td><td>Today’s stats, upcoming classes, quick links</td></tr><tr><td><strong>Education CRM</strong></td><td>Leads, public website</td></tr><tr><td><strong>Academy</strong></td><td>Batches, Class Schedule, Teachers, Students, Fees, Attendance, Tests</td></tr><tr><td><strong>Tutor Success</strong></td><td>Teacher availability, homework, tutor tools</td></tr><tr><td><strong>System → Settings</strong></td><td>Center name, billing, WhatsApp, AI keys, teaching profile</td></tr></tbody></table>
+<h3>Verify</h3>
+<ul><li>[ ] You can open each Academy item without errors</li><li>[ ] <strong>Dashboard → Upcoming Classes</strong> is empty until batches exist</li></ul>
+<hr>
+<section class="break"><h2>Step 3 — Configure center settings</h2>
+<p><strong>Path:</strong> <strong>System → Settings</strong></p>
+<h3>3a — Center details</h3>
+<ol><li>Set <strong>Tutoring center name</strong> (how parents see your brand in messages).</li><li>Set <strong>Default country code</strong> for phone numbers (e.g. <code>+91</code>).</li><li>Click <strong>Save Settings</strong> (under AI section, or after editing billing — save applies to all settings panels).</li></ol>
+<h3>3b — Billing &amp; invoices (recommended early)</h3>
+<ol><li><strong>Invoice prefix</strong> — e.g. <code>INV</code></li><li><strong>Default due day</strong> — day of month fees are due (1–28)</li><li><strong>UPI ID</strong> — shown in fee reminders</li><li><strong>Bank details</strong> — optional, for invoice footers</li></ol>
+<p>Batch-level fees are set when creating batches; per-student overrides are on the student form.</p>
+<h3>3c — WhatsApp &amp; AI (optional)</h3>
+<ul><li><strong>WhatsApp Business API</strong> — without credentials, messages are simulated locally</li><li><strong>OpenAI API key</strong> — optional; AI works with rule-based fallback without a key</li></ul>
+<h3>3d — Data storage</h3>
+<p>Under <strong>Data Management</strong>, confirm storage backend:</p>
+<ul><li><strong>Neon PostgreSQL</strong> — data synced to server database</li><li><strong>Browser localStorage</strong> — demo/local mode; run <code>start.bat</code> with <code>DATABASE_URL</code> for production sync</li></ul>
+<h3>Verify</h3>
+<ul><li>[ ] Center name saved and reflected in top bar / parent-facing copy</li><li>[ ] Invoice prefix and UPI ID saved</li><li>[ ] Storage backend matches your deployment expectation</li></ul>
+<hr>
+<section class="break"><h2>Step 4 — Link yourself as a teacher (owner who also teaches)</h2>
+<p>Many center owners teach their own batches. Use <strong>one admin login</strong> — do not create a separate teacher account for yourself unless you want a second login.</p>
+<p><strong>Path:</strong> <strong>System → Settings → My teaching profile</strong></p>
+<h3>Actions</h3>
+<ol><li>Check <strong>I also teach classes</strong>.</li><li>Choose <strong>Teacher profile</strong>:</li></ol>
+<p>   - <strong>Use my account (your name)</strong> — creates/links a teacher roster entry to your admin user</p>
+<p>   - Or pick an existing teacher record if you already added yourself under Teachers</p>
+<ol><li>Enter <strong>Subjects</strong> (comma-separated), e.g. <code>Mathematics, Science</code>.</li><li>Click <strong>Save teaching profile</strong>.</li></ol>
+<h3>Verify</h3>
+<ul><li>[ ] Checkbox stays checked after refresh</li><li>[ ] <strong>Academy → Teachers</strong> shows your name with a green <strong>You</strong> badge</li><li>[ ] <strong>Tutor Success</strong> defaults to your linked teacher profile</li><li>[ ] You can assign yourself when creating a batch</li></ul>
+<h3>Staff teachers (different from owner)</h3>
+<p>For tutors who need their <strong>own login</strong>:</p>
+<ol><li><strong>Academy → Teachers → + Add Teacher</strong> — add name, email, phone, subjects (roster record).</li><li>Teacher login accounts are separate users with role <code>teacher</code> and a <code>linkedTeacherId</code>. In the current MVP, demo accounts are pre-seeded; for new staff, coordinate with platform support or data import until a self-service “invite teacher” flow exists.</li></ol>
+<hr>
+<section class="break"><h2>Step 5 — Set teacher availability slots</h2>
+<p>Batches pick <strong>free slots</strong> from a teacher’s availability. Slots already assigned to another batch are hidden to prevent double-booking.</p>
+<p><strong>Path:</strong> <strong>Tutor Success → Schedule tab → Manage slots</strong></p>
+<p>(As admin-with-teaching-profile, Tutor Success opens on <strong>your</strong> teacher. For staff, use Support view or have the teacher set their own slots from the Teacher portal.)</p>
+<h3>Actions</h3>
+<ol><li>Click <strong>Manage slots</strong>.</li><li>Add one or more slots — each slot has:</li></ol>
+<p>   - <strong>Days</strong> (e.g. Mon, Wed, Fri)</p>
+<p>   - <strong>Start time</strong> and <strong>End time</strong></p>
+<ol><li>Example: Slot 1 = Mon/Wed/Fri 4:00–6:00 PM; Slot 2 = Sat 10:00–12:00 PM.</li><li>Click <strong>Save availability</strong>.</li></ol>
+<h3>Verify</h3>
+<ul><li>[ ] Slots appear in the Availability panel</li><li>[ ] <strong>Academy → Batches → New Batch</strong> shows your slots when you select yourself as teacher</li><li>[ ] After assigning a slot to Batch A, that slot does <strong>not</strong> appear when creating Batch B for the same teacher</li></ul>
+<hr>
+<section class="break"><h2>Step 6 — Add teachers (staff roster)</h2>
+<p>Skip if you are the only teacher and already linked in Step 4.</p>
+<p><strong>Path:</strong> <strong>Academy → Teachers → + Add Teacher</strong></p>
+<h3>Actions</h3>
+<ol><li>Enter name, email, phone, subjects.</li><li>Save.</li><li>Have each teacher set availability under <strong>Tutor Success</strong> (teacher login) or set slots while in admin Support view.</li></ol>
+<h3>Verify</h3>
+<ul><li>[ ] Teacher appears on Teachers list with batch/student counts (zero initially)</li><li>[ ] Teacher can be selected in batch form <strong>Assigned teacher</strong> dropdown</li><li>[ ] Teacher with no slots shows manual day/time fallback in batch form (or prompt to add slots in Tutor Success)</li></ul>
+<hr>
+<section class="break"><h2>Step 7 — Create a batch and auto-generate schedule</h2>
+<p><strong>Path:</strong> <strong>Academy → Batches → + New Batch</strong></p>
+<h3>Actions</h3>
+<ol><li><strong>Batch name</strong> — e.g. <code>Grade 10 Mathematics — Evening</code></li><li><strong>Assigned teacher</strong> — select tutor (yourself or staff)</li><li><strong>Capacity</strong>, <strong>Monthly fee (₹)</strong>, <strong>Fee due day</strong>, <strong>Subjects</strong>, <strong>Notes</strong></li><li>Under <strong>Class schedule from teacher availability</strong>:</li></ol>
+<p>   - Select a <strong>free availability slot</strong> (preferred), <strong>or</strong></p>
+<p>   - If no slots exist, pick days + start/end time manually</p>
+<ol><li>Set <strong>Course start date</strong> and <strong>Meeting platform</strong> (Google Meet / Zoom / Teams)</li><li><strong>Course topics</strong> — one topic per line (one class per topic):</li></ol>
+<p>   ```</p>
+<p>   Introduction to Algebra</p>
+<p>   Linear Equations</p>
+<p>   Quadratic Equations</p>
+<p>   ```</p>
+<ol><li>Click <strong>⚡ Auto-Generate Schedule</strong> — preview lists all sessions with dates and meeting links</li><li>Click <strong>Save Batch</strong></li></ol>
+<h3>Rules enforced by the app</h3>
+<ul><li>If the teacher has availability slots, you must pick a slot (or get a validation error)</li><li>A slot already used by another batch cannot be selected again</li><li>Saving syncs the batch to the chosen <code>availabilitySlotId</code></li></ul>
+<h3>Verify</h3>
+<ul><li>[ ] Batch appears in the list with schedule summary (e.g. Mon/Wed/Fri · 4:00 PM)</li><li>[ ] <strong>Schedule</strong> button on the batch shows all generated sessions</li><li>[ ] <strong>Dashboard → Upcoming Classes</strong> lists the next session</li><li>[ ] <strong>Academy → Class Schedule</strong> shows sessions on the week calendar</li><li>[ ] Creating a second batch for the same teacher does not offer an already-booked slot</li></ul>
+<hr>
+<section class="break"><h2>Step 8 — Add students</h2>
+<p><strong>Path:</strong> <strong>Academy → Students → + Add Student</strong></p>
+<h3>Actions</h3>
+<ol><li>Enter student name, grade, contact email/phone</li><li>Assign <strong>Batch</strong></li><li>Enter <strong>Parent name</strong> and <strong>Parent phone</strong> (used for comms and fee reminders)</li><li>Optional: override monthly fee on the student record</li><li>Save</li></ol>
+<h3>Optional: CRM enrollment</h3>
+<p><strong>Education CRM → Lead pipeline</strong> — convert a lead to a student when they enroll (links CRM to Academy).</p>
+<h3>Verify</h3>
+<ul><li>[ ] Student appears in Students table with correct batch</li><li>[ ] Batch capacity / student counts update on Dashboard stats</li><li>[ ] <strong>Reports → Student Reports</strong> includes the new student</li></ul>
+<hr>
+<section class="break"><h2>Step 9 — Manage class schedule (day-to-day)</h2>
+<p><strong>Path:</strong> <strong>Academy → Class Schedule</strong></p>
+<h3>Week calendar</h3>
+<ul><li>Browse by week; filter by batch</li><li>Click a class for actions</li></ul>
+<h3>Per-session actions</h3>
+<table><thead><tr><th>Action</th><th>When to use</th></tr></thead><tbody><tr><td><strong>Join Meeting</strong></td><td>Open live class link</td></tr><tr><td><strong>Copy Link</strong></td><td>Share with parents</td></tr><tr><td><strong>Reschedule</strong></td><td>Move one session to another date/time</td></tr><tr><td><strong>Cancel</strong></td><td>Cancel with optional reason; parents can be notified (WhatsApp if configured)</td></tr><tr><td><strong>Mark done</strong></td><td>Mark session completed</td></tr><tr><td><strong>Restore / Undo</strong></td><td>Reverse cancel or completion</td></tr></tbody></table>
+<h3>Batch-level schedule edit</h3>
+<p><strong>Academy → Batches → Schedule</strong> on a batch — edit meeting links or mark sessions done in bulk preview.</p>
+<h3>Verify</h3>
+<ul><li>[ ] Rescheduled session shows “Was [old date/time]” note</li><li>[ ] Cancelled sessions move to cancelled filter/tab</li><li>[ ] Completed sessions reflect in attendance and curriculum progress</li><li>[ ] Teacher portal (<strong>Teacher → My schedule</strong>) shows the same sessions for linked teachers</li></ul>
+<hr>
+<section class="break"><h2>Step 10 — Fees &amp; invoices</h2>
+<p><strong>Path:</strong> <strong>Academy → Fees &amp; Invoices</strong></p>
+<h3>Setup (already done in Settings)</h3>
+<ul><li>Invoice prefix, default due day, UPI ID</li></ul>
+<h3>Per batch / student</h3>
+<ul><li><strong>Monthly fee</strong> and <strong>Fee due day</strong> on batch form</li><li>Per-student override on student form</li></ul>
+<h3>Operations</h3>
+<ul><li>Generate or review invoices for the billing period</li><li>Send reminders (simulated WhatsApp unless API configured)</li><li>Mark payments received</li></ul>
+<h3>Verify</h3>
+<ul><li>[ ] Invoice amounts match batch fee × enrolled students (minus overrides)</li><li>[ ] UPI ID appears on reminders</li><li>[ ] <strong>Parent Portal → Fees</strong> tab shows balance for linked parents (family demo: <code>sharma@family.demo</code>)</li></ul>
+<hr>
+<section class="break"><h2>Step 11 — Next steps (after core setup)</h2>
+<table><thead><tr><th>Area</th><th>Path</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Attendance</strong></td><td>Academy → Attendance</td><td>Mark who attended each class</td></tr><tr><td><strong>Tests &amp; Marks</strong></td><td>Academy → Tests &amp; Marks</td><td>Record assessments; feeds reports</td></tr><tr><td><strong>Communication Hub</strong></td><td>Communication</td><td>Messages to parents/staff</td></tr><tr><td><strong>Student Success</strong></td><td>Student Success</td><td>Homework, assignments</td></tr><tr><td><strong>Tutor Success</strong></td><td>Tutor Success</td><td>Homework grading, lesson plans</td></tr><tr><td><strong>Reports</strong></td><td>System → Reports</td><td>Student and teacher performance</td></tr><tr><td><strong>Public Website</strong></td><td>Education CRM → Public Website</td><td>Center listing for inquiries</td></tr></tbody></table>
+<hr>
+<section class="break"><h2>Master verification checklist</h2>
+<p>Use this before going live with real students.</p>
+<h3>Account &amp; center</h3>
+<ul><li>[ ] Center registered; admin can log in via <strong>Center admin</strong> tile</li><li>[ ] Password reset works (<strong>Forgot password</strong> on login)</li><li>[ ] Settings saved: center name, billing, storage backend understood</li></ul>
+<h3>People</h3>
+<ul><li>[ ] Owner teaching profile linked (if applicable) — <strong>You</strong> badge on Teachers</li><li>[ ] Staff teachers added to roster</li><li>[ ] Availability slots saved for every teacher who runs batches</li></ul>
+<h3>Academic operations</h3>
+<ul><li>[ ] At least one batch created with topics and generated schedule</li><li>[ ] No double-booked teacher slots across batches</li><li>[ ] Students assigned to batches</li><li>[ ] Class Schedule calendar shows upcoming sessions</li><li>[ ] Meeting links open (Google Meet / Zoom / Teams)</li></ul>
+<h3>Business operations</h3>
+<ul><li>[ ] Monthly fees set on batches</li><li>[ ] Invoices / fee reminders tested</li><li>[ ] Parent contact numbers on student records</li></ul>
+<h3>Optional integrations</h3>
+<ul><li>[ ] WhatsApp API configured (or accept simulated mode)</li><li>[ ] OpenAI key added (or accept offline AI)</li></ul>
+<hr>
+<section class="break"><h2>Common issues</h2>
+<table><thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead><tbody><tr><td>No availability slots in batch form</td><td>Teacher has no slots</td><td>Tutor Success → Schedule → Manage slots</td></tr><tr><td>All slots show as booked</td><td>Every slot assigned to another batch</td><td>Free a slot (delete/edit batch) or add a new availability slot</td></tr><tr><td>“Select a teacher availability slot” error</td><td>Teacher selected but no slot/day chosen</td><td>Pick a slot or use manual days/times</td></tr><tr><td>“That slot is already used by …”</td><td>Another batch holds the slot</td><td>Choose a different slot or reschedule the other batch</td></tr><tr><td>Teacher cannot see batches</td><td>Teacher login not linked to roster</td><td>Ensure teacher user has <code>linkedTeacherId</code> matching roster id</td></tr><tr><td>Data lost after browser clear</td><td>localStorage mode</td><td>Use Neon PostgreSQL via <code>start.bat</code> + <code>DATABASE_URL</code></td></tr><tr><td>Owner wants two logins</td><td>Unnecessary for solo owner</td><td>Use <strong>I also teach classes</strong> in Settings instead</td></tr></tbody></table>
+<hr>
+<section class="break"><h2>Quick reference — navigation map</h2>
+<pre><code>Register → Dashboard
+    │
+    ├─ Settings ───────────── Center name, billing, teaching profile
+    │
+    ├─ Tutor Success ──────── Availability slots (Manage slots)
+    │
+    ├─ Teachers ───────────── Staff roster (+ You badge for owner)
+    │
+    ├─ Batches ────────────── Create batch → pick slot → topics → Auto-Generate
+    │
+    ├─ Students ───────────── Enroll into batches
+    │
+    ├─ Class Schedule ─────── Calendar: cancel / reschedule / mark done
+    │
+    └─ Fees &amp; Invoices ────── Billing after enrollment</code></pre>
+<hr>
+<section class="break"><h2>Demo walkthrough (5-minute smoke test)</h2>
+<ol><li>Log in as <code>admin@brightminds.demo</code> / <code>demo123</code> (<strong>Center admin</strong>)</li><li><strong>Settings</strong> — confirm teaching profile or enable <strong>I also teach classes</strong></li><li><strong>Tutor Success → Schedule</strong> — review <strong>Manage slots</strong></li><li><strong>Batches</strong> — open an existing batch or create a test batch; confirm slot picker</li><li><strong>Class Schedule</strong> — reschedule one session; confirm calendar updates</li><li>Log in as <code>anita@tutorhub.com</code> / <code>demo123</code> (<strong>Teacher</strong>) — confirm <strong>My schedule</strong> matches her batches only</li></ol>
+<hr>
+<p class="muted"><em>Related docs: <a href="./EDUOS-WORKFLOW.md">EDUOS-WORKFLOW.md</a> · <a href="./qa/accounts.csv">QA accounts</a></em></p>
+</body>
+</html>

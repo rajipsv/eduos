@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pillar 4 — Student Success</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1a2e1a;
+      line-height: 1.55;
+      font-size: 10pt;
+      margin: 0;
+      padding: 0 4mm;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover {
+      min-height: 240mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 18mm 12mm;
+      background: linear-gradient(145deg, #1b4332, #2d6a4f 55%, #40916c);
+      color: white;
+      page-break-after: always;
+      margin: -4mm -4mm 0;
+    }
+    .cover .badge {
+      font-size: 9pt;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin-bottom: 16px;
+    }
+    .cover h1 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 32pt;
+      font-weight: 400;
+      margin: 0 0 12px;
+    }
+    .cover p { font-size: 11pt; opacity: 0.92; max-width: 520px; margin: 0 0 8px; }
+    .cover .meta { margin-top: 32px; font-size: 9pt; opacity: 0.75; }
+    section { padding: 4mm 0; page-break-inside: avoid; }
+    section.break { page-break-before: always; padding-top: 0; }
+    section.break:first-of-type { page-break-before: auto; }
+    h1 { font-size: 22pt; color: #1b4332; margin: 0 0 12px; }
+    h2 {
+      font-family: Georgia, serif;
+      font-size: 16pt;
+      color: #1b4332;
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #40916c;
+    }
+    h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #2d6a4f;
+      margin: 14px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    p, li { color: #3d4f3d; margin: 0 0 6px; }
+    ul, ol { margin: 6px 0 10px 18px; padding: 0; }
+    ul.checklist { list-style: none; margin-left: 0; padding-left: 0; }
+    ul.checklist li.check::before { content: "☐ "; color: #2d6a4f; font-weight: 700; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+      margin: 10px 0 14px;
+    }
+    th, td {
+      border: 1px solid #dde8e0;
+      padding: 7px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #2d6a4f; color: white; font-weight: 600; }
+    tr:nth-child(even) td { background: #f4f9f6; }
+    code {
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 0.9em;
+      background: #eef5f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    pre {
+      background: #1b4332;
+      color: #e8f5e9;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 8.5pt;
+      overflow-x: auto;
+      margin: 10px 0 14px;
+      white-space: pre-wrap;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+    hr { border: none; border-top: 1px solid #dde8e0; margin: 14px 0; }
+    a { color: #2d6a4f; }
+    .muted { font-size: 9pt; color: #5a6b5a; }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <div class="badge">EduOS Operations Guide</div>
+    <h1>Pillar 4 — Student Success</h1>
+    <p>Step-by-step setup for new tuition center administrators — register, teaching profile, batches, and class scheduling.</p>
+    <div class="meta">Generated 2026-07-24 · tutor-hub / EduOS</div>
+  </div>
+  <h1>Pillar 4 — Student Success</h1>
+<p><strong>Product:</strong> EduOS · <strong>Layer:</strong> 4 · <strong>Sidebar:</strong> Student Success</p>
+<hr>
+<section class="break"><h2>Purpose</h2>
+<p>Student Success tracks <strong>learning outcomes beyond attendance</strong>: success scores, skill journeys, interventions, homework, certificates, and parent progress summaries. It answers: *Is this student on track, and what should we do if not?*</p>
+<hr>
+<section class="break"><h2>Who uses it</h2>
+<table><thead><tr><th>Role</th><th>Access</th></tr></thead><tbody><tr><td>Center admin</td><td>Full engine — all tabs and admin actions</td></tr><tr><td>Teacher</td><td>Assignments, feedback, certificates (via Tutor Success overlap)</td></tr><tr><td>Parent</td><td>Homework view only (read-only list)</td></tr><tr><td>Student</td><td>Own homework — view and submit</td></tr></tbody></table>
+<hr>
+<section class="break"><h2>Modules &amp; functionalities</h2>
+<p><strong>Path:</strong> Student Success (admin/teacher view)</p>
+<p><strong>Admin toolbar actions:</strong></p>
+<ul><li><strong>+ Assignment</strong> — create homework for a batch/student</li><li><strong>Issue Certificate</strong> — award completion or achievement certificate</li><li><strong>+ Feedback</strong> — teacher notes visible to parents</li></ul>
+<p><strong>Tabs:</strong></p>
+<table><thead><tr><th>Tab</th><th>Function</th></tr></thead><tbody><tr><td>Overview</td><td>All students — success score, attendance, tests, homework %, risk badge</td></tr><tr><td>Journey</td><td>Skills by subject, progress bars, projects, certificates</td></tr><tr><td>Interventions</td><td>At-risk plans — generate, apply, mark resolved</td></tr><tr><td>Assignments</td><td>Homework list — grade submissions, track due dates</td></tr><tr><td>Parent Summary</td><td>Draft progress summary → <strong>Send to Parents</strong></td></tr></tbody></table>
+<p><strong>Success score</strong> combines attendance, test averages, curriculum progress, and homework completion.</p>
+<p><strong>Risk levels:</strong> High (&amp;lt;60 score), Medium, Low — drives intervention suggestions.</p>
+<hr>
+<section class="break"><h2>How to use — step by step</h2>
+<h3>A. Review all students</h3>
+<ol><li>Open <strong>Student Success → Overview</strong>.</li><li>Scan the table for red <strong>high</strong> risk badges.</li><li>Click a student row to open their <strong>Success Profile</strong> below.</li></ol>
+<h3>B. Track learning journey</h3>
+<ol><li>Select student from dropdown (top toolbar).</li><li><strong>Journey tab</strong> — review skills table (subject, level, progress %).</li><li>Add projects or view certificates earned.</li></ol>
+<h3>C. Apply an intervention</h3>
+<ol><li><strong>Interventions tab</strong> for an at-risk student.</li><li>Review suggested plan (extra practice, parent call, etc.).</li><li>Click <strong>Generate &amp; Apply Plan</strong>.</li><li>When resolved, click <strong>Mark resolved</strong>.</li></ol>
+<h3>D. Manage homework</h3>
+<ol><li><strong>+ Assignment</strong> — title, batch, due date, description.</li><li><strong>Assignments tab</strong> — see status per student (pending, submitted, graded).</li><li>Click <strong>Grade</strong> to enter marks and feedback.</li><li>Students submit via <strong>Student Success</strong> (student login); parents can mark submitted (parent confirmation).</li></ol>
+<h3>E. Send parent summary</h3>
+<ol><li><strong>Parent Summary tab</strong> for selected student.</li><li>Review auto-generated summary text.</li><li>Click <strong>Send to Parents</strong> (uses Communication engine).</li></ol>
+<h3>F. Issue certificate or feedback</h3>
+<ol><li><strong>Issue Certificate</strong> — pick student, title, date.</li><li><strong>+ Feedback</strong> — short note for parent portal <strong>Feedback</strong> tab.</li></ol>
+<hr>
+<section class="break"><h2>Verify</h2>
+<ul><li>[ ] Overview shows all enrolled students with scores</li><li>[ ] New assignment appears in Assignments tab and student/parent homework views</li><li>[ ] Graded homework updates homework % on overview</li><li>[ ] Intervention can be applied and resolved</li><li>[ ] Parent summary sends to message log</li></ul>
+<hr>
+<section class="break"><h2>Demo tip</h2>
+<p><strong>Center admin</strong> → Student Success → pick a demo student → walk Overview → Assignments → Parent Summary.</p>
+<hr>
+<p class="muted"><em>Related: Pillar 5 (Tutor Success) for homework grading · Pillar 6 (Parent Experience) for parent-facing homework.</em></p>
+</body>
+</html>

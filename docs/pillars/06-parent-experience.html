@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pillar 6 — Parent Experience</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1a2e1a;
+      line-height: 1.55;
+      font-size: 10pt;
+      margin: 0;
+      padding: 0 4mm;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover {
+      min-height: 240mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 18mm 12mm;
+      background: linear-gradient(145deg, #1b4332, #2d6a4f 55%, #40916c);
+      color: white;
+      page-break-after: always;
+      margin: -4mm -4mm 0;
+    }
+    .cover .badge {
+      font-size: 9pt;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin-bottom: 16px;
+    }
+    .cover h1 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 32pt;
+      font-weight: 400;
+      margin: 0 0 12px;
+    }
+    .cover p { font-size: 11pt; opacity: 0.92; max-width: 520px; margin: 0 0 8px; }
+    .cover .meta { margin-top: 32px; font-size: 9pt; opacity: 0.75; }
+    section { padding: 4mm 0; page-break-inside: avoid; }
+    section.break { page-break-before: always; padding-top: 0; }
+    section.break:first-of-type { page-break-before: auto; }
+    h1 { font-size: 22pt; color: #1b4332; margin: 0 0 12px; }
+    h2 {
+      font-family: Georgia, serif;
+      font-size: 16pt;
+      color: #1b4332;
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #40916c;
+    }
+    h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #2d6a4f;
+      margin: 14px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    p, li { color: #3d4f3d; margin: 0 0 6px; }
+    ul, ol { margin: 6px 0 10px 18px; padding: 0; }
+    ul.checklist { list-style: none; margin-left: 0; padding-left: 0; }
+    ul.checklist li.check::before { content: "☐ "; color: #2d6a4f; font-weight: 700; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+      margin: 10px 0 14px;
+    }
+    th, td {
+      border: 1px solid #dde8e0;
+      padding: 7px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #2d6a4f; color: white; font-weight: 600; }
+    tr:nth-child(even) td { background: #f4f9f6; }
+    code {
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 0.9em;
+      background: #eef5f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    pre {
+      background: #1b4332;
+      color: #e8f5e9;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 8.5pt;
+      overflow-x: auto;
+      margin: 10px 0 14px;
+      white-space: pre-wrap;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+    hr { border: none; border-top: 1px solid #dde8e0; margin: 14px 0; }
+    a { color: #2d6a4f; }
+    .muted { font-size: 9pt; color: #5a6b5a; }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <div class="badge">EduOS Operations Guide</div>
+    <h1>Pillar 6 — Parent Experience</h1>
+    <p>Step-by-step setup for new tuition center administrators — register, teaching profile, batches, and class scheduling.</p>
+    <div class="meta">Generated 2026-07-24 · tutor-hub / EduOS</div>
+  </div>
+  <h1>Pillar 6 — Parent Experience</h1>
+<p><strong>Product:</strong> EduOS · <strong>Layer:</strong> 6 · <strong>Sidebar:</strong> Parent Portal</p>
+<hr>
+<section class="break"><h2>Purpose</h2>
+<p>The Parent Experience Portal gives guardians <strong>real-time visibility</strong> into their child's classes, progress, homework, attendance, fees, and messages — without calling the center for every update.</p>
+<hr>
+<section class="break"><h2>Who uses it</h2>
+<table><thead><tr><th>Role</th><th>Access</th></tr></thead><tbody><tr><td>Parent</td><td>Parent Portal dashboard and tabs</td></tr><tr><td>Center admin</td><td>Preview parent view (same UI, admin context)</td></tr><tr><td>Family account</td><td>One login — switch <strong>Parent view</strong> / <strong>Student view</strong> in top bar</td></tr></tbody></table>
+<p><strong>Demo family login:</strong> <code>sharma@family.demo</code> / <code>demo123</code></p>
+<hr>
+<section class="break"><h2>Modules &amp; functionalities</h2>
+<p><strong>Path:</strong> Parent Portal (or Parent view after family login)</p>
+<p><strong>Child selector:</strong> Dropdown to switch between linked children.</p>
+<p><strong>Tabs:</strong></p>
+<table><thead><tr><th>Tab</th><th>Content</th></tr></thead><tbody><tr><td>Home</td><td>Success score, next class, recent activity, contact teacher</td></tr><tr><td>Progress</td><td>Strengths, skills breakdown, test history chart</td></tr><tr><td>Homework</td><td>Assignments, due dates, status — parent can mark submitted</td></tr><tr><td>Attendance</td><td>History table and attendance rate</td></tr><tr><td>Fees</td><td>Outstanding balance, invoices, report payment (UPI)</td></tr><tr><td>Feedback</td><td>Teacher notes from center</td></tr><tr><td>Messages</td><td>Thread with center / comm hub</td></tr><tr><td>Settings</td><td>Notification preferences (email, WhatsApp, SMS toggles)</td></tr></tbody></table>
+<p><strong>Actions on Home:</strong></p>
+<ul><li><strong>Request Progress Summary</strong> — triggers summary generation/notification</li></ul>
+<hr>
+<section class="break"><h2>How to use — step by step (parent)</h2>
+<h3>A. Log in and select child</h3>
+<ol><li>Choose <strong>Family</strong> or <strong>Parent</strong> portal tile (or family login above).</li><li>If multiple children, use <strong>Viewing as parent of</strong> dropdown.</li></ol>
+<h3>B. Check upcoming class</h3>
+<ol><li><strong>Home tab</strong> — see next class date, time, topic, <strong>Join</strong> link.</li><li>Review success score and recent activity feed.</li></ol>
+<h3>C. Track progress</h3>
+<ol><li><strong>Progress tab</strong> — skills by subject with progress bars.</li><li>Review test history and strengths list.</li></ol>
+<h3>D. Homework</h3>
+<ol><li><strong>Homework tab</strong> — list of assignments with due dates.</li><li>When child completes work offline, parent clicks <strong>Mark submitted</strong> (confirmation, not grading).</li><li>View grades after teacher grades in Tutor Success.</li></ol>
+<h3>E. Attendance &amp; fees</h3>
+<ol><li><strong>Attendance tab</strong> — see present/absent/late history and overall rate.</li><li><strong>Fees tab</strong> — view invoice amount, due date, UPI payment instructions.</li><li>After paying offline, <strong>Report payment</strong> — admin confirms in Fees &amp; Invoices.</li></ol>
+<h3>F. Messages &amp; preferences</h3>
+<ol><li><strong>Messages tab</strong> — read center announcements and replies.</li><li><strong>Settings tab</strong> — toggle notification channels → <strong>Save Preferences</strong>.</li></ol>
+<hr>
+<section class="break"><h2>How center admin supports parents</h2>
+<ol><li>Ensure student records have correct <strong>parent name</strong> and <strong>parent phone</strong>.</li><li>Keep class schedule and meeting links updated in Academy.</li><li>Record attendance and tests so parent tabs stay accurate.</li><li>Configure UPI ID in <strong>Settings → Billing</strong> for fee tab.</li><li>Respond to messages in <strong>Communication Hub</strong>.</li></ol>
+<hr>
+<section class="break"><h2>Verify</h2>
+<ul><li>[ ] Parent login shows linked child(ren) only</li><li>[ ] Home displays next scheduled class with join link</li><li>[ ] Homework list matches assignments created in Student Success</li><li>[ ] Fees tab shows current month invoice and UPI ID</li><li>[ ] Report payment flows to admin <strong>Confirm payment</strong></li><li>[ ] Notification preferences save on Settings tab</li></ul>
+<hr>
+<section class="break"><h2>Demo tip</h2>
+<p>Log in as <code>sharma@family.demo</code> → switch Parent view → walk Home → Homework → Fees.</p>
+<hr>
+<p class="muted"><em>Related: Pillar 2 (Fees) · Pillar 4 (Homework) · Pillar 3 (Messages).</em></p>
+</body>
+</html>
