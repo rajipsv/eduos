@@ -66,6 +66,37 @@ export const LANDING_STATS = [
 const EDUOS_SALES_WHATSAPP = '919553371972';
 export const EDUOS_SALES_EMAIL = 'hello@eduos.app';
 
+/** Meta ads / demo funnel — standalone page at repo root. */
+export const START_PAGE_PATH = 'start-page.html';
+
+const UTM_KEYS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+  'utm_id',
+  'fbclid',
+];
+
+/** Link to the demo funnel; forwards current UTM tags when present. */
+export function buildStartPageUrl(extra = {}) {
+  const base = typeof window !== 'undefined' ? window.location.origin : '';
+  const url = new URL(START_PAGE_PATH, base || 'http://localhost');
+  if (typeof window !== 'undefined') {
+    const current = new URLSearchParams(window.location.search);
+    UTM_KEYS.forEach((key) => {
+      const value = current.get(key);
+      if (value) url.searchParams.set(key, value);
+    });
+  }
+  Object.entries(extra).forEach(([key, value]) => {
+    if (value != null && value !== '') url.searchParams.set(key, value);
+  });
+  const path = `${url.pathname}${url.search}`;
+  return base ? `${base}${path}` : path;
+}
+
 export const LANDING_PRICING_TIERS = [
   {
     id: 'starter',
@@ -143,6 +174,7 @@ export function renderLandingHeader() {
           <button type="button" class="landing-nav-link" data-scroll="tuitions">Browse tuitions</button>
         </nav>
         <div class="landing-header-cta">
+          <a class="btn btn-secondary btn-sm" href="${buildStartPageUrl()}">Book free demo</a>
           <button type="button" class="btn btn-primary btn-sm" data-auth-open-login>Log in</button>
         </div>
       </div>
@@ -157,6 +189,10 @@ export function renderLandingHero() {
           <p class="landing-eyebrow">The operating system for education businesses</p>
           <h1 class="landing-headline">Run your academy.<br>Delight every parent.<br><em>Scale with confidence.</em></h1>
           <p class="landing-lead">EduOS is not an LMS — it is the ops platform for tuition centers. Acquire students, run batches, communicate with families, and grow revenue from one place.</p>
+          <div class="landing-hero-actions">
+            <a class="btn btn-primary" href="${buildStartPageUrl()}">Book free demo</a>
+            <button type="button" class="btn btn-secondary" data-scroll="pricing">See pricing</button>
+          </div>
           <div class="landing-stats">
             ${LANDING_STATS.map((s) => `
               <div class="landing-stat">
@@ -229,7 +265,8 @@ export function renderLandingPricing() {
       <div class="landing-pricing-foot">
         <p><strong>Example:</strong> 2 branches, 120 students (60 each) → ₹18,000 + ₹12,000 = <strong>₹30,000/year</strong>. GST may apply on platform fee.</p>
         <div class="landing-pricing-contact">
-          <a class="btn btn-primary" href="${generalUrl}" target="_blank" rel="noopener noreferrer">Contact via WhatsApp</a>
+          <a class="btn btn-primary" href="${buildStartPageUrl()}">Book free demo</a>
+          <a class="btn btn-secondary" href="${generalUrl}" target="_blank" rel="noopener noreferrer">Contact via WhatsApp</a>
           <a class="landing-pricing-email" href="mailto:${EDUOS_SALES_EMAIL}?subject=EduOS%20platform%20subscription">${EDUOS_SALES_EMAIL}</a>
         </div>
       </div>
@@ -268,6 +305,8 @@ export function renderLandingFooter() {
         </div>
         <p>Operations platform for tuition centers — not course hosting.</p>
         <p class="landing-footer-links">
+          <a href="${buildStartPageUrl()}">Book free demo</a>
+          <span aria-hidden="true">·</span>
           <button type="button" class="landing-footer-link" data-scroll="pricing">Pricing</button>
           <span aria-hidden="true">·</span>
           <a href="${buildPricingWhatsAppUrl('EduOS platform')}" target="_blank" rel="noopener noreferrer">Contact via WhatsApp</a>

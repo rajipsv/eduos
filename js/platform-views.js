@@ -5,6 +5,7 @@ import { getUpcomingSessions, formatTime } from './scheduler.js';
 
 export const platformPageMeta = {
   platformDashboard: { title: 'Platform Dashboard', subtitle: 'EduOS operator — all tuition centers' },
+  platformInboundLeads: { title: 'Demo requests', subtitle: 'Inbound leads from start-page and Meta ads' },
   platformCenters: { title: 'All Centers', subtitle: 'Registered tuition centers on EduOS' },
   platformCenterDetail: { title: 'Center detail', subtitle: 'Inspect and manage a center' },
   platformRoadmap: { title: 'Product Roadmap', subtitle: 'Capabilities included in every tuition center' },
@@ -42,12 +43,118 @@ export function renderPlatformDashboard(rawState) {
       <div class="stat-card"><div class="label">Teachers (all)</div><div class="value">${totalTeachers}</div></div>
       <div class="stat-card"><div class="label">Students (all)</div><div class="value">${totalStudents}</div></div>
     </div>
+    <div class="panel" style="margin-top:20px" id="platformInboundPanel">
+      <div class="panel-header">
+        <h3>Demo requests</h3>
+        <button class="btn btn-sm btn-secondary" data-action="go-platformInboundLeads">View all</button>
+      </div>
+      <div class="panel-body" id="platformInboundPanelBody"><p class="empty-state">Loading inbound leads…</p></div>
+    </div>
     <div class="panel" style="margin-top:20px"><div class="panel-header"><h3>Recent centers</h3><button class="btn btn-sm btn-secondary" data-action="go-platformCenters">View all</button></div>
     <div class="panel-body">${centers.slice(0, 5).map((c) => {
       const st = getCenterOpsStats(c.id, rawState);
       return `<div class="session-row"><div class="session-info"><h4>${c.name}</h4><p>${c.city || '—'} · ${st.teachers} teachers · ${st.students} students · <span class="badge ${c.status === 'suspended' ? 'badge-red' : 'badge-green'}">${c.status || 'active'}</span></p></div>
       <button class="btn btn-sm btn-primary" data-action="open-center" data-id="${c.id}">Open</button></div>`;
     }).join('')}</div></div>`;
+}
+
+function inboundStageOptions(selected) {
+  const stages = [
+    ['inquiry', 'Inquiry'],
+    ['contacted', 'Contacted'],
+    ['demo', 'Demo scheduled'],
+    ['pilot', 'Pilot'],
+    ['won', 'Won'],
+    ['lost', 'Lost'],
+  ];
+  return stages.map(([id, label]) => `<option value="${id}"${selected === id ? ' selected' : ''}>${label}</option>`).join('');
+}
+
+function renderInboundLeadRows(leads) {
+  if (!leads.length) {
+    return '<p class="empty-state">No demo requests yet. Share <code>start-page.html</code> in Meta ads or from the website.</p>';
+  }
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>When</th><th>Contact</th><th>Center</th><th>Students</th><th>Source</th><th>Stage</th><th></th></tr></thead>
+    <tbody>${leads.map((lead) => `
+      <tr data-inbound-id="${lead.id}">
+        <td><small>${(lead.createdAt || '').slice(0, 10)}</small></td>
+        <td><strong>${lead.name}</strong><br><small>${lead.phone}<br>${lead.email}</small></td>
+        <td>${lead.centerName}<br><small>${lead.city}</small></td>
+        <td>${lead.students || '—'}</td>
+        <td><span class="badge badge-gray">${lead.source || 'Start Page'}</span></td>
+        <td><select class="inbound-stage-select" data-inbound-stage="${lead.id}">${inboundStageOptions(lead.stage)}</select></td>
+        <td><a class="btn btn-sm btn-secondary" href="https://wa.me/919553371972?text=${encodeURIComponent(`Hi ${lead.firstName}, following up on your EduOS demo request for ${lead.centerName}.`)}" target="_blank" rel="noopener noreferrer">WhatsApp</a></td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+function renderInboundLeadCards(leads) {
+  if (!leads.length) {
+    return '<p class="empty-state">No demo requests yet.</p>';
+  }
+  return leads.slice(0, 5).map((lead) => `
+    <div class="session-row">
+      <div class="session-info">
+        <h4>${lead.centerName} · ${lead.city}</h4>
+        <p>${lead.name} · ${lead.phone} · ${lead.students} students · <span class="badge badge-gray">${lead.source || 'Start Page'}</span></p>
+      </div>
+      <span class="badge badge-orange">${lead.stage || 'inquiry'}</span>
+    </div>`).join('');
+}
+
+export function renderPlatformInboundLeads() {
+  return `
+    <div class="vision-banner"><h3>Demo request pipeline</h3><p>Leads captured from <code>start-page.html</code> — Meta ads and website CTAs. Updates sync from the server.</p></div>
+    <div class="panel"><div class="panel-body" id="platformInboundFullBody"><p class="empty-state">Loading inbound leads…</p></div></div>`;
+}
+
+async function fetchInboundLeads() {
+  const res = await fetch('/api/leads', { credentials: 'include' });
+  if (res.status === 401 || res.status === 403) {
+    throw new Error('Sign in as platform owner to view demo requests.');
+  }
+  if (!res.ok) throw new Error(`Could not load leads (${res.status})`);
+  const payload = await res.json();
+  return payload.leads || [];
+}
+
+export async function hydrateInboundLeadsPanels({ toast, navigate, full = false } = {}) {
+  const bodyId = full ? 'platformInboundFullBody' : 'platformInboundPanelBody';
+  const body = document.getElementById(bodyId);
+  if (!body) return;
+
+  try {
+    const leads = await fetchInboundLeads();
+    body.innerHTML = full ? renderInboundLeadRows(leads) : renderInboundLeadCards(leads);
+    if (full) bindInboundStageHandlers({ toast });
+  } catch (err) {
+    body.innerHTML = `<p class="empty-state">${err.message}</p>`;
+    if (full && err.message.includes('platform owner')) {
+      body.innerHTML += '<p class="empty-state">Local dev: log in as <code>owner@eduos.app</code> or disable JWT auth.</p>';
+    }
+  }
+}
+
+function bindInboundStageHandlers({ toast }) {
+  document.querySelectorAll('[data-inbound-stage]').forEach((select) => {
+    select.addEventListener('change', async (e) => {
+      const id = e.target.dataset.inboundStage;
+      const stage = e.target.value;
+      try {
+        const res = await fetch('/api/leads', {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, stage }),
+        });
+        if (!res.ok) throw new Error('update_failed');
+        toast?.('Lead stage updated', 'success');
+      } catch {
+        toast?.('Could not update stage', 'error');
+      }
+    });
+  });
 }
 
 export function renderPlatformCenters(rawState) {
@@ -120,11 +227,18 @@ export function renderPlatformRoadmap() {
 export function bindPlatformEvents(ctx) {
   const { navigate, toast, refresh, rawState } = ctx;
 
+  hydrateInboundLeadsPanels({ toast, navigate, full: false });
+  if (document.getElementById('platformInboundFullBody')) {
+    hydrateInboundLeadsPanels({ toast, navigate, full: true });
+  }
+
   document.querySelectorAll('[data-action="open-center"]').forEach((btn) => {
     btn.addEventListener('click', () => navigate('platformCenterDetail', { centerId: btn.dataset.id }));
   });
 
   document.querySelector('[data-action="go-platformCenters"]')?.addEventListener('click', () => navigate('platformCenters'));
+
+  document.querySelector('[data-action="go-platformInboundLeads"]')?.addEventListener('click', () => navigate('platformInboundLeads'));
 
   document.querySelector('[data-action="support-view"]')?.addEventListener('click', (e) => {
     platformViewCenter(e.target.dataset.id);

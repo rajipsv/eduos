@@ -27,11 +27,12 @@ export const PORTAL_CONFIG = {
     nav: [
       { section: 'Platform', items: [
         { view: 'platformDashboard', icon: '◉', label: 'Dashboard' },
+        { view: 'platformInboundLeads', icon: '→', label: 'Demo requests' },
         { view: 'platformCenters', icon: '▣', label: 'All centers' },
         { view: 'platformRoadmap', icon: '◇', label: 'Product roadmap' },
       ]},
     ],
-    views: ['platformDashboard', 'platformCenters', 'platformCenterDetail', 'platformRoadmap'],
+    views: ['platformDashboard', 'platformInboundLeads', 'platformCenters', 'platformCenterDetail', 'platformRoadmap'],
   },
   center_admin: {
     defaultView: 'dashboard',

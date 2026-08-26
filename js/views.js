@@ -103,6 +103,7 @@ import { getCrmStats, searchLeads, getStageLabel, formatLeadAge } from './crm.js
 import { academyBanner, academyStatsGrid } from './academy.js';
 import {
   renderPlatformDashboard, renderPlatformCenters, renderPlatformCenterDetail, renderPlatformRoadmap,
+  renderPlatformInboundLeads,
   renderTeacherHome, renderStudentHome, bindPlatformEvents,
 } from './platform-views.js';
 import { renderTuitionMarketplace, bindTuitionMarketplaceEvents } from './tuition-marketplace.js';
@@ -144,6 +145,7 @@ export function renderView(view, ctx, params = {}) {
     intelligence: renderIntelligence,
     platform: renderPlatform,
     platformDashboard: () => renderPlatformDashboard(raw),
+    platformInboundLeads: renderPlatformInboundLeads,
     platformCenters: () => renderPlatformCenters(raw),
     platformCenterDetail: () => renderPlatformCenterDetail(params.centerId, raw),
     platformRoadmap: renderPlatformRoadmap,
@@ -1448,7 +1450,7 @@ export function bindViewEvents(view, ctx, params = {}) {
     btn.addEventListener('click', () => navigate(btn.dataset.viewLink));
   });
 
-  if (['platformDashboard', 'platformCenters', 'platformCenterDetail'].includes(view)) {
+  if (['platformDashboard', 'platformInboundLeads', 'platformCenters', 'platformCenterDetail'].includes(view)) {
     bindPlatformEvents(ctx);
   }
 

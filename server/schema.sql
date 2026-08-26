@@ -48,3 +48,13 @@ CREATE TABLE IF NOT EXISTS auth_password_reset_tokens (
 );
 
 CREATE INDEX IF NOT EXISTS auth_password_reset_hash_idx ON auth_password_reset_tokens (token_hash);
+
+-- Public demo-request funnel (start-page.html, Meta ads)
+CREATE TABLE IF NOT EXISTS platform_inbound_leads (
+  id TEXT PRIMARY KEY,
+  data JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS platform_inbound_leads_created_idx ON platform_inbound_leads (created_at DESC);

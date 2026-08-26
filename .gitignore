@@ -6,4 +6,5 @@ Thumbs.db
 .env.*.local
 !.env.example
 node_modules/
+server/data/
 ~$*

@@ -24,6 +24,11 @@ import {
 } from './auth/handlers.js';
 import { isAuthConfigured } from './auth/config.js';
 import { ensureNeonDemoSeeded } from './demo-seed.js';
+import {
+  handleCreateInboundLead,
+  handleListInboundLeads,
+  handleUpdateInboundLead,
+} from './leads-handler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -89,6 +94,10 @@ app.delete('/api/state', (req, res) => removeAppStateForRequest(req, res).then((
   }
   res.status(result.status).json(result.body);
 }));
+
+app.post('/api/leads', (req, res) => handleCreateInboundLead(req, res));
+app.get('/api/leads', (req, res) => handleListInboundLeads(req, res));
+app.patch('/api/leads', (req, res) => handleUpdateInboundLead(req, res));
 
 app.use(express.static(root));
 
