@@ -1,6 +1,6 @@
 # Pillar 7 — AI Assistants
 
-**Product:** EduOS · **Layer:** 7 · **Sidebar:** AI Assistants
+**Product:** Tutorsala · **Layer:** 7 · **Sidebar:** AI Assistants
 
 ---
 

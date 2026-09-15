@@ -248,10 +248,10 @@ function wrapHtml(title, body) {
 </head>
 <body>
   <div class="cover">
-    <div class="badge">EduOS Operations Guide</div>
+    <div class="badge">Tutorsala Operations Guide</div>
     <h1>${escapeHtml(title)}</h1>
     <p>Step-by-step setup for new tuition center administrators — register, teaching profile, batches, and class scheduling.</p>
-    <div class="meta">Generated ${new Date().toISOString().slice(0, 10)} · tutor-hub / EduOS</div>
+    <div class="meta">Generated ${new Date().toISOString().slice(0, 10)} · tutor-hub / Tutorsala</div>
   </div>
   ${body}
 </body>

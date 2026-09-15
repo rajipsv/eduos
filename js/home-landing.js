@@ -23,7 +23,7 @@ export const LANDING_FEATURES = [
   {
     icon: '◆',
     title: 'Business Intelligence',
-    desc: 'KPIs, trends, and daily decisions. EduOS tells you what to do next, not just what happened.',
+    desc: 'KPIs, trends, and daily decisions. Tutorsala tells you what to do next, not just what happened.',
   },
   {
     icon: '✦',
@@ -63,8 +63,8 @@ export const LANDING_STATS = [
 ];
 
 /** Internal sales WhatsApp — not shown on UI; used for wa.me links only. */
-const EDUOS_SALES_WHATSAPP = '919553371972';
-export const EDUOS_SALES_EMAIL = 'hello@eduos.app';
+const TUTORSALA_SALES_WHATSAPP = '919553371972';
+export const TUTORSALA_SALES_EMAIL = 'hello@tutorsala.app';
 
 /** Meta ads / demo funnel — standalone page at repo root. */
 export const START_PAGE_PATH = 'start-page.html';
@@ -106,7 +106,7 @@ export const LANDING_PRICING_TIERS = [
     note: '1 branch · up to 100 active students',
     featured: true,
     features: [
-      'Full EduOS workspace — CRM, academy, comms, family portal',
+      'Full Tutorsala workspace — CRM, academy, comms, family portal',
       'Marketplace listing & guest inquiries',
       'Best for single-location centers (~40–100 students)',
     ],
@@ -121,7 +121,7 @@ export const LANDING_PRICING_TIERS = [
     features: [
       'Add locations as branches on one center account',
       'Branch switcher & branch-scoped CRM',
-      'One academy = one EduOS center (no duplicate signups)',
+      'One academy = one Tutorsala center (no duplicate signups)',
     ],
   },
   {
@@ -151,8 +151,8 @@ function stars(n) {
 }
 
 export function buildPricingWhatsAppUrl(planName) {
-  const digits = String(EDUOS_SALES_WHATSAPP).replace(/\D/g, '');
-  const text = `Hi EduOS team, I'm interested in the ${planName} plan. Please share platform subscription and payment details for my tuition center.`;
+  const digits = String(TUTORSALA_SALES_WHATSAPP).replace(/\D/g, '');
+  const text = `Hi Tutorsala team, I'm interested in the ${planName} plan. Please share platform subscription and payment details for my tuition center.`;
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }
 
@@ -160,10 +160,10 @@ export function renderLandingHeader() {
   return `
     <header class="landing-header">
       <div class="landing-header-inner">
-        <a href="#" class="landing-logo" data-scroll="top" aria-label="EduOS home">
+        <a href="#" class="landing-logo" data-scroll="top" aria-label="Tutorsala home">
           <span class="brand-icon">E</span>
           <span class="landing-logo-text">
-            <strong>EduOS</strong>
+            <strong>Tutorsala</strong>
             <small>Education Business Platform</small>
           </span>
         </a>
@@ -188,7 +188,7 @@ export function renderLandingHero() {
         <div class="landing-hero-copy">
           <p class="landing-eyebrow">The operating system for education businesses</p>
           <h1 class="landing-headline">Run your academy.<br>Delight every parent.<br><em>Scale with confidence.</em></h1>
-          <p class="landing-lead">EduOS is not an LMS — it is the ops platform for tuition centers. Acquire students, run batches, communicate with families, and grow revenue from one place.</p>
+          <p class="landing-lead">Tutorsala is not an LMS — it is the ops platform for tuition centers. Acquire students, run batches, communicate with families, and grow revenue from one place.</p>
           <div class="landing-hero-actions">
             <a class="btn btn-primary" href="${buildStartPageUrl()}">Book free demo</a>
             <button type="button" class="btn btn-secondary" data-scroll="pricing">See pricing</button>
@@ -225,7 +225,7 @@ export function renderLandingFeatures() {
       <div class="landing-section-head">
         <p class="landing-eyebrow">Platform capabilities</p>
         <h2>Everything your tuition center needs</h2>
-        <p class="landing-section-sub">Nine integrated pillars — from first inquiry to parent satisfaction. Teaching stays on Zoom or Meet; EduOS runs the business around it.</p>
+        <p class="landing-section-sub">Nine integrated pillars — from first inquiry to parent satisfaction. Teaching stays on Zoom or Meet; Tutorsala runs the business around it.</p>
       </div>
       <div class="landing-features-grid">
         ${LANDING_FEATURES.map((f) => `
@@ -239,13 +239,13 @@ export function renderLandingFeatures() {
 }
 
 export function renderLandingPricing() {
-  const generalUrl = buildPricingWhatsAppUrl('EduOS platform');
+  const generalUrl = buildPricingWhatsAppUrl('Tutorsala platform');
   return `
     <section class="landing-section landing-section-alt" id="pricing">
       <div class="landing-section-head">
         <p class="landing-eyebrow">Platform subscription</p>
         <h2>Simple annual plans for tuition centers</h2>
-        <p class="landing-section-sub">EduOS platform fee is separate from what you charge students — collect tuition on your own UPI or bank. Contact us on WhatsApp for invoice, UPI, or NEFT details and to activate your center.</p>
+        <p class="landing-section-sub">Tutorsala platform fee is separate from what you charge students — collect tuition on your own UPI or bank. Contact us on WhatsApp for invoice, UPI, or NEFT details and to activate your center.</p>
       </div>
       <div class="landing-pricing-grid">
         ${LANDING_PRICING_TIERS.map((tier) => `
@@ -267,7 +267,7 @@ export function renderLandingPricing() {
         <div class="landing-pricing-contact">
           <a class="btn btn-primary" href="${buildStartPageUrl()}">Book free demo</a>
           <a class="btn btn-secondary" href="${generalUrl}" target="_blank" rel="noopener noreferrer">Contact via WhatsApp</a>
-          <a class="landing-pricing-email" href="mailto:${EDUOS_SALES_EMAIL}?subject=EduOS%20platform%20subscription">${EDUOS_SALES_EMAIL}</a>
+          <a class="landing-pricing-email" href="mailto:${TUTORSALA_SALES_EMAIL}?subject=Tutorsala%20platform%20subscription">${TUTORSALA_SALES_EMAIL}</a>
         </div>
       </div>
     </section>`;
@@ -279,7 +279,7 @@ export function renderLandingTestimonials() {
       <div class="landing-section-head">
         <p class="landing-eyebrow">Trusted by academies & families</p>
         <h2>What our users say</h2>
-        <p class="landing-section-sub">Real outcomes for center owners, tutors, and parents on EduOS.</p>
+        <p class="landing-section-sub">Real outcomes for center owners, tutors, and parents on Tutorsala.</p>
       </div>
       <div class="landing-testimonials-grid">
         ${LANDING_TESTIMONIALS.map((t) => `
@@ -301,7 +301,7 @@ export function renderLandingFooter() {
       <div class="landing-footer-inner">
         <div class="landing-logo landing-logo-footer">
           <span class="brand-icon">E</span>
-          <strong>EduOS</strong>
+          <strong>Tutorsala</strong>
         </div>
         <p>Operations platform for tuition centers — not course hosting.</p>
         <p class="landing-footer-links">
@@ -309,11 +309,11 @@ export function renderLandingFooter() {
           <span aria-hidden="true">·</span>
           <button type="button" class="landing-footer-link" data-scroll="pricing">Pricing</button>
           <span aria-hidden="true">·</span>
-          <a href="${buildPricingWhatsAppUrl('EduOS platform')}" target="_blank" rel="noopener noreferrer">Contact via WhatsApp</a>
+          <a href="${buildPricingWhatsAppUrl('Tutorsala platform')}" target="_blank" rel="noopener noreferrer">Contact via WhatsApp</a>
           <span aria-hidden="true">·</span>
-          <a href="mailto:${EDUOS_SALES_EMAIL}">${EDUOS_SALES_EMAIL}</a>
+          <a href="mailto:${TUTORSALA_SALES_EMAIL}">${TUTORSALA_SALES_EMAIL}</a>
         </p>
-        <p class="landing-footer-copy">© ${new Date().getFullYear()} EduOS · Tutor Hub demo</p>
+        <p class="landing-footer-copy">© ${new Date().getFullYear()} Tutorsala · Tutor Hub demo</p>
       </div>
     </footer>`;
 }

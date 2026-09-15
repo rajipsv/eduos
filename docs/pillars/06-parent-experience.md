@@ -1,6 +1,6 @@
 # Pillar 6 — Parent Experience
 
-**Product:** EduOS · **Layer:** 6 · **Sidebar:** Parent Portal
+**Product:** Tutorsala · **Layer:** 6 · **Sidebar:** Parent Portal
 
 ---
 

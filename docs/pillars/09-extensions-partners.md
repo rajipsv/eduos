@@ -1,12 +1,12 @@
 # Pillar 9 — Extensions & Partners
 
-**Product:** EduOS · **Layer:** 9 · **Sidebar:** Extensions → Extensions & Partners
+**Product:** Tutorsala · **Layer:** 9 · **Sidebar:** Extensions → Extensions & Partners
 
 ---
 
 ## Purpose
 
-Extensions connect EduOS to **tools you already use** for teaching and business ops — Zoom, Google Calendar, WhatsApp, payroll partners, GST services, and message templates. EduOS remains the **operations hub**; lesson content stays on external platforms.
+Extensions connect Tutorsala to **tools you already use** for teaching and business ops — Zoom, Google Calendar, WhatsApp, payroll partners, GST services, and message templates. Tutorsala remains the **operations hub**; lesson content stays on external platforms.
 
 This is **not** a course content marketplace.
 
@@ -74,7 +74,7 @@ This is **not** a course content marketplace.
 ### E. Partner services
 
 1. Browse **Partner services** filter for payroll/GST help.
-2. Partner handles salaries and tax — EduOS tracks **student fees** separately.
+2. Partner handles salaries and tax — Tutorsala tracks **student fees** separately.
 3. Contact partner via details on card if offered.
 
 ### F. Rate an extension
@@ -92,7 +92,7 @@ This is **not** a course content marketplace.
 | 2 | Zoom or Google Meet (batch platform) | Live class links in schedule |
 | 3 | Google Calendar (Connections) | Sync sessions externally |
 | 4 | Fee Reminder template pack | Pre-built comms templates |
-| 5 | Payroll partner (optional) | Staff salaries outside EduOS |
+| 5 | Payroll partner (optional) | Staff salaries outside Tutorsala |
 
 ---
 

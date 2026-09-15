@@ -1,6 +1,6 @@
 # Pillar 4 — Student Success
 
-**Product:** EduOS · **Layer:** 4 · **Sidebar:** Student Success
+**Product:** Tutorsala · **Layer:** 4 · **Sidebar:** Student Success
 
 ---
 

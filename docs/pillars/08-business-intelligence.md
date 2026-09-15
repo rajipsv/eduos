@@ -1,6 +1,6 @@
 # Pillar 8 — Business Intelligence
 
-**Product:** EduOS · **Layer:** 8 · **Sidebar:** Business Intelligence
+**Product:** Tutorsala · **Layer:** 8 · **Sidebar:** Business Intelligence
 
 ---
 

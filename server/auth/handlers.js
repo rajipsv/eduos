@@ -75,7 +75,7 @@ export async function handleLogin(req, res) {
   }
 
   if (user.centerId && appStateCenterSuspended(user.centerId, await loadAppStateData())) {
-    return json(res, 403, { ok: false, error: 'This center has been suspended. Contact EduOS support.' });
+    return json(res, 403, { ok: false, error: 'This center has been suspended. Contact Tutorsala support.' });
   }
 
   return issueAuthResponse(req, res, user);

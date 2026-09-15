@@ -1,6 +1,6 @@
 const ACCESS_TTL_SEC = Number(process.env.JWT_ACCESS_TTL_SEC) || 15 * 60;
 const REFRESH_TTL_SEC = Number(process.env.JWT_REFRESH_TTL_SEC) || 30 * 24 * 60 * 60;
-const REFRESH_COOKIE = 'eduos_refresh';
+const REFRESH_COOKIE = 'tutorsala_refresh';
 
 export function isAuthConfigured() {
   return Boolean(process.env.JWT_SECRET && process.env.JWT_REFRESH_SECRET);

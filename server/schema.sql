@@ -1,4 +1,4 @@
--- EduOS shared application state (MVP: single JSON document, same shape as localStorage blob)
+-- Tutorsala shared application state (MVP: single JSON document, same shape as localStorage blob)
 CREATE TABLE IF NOT EXISTS app_state (
   id TEXT PRIMARY KEY,
   data JSONB NOT NULL,

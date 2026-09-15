@@ -1,6 +1,6 @@
 # Center Admin Onboarding Guide
 
-**Product:** EduOS (tutor-hub)  
+**Product:** Tutorsala (tutor-hub)  
 **Audience:** New tuition center owners and managers  
 **Goal:** Set up a center from scratch — register, configure settings, link yourself as a teacher (if you teach), create batches, and run class scheduling.
 
@@ -48,7 +48,7 @@
 
 ### Alternative: Platform owner view
 
-If EduOS platform staff onboard you, they log in as **Platform owner** → **All centers** → open your center → **Support view**. That mirrors your admin workspace for troubleshooting. Day-to-day work should still use your own **Center admin** login.
+If Tutorsala platform staff onboard you, they log in as **Platform owner** → **All centers** → open your center → **Support view**. That mirrors your admin workspace for troubleshooting. Day-to-day work should still use your own **Center admin** login.
 
 ---
 
@@ -406,4 +406,4 @@ Register → Dashboard
 
 ---
 
-*Related docs: [EDUOS-WORKFLOW.md](./EDUOS-WORKFLOW.md) · [QA accounts](./qa/accounts.csv)*
+*Related docs: [TUTORSALA-WORKFLOW.md](./TUTORSALA-WORKFLOW.md) · [QA accounts](./qa/accounts.csv)*

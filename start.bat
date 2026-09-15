@@ -1,5 +1,5 @@
 @echo off
-title EduOS local server
+title Tutorsala local server
 cd /d "%~dp0"
 set PORT=8888
 set URL=http://127.0.0.1:%PORT%/
@@ -8,11 +8,11 @@ rem Ensure Node/npm are on PATH when launched by double-click
 if exist "%ProgramFiles%\nodejs\" set "PATH=%ProgramFiles%\nodejs;%PATH%"
 
 echo.
-echo  EduOS - local server
+echo  Tutorsala - local server
 echo  ====================
 echo  URL: %URL%
 echo.
-echo  Keep this window OPEN while using EduOS.
+echo  Keep this window OPEN while using Tutorsala.
 echo  Press Ctrl+C to stop the server.
 echo.
 

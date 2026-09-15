@@ -140,7 +140,7 @@ function buildDemoAppState() {
   };
 
   const users = [
-    { id: DEMO_IDS.userOwner, email: 'owner@eduos.app', role: 'platform_owner', name: 'Platform Owner' },
+    { id: DEMO_IDS.userOwner, email: 'owner@tutorsala.app', role: 'platform_owner', name: 'Platform Owner' },
     { id: DEMO_IDS.userAdmin, email: 'admin@brightminds.demo', role: 'center_admin', name: 'Center Admin', centerId },
     { id: DEMO_IDS.userAnita, email: 'anita@tutorhub.com', role: 'teacher', name: teacher1.name, centerId, linkedTeacherId: teacher1.id },
     { id: DEMO_IDS.userVikram, email: 'vikram@tutorhub.com', role: 'teacher', name: teacher2.name, centerId, linkedTeacherId: teacher2.id },
@@ -213,7 +213,7 @@ async function saveAppStateData(data) {
 function demoAppStateMissing(data) {
   if (!data) return true;
   if (!data.users?.some((u) => u.email === 'admin@brightminds.demo')) return true;
-  if (!data.users?.some((u) => u.email === 'owner@eduos.app')) return true;
+  if (!data.users?.some((u) => u.email === 'owner@tutorsala.app')) return true;
   return false;
 }
 

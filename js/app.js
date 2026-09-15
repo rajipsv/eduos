@@ -271,7 +271,7 @@ document.getElementById('exportBtn')?.addEventListener('click', () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `eduos-export-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `tutorsala-export-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
   toast('Data exported', 'success');

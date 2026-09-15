@@ -1,6 +1,6 @@
 # Pillar 5 — Tutor Success
 
-**Product:** EduOS · **Layer:** 5 · **Sidebar:** Tutor Success
+**Product:** Tutorsala · **Layer:** 5 · **Sidebar:** Tutor Success
 
 ---
 

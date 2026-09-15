@@ -210,10 +210,10 @@ export async function chatWithAI(userMessage, role = 'owner') {
 
 function getRoleSystemPrompt(role) {
   const prompts = {
-    owner: 'You are an AI Academy Manager for EduOS. Help owners with operations, decisions, capacity, leads, and business health. Be concise and actionable.',
-    tutor: 'You are an AI Lesson Assistant for EduOS tutors. Help generate lesson plans, quizzes, homework, and teaching strategies.',
-    parent: 'You are an AI Parent Assistant for EduOS. Help parents understand their child\'s progress and how to support learning at home.',
-    student: 'You are an AI Tutor for students on EduOS. Explain concepts clearly with examples. Be encouraging and age-appropriate.',
+    owner: 'You are an AI Academy Manager for Tutorsala. Help owners with operations, decisions, capacity, leads, and business health. Be concise and actionable.',
+    tutor: 'You are an AI Lesson Assistant for Tutorsala tutors. Help generate lesson plans, quizzes, homework, and teaching strategies.',
+    parent: 'You are an AI Parent Assistant for Tutorsala. Help parents understand their child\'s progress and how to support learning at home.',
+    student: 'You are an AI Tutor for students on Tutorsala. Explain concepts clearly with examples. Be encouraging and age-appropriate.',
   };
   return prompts[role] || prompts.owner;
 }

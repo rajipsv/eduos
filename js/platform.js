@@ -104,11 +104,11 @@ function defaultMarketplace() {
       id: 'mp_zoom',
       type: 'integration',
       title: 'Zoom Class Connector',
-      author: 'EduOS',
+      author: 'Tutorsala',
       price: 'Free',
       rating: 4.6,
       installs: 3200,
-      description: 'Auto-attach Zoom join links to scheduled classes. You teach on Zoom — EduOS handles scheduling and reminders.',
+      description: 'Auto-attach Zoom join links to scheduled classes. You teach on Zoom — Tutorsala handles scheduling and reminders.',
       sdkId: 'sdk_zoom',
       linkView: 'schedule',
     },
@@ -116,7 +116,7 @@ function defaultMarketplace() {
       id: 'mp_gcal',
       type: 'integration',
       title: 'Google Calendar Sync',
-      author: 'EduOS',
+      author: 'Tutorsala',
       price: 'Free',
       rating: 4.4,
       installs: 2100,
@@ -128,7 +128,7 @@ function defaultMarketplace() {
       id: 'mp_wa',
       type: 'integration',
       title: 'WhatsApp Business',
-      author: 'EduOS',
+      author: 'Tutorsala',
       price: 'Free',
       rating: 4.7,
       installs: 4100,
@@ -139,7 +139,7 @@ function defaultMarketplace() {
       id: 'mp_twilio',
       type: 'integration',
       title: 'Twilio SMS',
-      author: 'EduOS',
+      author: 'Tutorsala',
       price: 'Free',
       rating: 4.3,
       installs: 980,
@@ -151,7 +151,7 @@ function defaultMarketplace() {
       id: 'mp_tpl_fee',
       type: 'template',
       title: 'Fee Reminder Pack',
-      author: 'EduOS Ops',
+      author: 'Tutorsala Ops',
       price: 'Free',
       rating: 4.5,
       installs: 890,
@@ -169,7 +169,7 @@ function defaultMarketplace() {
       id: 'mp_tpl_onboard',
       type: 'template',
       title: 'Parent Onboarding Pack',
-      author: 'EduOS Ops',
+      author: 'Tutorsala Ops',
       price: 'Free',
       rating: 4.8,
       installs: 560,
@@ -187,7 +187,7 @@ function defaultMarketplace() {
       id: 'mp_tpl_report',
       type: 'template',
       title: 'Monthly Progress Update',
-      author: 'EduOS Ops',
+      author: 'Tutorsala Ops',
       price: 'Free',
       rating: 4.6,
       installs: 720,
@@ -220,7 +220,7 @@ function defaultMarketplace() {
       price: 'Contact',
       rating: 4.9,
       installs: 45,
-      description: 'External partner for tutor salaries, GST filing, and reconciling student fee collections with teacher payouts. EduOS handles academy ops — payroll and accounts stay with your bookkeeper.',
+      description: 'External partner for tutor salaries, GST filing, and reconciling student fee collections with teacher payouts. Tutorsala handles academy ops — payroll and accounts stay with your bookkeeper.',
       contact: 'ops@edubooks.example',
       tags: ['payroll', 'teachers', 'gst', 'bookkeeping'],
     },
@@ -256,7 +256,7 @@ export function getMarketplaceInstallHint(item) {
   if (item.type === 'integration' && item.sdkId) return 'Finish OAuth/setup in Extensions → Connections.';
   if (item.type === 'integration' && item.linkView === 'commHub') return 'Configure channels in Communication Hub.';
   if (item.type === 'integration' && item.linkView === 'schedule') return 'Join links appear on Class Schedule sessions.';
-  if (item.type === 'partner') return 'Contact the partner directly — EduOS does not process payroll or GST in-app.';
+  if (item.type === 'partner') return 'Contact the partner directly — Tutorsala does not process payroll or GST in-app.';
   return 'Active in your academy operations.';
 }
 
@@ -353,7 +353,7 @@ export function seedPlatformDemo(state, students = [], batches = [], teachers = 
   };
 
   if (!state.webhooks.length) {
-    state.webhooks = [{ id: uid('wh'), url: 'https://hooks.example.com/eduos', events: ['student.created', 'attendance.marked'], active: true }];
+    state.webhooks = [{ id: uid('wh'), url: 'https://hooks.example.com/tutorsala', events: ['student.created', 'attendance.marked'], active: true }];
   }
   if (!state.apiEventLog.length) {
     state.apiEventLog = [
@@ -647,14 +647,14 @@ export function simulateApiCall(method, path) {
 
 function defaultSdkIntegrations() {
   return [
-    { id: 'sdk_js', name: 'JavaScript SDK', version: '1.2.0', installed: true, command: 'npm install @eduos/sdk', docs: 'https://docs.eduos.app/sdk/js' },
-    { id: 'sdk_py', name: 'Python SDK', version: '1.1.0', installed: false, command: 'pip install eduos-sdk', docs: 'https://docs.eduos.app/sdk/python' },
-    { id: 'sdk_zapier', name: 'Zapier', version: '1.0.0', installed: false, command: 'Connect via Zapier marketplace', docs: 'https://zapier.com/apps/eduos' },
-    { id: 'sdk_zoom', name: 'Zoom Connector', version: '2.0.1', installed: true, command: 'OAuth connect in Settings', docs: 'https://docs.eduos.app/integrations/zoom' },
-    { id: 'sdk_gcal', name: 'Google Calendar', version: '1.3.0', installed: false, command: 'OAuth connect in Settings', docs: 'https://docs.eduos.app/integrations/google-calendar' },
-    { id: 'sdk_openai', name: 'OpenAI', version: '1.0.0', installed: true, command: 'Add API key in Settings', docs: 'https://docs.eduos.app/integrations/openai' },
-    { id: 'sdk_twilio', name: 'Twilio SMS', version: '1.0.0', installed: false, command: 'Configure in Communication Hub', docs: 'https://docs.eduos.app/integrations/twilio' },
-    { id: 'sdk_stripe', name: 'Stripe', version: '0.9.0', installed: false, command: 'Coming with Payments layer', docs: 'https://docs.eduos.app/integrations/stripe' },
+    { id: 'sdk_js', name: 'JavaScript SDK', version: '1.2.0', installed: true, command: 'npm install @tutorsala/sdk', docs: 'https://docs.tutorsala.app/sdk/js' },
+    { id: 'sdk_py', name: 'Python SDK', version: '1.1.0', installed: false, command: 'pip install tutorsala-sdk', docs: 'https://docs.tutorsala.app/sdk/python' },
+    { id: 'sdk_zapier', name: 'Zapier', version: '1.0.0', installed: false, command: 'Connect via Zapier marketplace', docs: 'https://zapier.com/apps/tutorsala' },
+    { id: 'sdk_zoom', name: 'Zoom Connector', version: '2.0.1', installed: true, command: 'OAuth connect in Settings', docs: 'https://docs.tutorsala.app/integrations/zoom' },
+    { id: 'sdk_gcal', name: 'Google Calendar', version: '1.3.0', installed: false, command: 'OAuth connect in Settings', docs: 'https://docs.tutorsala.app/integrations/google-calendar' },
+    { id: 'sdk_openai', name: 'OpenAI', version: '1.0.0', installed: true, command: 'Add API key in Settings', docs: 'https://docs.tutorsala.app/integrations/openai' },
+    { id: 'sdk_twilio', name: 'Twilio SMS', version: '1.0.0', installed: false, command: 'Configure in Communication Hub', docs: 'https://docs.tutorsala.app/integrations/twilio' },
+    { id: 'sdk_stripe', name: 'Stripe', version: '0.9.0', installed: false, command: 'Coming with Payments layer', docs: 'https://docs.tutorsala.app/integrations/stripe' },
   ];
 }
 

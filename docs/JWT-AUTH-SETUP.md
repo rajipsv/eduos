@@ -1,6 +1,6 @@
 # JWT Auth Setup (Option A)
 
-EduOS supports **server-side JWT auth** when Neon + secrets are configured. Without them, the app keeps **local demo auth** (passwords in browser storage).
+Tutorsala supports **server-side JWT auth** when Neon + secrets are configured. Without them, the app keeps **local demo auth** (passwords in browser storage).
 
 ## Enable auth
 
@@ -44,7 +44,7 @@ Expect: `{ "ok": true, "db": true, "auth": true }`
 
 | Piece | Behavior |
 |-------|----------|
-| **Login** | `POST /api/auth/login` → access token (JSON) + refresh cookie (`eduos_refresh`, httpOnly) |
+| **Login** | `POST /api/auth/login` → access token (JSON) + refresh cookie (`tutorsala_refresh`, httpOnly) |
 | **Refresh** | `POST /api/auth/refresh` → new access token |
 | **API data** | `GET/PUT/DELETE /api/state` requires `Authorization: Bearer <token>` when auth enabled |
 | **Passwords** | Stored as scrypt hashes in `auth_users` — stripped from JSON blob on save |

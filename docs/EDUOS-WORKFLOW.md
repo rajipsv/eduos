@@ -1,14 +1,14 @@
-# EduOS — Workflow & High-Level Design
+# Tutorsala — Workflow & High-Level Design
 
-**Product:** EduOS (tutor-hub)  
+**Product:** Tutorsala (tutor-hub)  
 **Type:** Tutoring **operations** platform — not an LMS  
 **Version:** MVP demo (local-first, multi-tenant)
 
 ---
 
-## 1. What EduOS Is
+## 1. What Tutorsala Is
 
-EduOS is the **operating system for tuition centers**. It handles everything *around* teaching:
+Tutorsala is the **operating system for tuition centers**. It handles everything *around* teaching:
 
 - Acquiring and enrolling students (CRM)
 - Running batches, schedules, attendance, and tests
@@ -17,11 +17,11 @@ EduOS is the **operating system for tuition centers**. It handles everything *ar
 - Business intelligence and decisions
 - Connecting external tools (Zoom, WhatsApp, calendars)
 
-**Teaching itself** (live classes, worksheets, course content) happens on the tutor’s own platforms (Zoom, Google Meet, Khan Academy, etc.). EduOS coordinates logistics and visibility.
+**Teaching itself** (live classes, worksheets, course content) happens on the tutor’s own platforms (Zoom, Google Meet, Khan Academy, etc.). Tutorsala coordinates logistics and visibility.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    PLATFORM OWNER (EduOS)                   │
+│                    PLATFORM OWNER (Tutorsala)                   │
 │   Onboard centers · Monitor usage · Support view            │
 └──────────────────────────┬──────────────────────────────────┘
                            │ many centers
@@ -57,7 +57,7 @@ Each user logs in through a **portal tile** on the auth home screen. Sessions ar
 
 | Role | Who | Default landing | Data scope |
 |------|-----|-----------------|------------|
-| **Platform owner** | EduOS operator | Platform dashboard | All centers; optional **support view** into one center |
+| **Platform owner** | Tutorsala operator | Platform dashboard | All centers; optional **support view** into one center |
 | **Center admin** | Academy owner / manager | Command dashboard | Full center workspace |
 | **Teacher** | Tutor | Teacher Today | Own batches & students only |
 | **Student** | Learner | Student home | Own profile, schedule, homework |
@@ -302,7 +302,7 @@ Password for all: **`demo123`**
 
 | Portal | Email |
 |--------|-------|
-| Platform owner | `owner@eduos.app` |
+| Platform owner | `owner@tutorsala.app` |
 | Center admin | `admin@brightminds.demo` |
 | Teacher | `anita@tutorhub.com` or `vikram@tutorhub.com` |
 | Student | `aarav@email.com` |

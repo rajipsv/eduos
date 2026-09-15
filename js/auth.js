@@ -291,12 +291,12 @@ export async function requestPasswordReset(email) {
   if (user) {
     const { token } = createPasswordResetToken(user.id, normEmail);
     demoResetUrl = buildPasswordResetUrl(token);
-    const academy = getState().settings?.tutorName || 'EduOS';
+    const academy = getState().settings?.tutorName || 'Tutorsala';
     await sendViaChannel('email', {
       to: normEmail,
       message: `Hello ${user.name},
 
-We received a request to reset your EduOS password.
+We received a request to reset your Tutorsala password.
 
 Open this link to choose a new password (valid for 1 hour):
 ${demoResetUrl}
@@ -305,7 +305,7 @@ If you did not request this, you can ignore this email.
 
 — ${academy}`,
       type: 'password_reset',
-      meta: { subject: 'Reset your EduOS password', email: normEmail, resetUrl: demoResetUrl },
+      meta: { subject: 'Reset your Tutorsala password', email: normEmail, resetUrl: demoResetUrl },
     });
   }
 
@@ -384,7 +384,7 @@ export async function login(email, password, expectedPortal) {
 
   const center = user.centerId ? getCenter(user.centerId) : null;
   if (user.centerId && center?.status === 'suspended') {
-    return { ok: false, error: 'This center has been suspended. Contact EduOS support.' };
+    return { ok: false, error: 'This center has been suspended. Contact Tutorsala support.' };
   }
 
   const session = {
@@ -537,7 +537,7 @@ export function getSessionLabel() {
   }
 
   if (session.role === 'family' || session.role === 'parent' || session.role === 'student') {
-    return session.name || session.centerName || 'EduOS';
+    return session.name || session.centerName || 'Tutorsala';
   }
 
   const branchPart = session.branchName ? ` · ${session.branchName}` : '';

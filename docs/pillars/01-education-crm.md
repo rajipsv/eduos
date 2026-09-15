@@ -1,6 +1,6 @@
 # Pillar 1 — Education CRM
 
-**Product:** EduOS · **Layer:** 1 · **Sidebar:** Education CRM
+**Product:** Tutorsala · **Layer:** 1 · **Sidebar:** Education CRM
 
 ---
 
@@ -8,7 +8,7 @@
 
 Education CRM is your **sales-to-operations pipeline**. It captures inquiries from every channel, tracks prospects through demo and admission stages, and converts enrolled leads into Academy students.
 
-EduOS is ops-first — CRM handles **enrollment logistics**, not course content.
+Tutorsala is ops-first — CRM handles **enrollment logistics**, not course content.
 
 ---
 

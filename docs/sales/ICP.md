@@ -1,8 +1,8 @@
-# EduOS — Ideal Customer Profile (ICP)
+# Tutorsala — Ideal Customer Profile (ICP)
 
 ## One-line definition
 
-**EduOS is for tuition center owners in India with 40–100+ active students who run enrollment, schedules, fees, and parent updates on WhatsApp and spreadsheets — and want one operations platform, not an LMS.**
+**Tutorsala is for tuition center owners in India with 40–100+ active students who run enrollment, schedules, fees, and parent updates on WhatsApp and spreadsheets — and want one operations platform, not an LMS.**
 
 ---
 
@@ -39,10 +39,10 @@
 | Segment | Why not now |
 |---------|-------------|
 | Solo home tutor (under 15 students) | WhatsApp is enough; won’t pay ₹18k/year |
-| Pure online course creators | Want LMS/video hosting — not EduOS |
+| Pure online course creators | Want LMS/video hosting — not Tutorsala |
 | Schools (K–12 institutions) | Different buyer, procurement, compliance |
 | Owners who refuse process change | Won’t adopt CRM or batch discipline |
-| “Website only” requests | EduOS is ops platform, not a brochure site |
+| “Website only” requests | Tutorsala is ops platform, not a brochure site |
 
 ---
 
@@ -55,7 +55,7 @@ Use on first WhatsApp call or from the landing inquiry form:
 - [ ] **Pain is weekly** — fees, leads, schedules, or parent comms break often
 - [ ] **Uses WhatsApp** for parents and leads today
 - [ ] **Can start pilot within 2 weeks**
-- [ ] **Understands** EduOS is **not** an LMS (no course video hosting)
+- [ ] **Understands** Tutorsala is **not** an LMS (no course video hosting)
 
 **Strong lead:** 4+ boxes checked. **Weak lead:** under 40 students and “just exploring.”
 
@@ -78,7 +78,7 @@ Use on first WhatsApp call or from the landing inquiry form:
 
 - Local coaching clusters and franchise networks
 - WhatsApp groups of academy owners
-- Guest inquiries on **EduOS marketplace**
+- Guest inquiries on **Tutorsala marketplace**
 - Referrals from design partners
 - Search intent: “tuition management software India”, “coaching center CRM”
 

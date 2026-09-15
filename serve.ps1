@@ -18,7 +18,7 @@ try {
   exit 1
 }
 
-Write-Host "EduOS running at http://127.0.0.1:$port/"
+Write-Host "Tutorsala running at http://127.0.0.1:$port/"
 Start-Process "http://127.0.0.1:$port/"
 
 function Get-ContentType($path) {

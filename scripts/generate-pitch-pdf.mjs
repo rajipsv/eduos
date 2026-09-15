@@ -5,8 +5,8 @@ import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
-const htmlPath = path.join(root, 'docs', 'pitch', 'EduOS-Customer-Pitch.html');
-const pdfPath = path.join(root, 'docs', 'pitch', 'EduOS-Customer-Pitch.pdf');
+const htmlPath = path.join(root, 'docs', 'pitch', 'Tutorsala-Customer-Pitch.html');
+const pdfPath = path.join(root, 'docs', 'pitch', 'Tutorsala-Customer-Pitch.pdf');
 
 if (!fs.existsSync(htmlPath)) {
   console.error('Missing HTML pitch file:', htmlPath);

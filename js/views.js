@@ -135,7 +135,7 @@ export const pageMeta = {
   settings: { title: 'Settings', subtitle: 'Configure your tutoring center' },
   teacherHome: { title: 'Teacher Today', subtitle: 'Your classes and tasks' },
   studentHome: { title: 'Student Home', subtitle: 'Schedule and homework status' },
-  tuitionMarketplace: { title: 'Find Tuitions', subtitle: 'Browse tuition centers on EduOS' },
+  tuitionMarketplace: { title: 'Find Tuitions', subtitle: 'Browse tuition centers on Tutorsala' },
 };
 
 export function renderView(view, ctx, params = {}) {
@@ -188,7 +188,7 @@ function renderDashboard() {
   return `
     <div class="vision-banner">
       <h3>The Operating System for Education Businesses</h3>
-      <p>Acquire students · Run operations · Deliver learning · Grow revenue. EduOS tells you what to do next.</p>
+      <p>Acquire students · Run operations · Deliver learning · Grow revenue. Tutorsala tells you what to do next.</p>
     </div>
     <div class="stats-grid">
       <div class="stat-card"><div class="label">Active Batches</div><div class="value">${batches.length}</div></div>
@@ -264,7 +264,7 @@ function renderIntelligence() {
   return `
     <div class="vision-banner">
       <h3>Business Intelligence — Decisions, not reports</h3>
-      <p>ERP systems record what happened. EduOS tells academy owners what to do next — with KPIs, trends, and predictions.</p>
+      <p>ERP systems record what happened. Tutorsala tells academy owners what to do next — with KPIs, trends, and predictions.</p>
     </div>
     <div class="report-tabs" id="biTabs">
       <button class="report-tab active" data-bi-tab="decisions">Decisions</button>
@@ -396,7 +396,7 @@ function biTabContent(tab) {
 function renderPlatform() {
   return `
     <div class="vision-banner">
-      <h3>EduOS platform roadmap</h3>
+      <h3>Tutorsala platform roadmap</h3>
       <p>Nine capabilities that power a modern tuition center — from first inquiry to parent satisfaction.</p>
     </div>
     <div class="layer-grid">

@@ -260,7 +260,7 @@ Invoice: ${invoice.invoiceNumber}
 Amount: ₹${invoice.amount.toLocaleString('en-IN')}
 Method: ${paymentMethod}${refLine}${noteLine}
 
-Open Fees & Invoices in EduOS to verify and confirm.`;
+Open Fees & Invoices in Tutorsala to verify and confirm.`;
 
   addMessage({
     to: 'Center admin',

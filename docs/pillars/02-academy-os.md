@@ -1,12 +1,12 @@
 # Pillar 2 — Academy OS
 
-**Product:** EduOS · **Layer:** 2 · **Sidebar:** Academy
+**Product:** Tutorsala · **Layer:** 2 · **Sidebar:** Academy
 
 ---
 
 ## Purpose
 
-Academy OS runs the **core teaching operations** of your center: tutors, batches, auto-generated schedules, students, fees, attendance, and tests. Live classes happen on Zoom/Meet/Teams — EduOS coordinates **when**, **who**, and **what's next**.
+Academy OS runs the **core teaching operations** of your center: tutors, batches, auto-generated schedules, students, fees, attendance, and tests. Live classes happen on Zoom/Meet/Teams — Tutorsala coordinates **when**, **who**, and **what's next**.
 
 ---
 

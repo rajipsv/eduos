@@ -158,7 +158,7 @@ function pagerHtml({ shown, total, filtering }) {
   }
   const hint = filtering
     ? 'Refine search or load more results below.'
-    : `${total} centers on EduOS — search by city or subject, or load more.`;
+    : `${total} centers on Tutorsala — search by city or subject, or load more.`;
   return `
     <p class="tuition-pager-note">Showing <strong>${shown}</strong> of <strong>${total}</strong> centers · ${hint}</p>
     <button type="button" class="btn btn-secondary btn-sm" data-action="tuition-load-more">Show more centers</button>`;
@@ -203,7 +203,7 @@ export function renderTuitionMarketplace(rawState, options = {}) {
   const banner = publicHome ? '' : `
     <div class="vision-banner">
       <h3>Tuition Marketplace</h3>
-      <p>Search tuition centers on EduOS — academics, dance, art, music, sports, coding, and more.</p>
+      <p>Search tuition centers on Tutorsala — academics, dance, art, music, sports, coding, and more.</p>
     </div>`;
 
   return `

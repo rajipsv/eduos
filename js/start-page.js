@@ -1,4 +1,4 @@
-const EDUOS_SALES_WHATSAPP = '919553371972';
+const TUTORSALA_SALES_WHATSAPP = '919553371972';
 
 const UTM_KEYS = [
   'utm_source',
@@ -27,9 +27,9 @@ function scrollToForm(event) {
 }
 
 function buildWhatsAppUrl(data, utm = {}, leadId = null) {
-  const digits = String(EDUOS_SALES_WHATSAPP).replace(/\D/g, '');
+  const digits = String(TUTORSALA_SALES_WHATSAPP).replace(/\D/g, '');
   const lines = [
-    'Hi EduOS team — I filled out the start page form and want to book a free demo.',
+    'Hi Tutorsala team — I filled out the start page form and want to book a free demo.',
     '',
     `Name: ${data.first_name} ${data.last_name}`,
     `Center: ${data.center_name}`,
@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     el.addEventListener('click', scrollToForm);
   });
 
-  const form = document.getElementById('eduos-form');
+  const form = document.getElementById('tutorsala-form');
   if (form) form.addEventListener('submit', handleFormSubmit);
 });
 

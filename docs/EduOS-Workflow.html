@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>EduOS — Workflow &amp; High-Level Design</title>
+  <title>Tutorsala — Workflow &amp; High-Level Design</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif&display=swap" rel="stylesheet">
   <style>
     @page { size: A4; margin: 14mm; }
@@ -132,14 +132,14 @@
 
   <div class="cover">
     <div class="badge">Workflow &amp; High-Level Design</div>
-    <h1>EduOS</h1>
+    <h1>Tutorsala</h1>
     <p>Tutoring operations platform — not an LMS. Multi-tenant MVP architecture, roles, nine layers, and core workflows.</p>
-    <div class="meta">Product: EduOS (tutor-hub) · Version: local-first demo · 2026</div>
+    <div class="meta">Product: Tutorsala (tutor-hub) · Version: local-first demo · 2026</div>
   </div>
 
   <section>
-    <h2>1. What EduOS Is</h2>
-    <p class="lead">EduOS is the <strong>operating system for tuition centers</strong>. It handles everything around teaching:</p>
+    <h2>1. What Tutorsala Is</h2>
+    <p class="lead">Tutorsala is the <strong>operating system for tuition centers</strong>. It handles everything around teaching:</p>
     <ul>
       <li>Acquiring and enrolling students (CRM)</li>
       <li>Running batches, schedules, attendance, and tests</li>
@@ -148,8 +148,8 @@
       <li>Business intelligence and decisions</li>
       <li>Connecting external tools (Zoom, WhatsApp, calendars)</li>
     </ul>
-    <p><strong>Teaching itself</strong> happens on the tutor's own platforms (Zoom, Google Meet, Khan Academy, etc.). EduOS coordinates logistics and visibility.</p>
-    <div class="diagram">PLATFORM OWNER (EduOS) — onboard centers · monitor · support view
+    <p><strong>Teaching itself</strong> happens on the tutor's own platforms (Zoom, Google Meet, Khan Academy, etc.). Tutorsala coordinates logistics and visibility.</p>
+    <div class="diagram">PLATFORM OWNER (Tutorsala) — onboard centers · monitor · support view
          │
     ┌────┴────┬────────┐
  Center A  Center B  Center C  (each tenant isolated)
@@ -178,7 +178,7 @@
     <table>
       <thead><tr><th>Role</th><th>Who</th><th>Default landing</th><th>Data scope</th></tr></thead>
       <tbody>
-        <tr><td><strong>Platform owner</strong></td><td>EduOS operator</td><td>Platform dashboard</td><td>All centers; support view into one center</td></tr>
+        <tr><td><strong>Platform owner</strong></td><td>Tutorsala operator</td><td>Platform dashboard</td><td>All centers; support view into one center</td></tr>
         <tr><td><strong>Center admin</strong></td><td>Academy owner</td><td>Command dashboard</td><td>Full center workspace</td></tr>
         <tr><td><strong>Teacher</strong></td><td>Tutor</td><td>Teacher Today</td><td>Own batches &amp; students</td></tr>
         <tr><td><strong>Student</strong></td><td>Learner</td><td>Student home</td><td>Own profile, schedule, homework</td></tr>
@@ -339,7 +339,7 @@
     <table>
       <thead><tr><th>Portal</th><th>Email</th></tr></thead>
       <tbody>
-        <tr><td>Platform owner</td><td>owner@eduos.app</td></tr>
+        <tr><td>Platform owner</td><td>owner@tutorsala.app</td></tr>
         <tr><td>Center admin</td><td>admin@brightminds.demo</td></tr>
         <tr><td>Teacher</td><td>anita@tutorhub.com / vikram@tutorhub.com</td></tr>
         <tr><td>Student</td><td>aarav@email.com</td></tr>

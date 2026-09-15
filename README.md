@@ -53,7 +53,7 @@ https://YOUR-DOMAIN/start-page.html?utm_source=Meta+Ads&utm_medium=...&utm_campa
 
 When a lead submits the form, UTM parameters are appended to the WhatsApp message so you know which ad brought them in.
 
-**CRM auto-capture:** the same submit also `POST`s to `/api/leads`, which stores the lead server-side (PostgreSQL when `DATABASE_URL` is set, otherwise `server/data/platform-inbound-leads.json`). Log in as **platform owner** (`owner@eduos.app`) and open **Demo requests** in the sidebar to view and update stages.
+**CRM auto-capture:** the same submit also `POST`s to `/api/leads`, which stores the lead server-side (PostgreSQL when `DATABASE_URL` is set, otherwise `server/data/platform-inbound-leads.json`). Log in as **platform owner** (`owner@tutorsala.app`) and open **Demo requests** in the sidebar to view and update stages.
 
 ```bash
 # With the local server running
@@ -61,7 +61,7 @@ http://127.0.0.1:8888/start-page.html
 http://127.0.0.1:8888/                    # home page → Book free demo → start page
 ```
 
-The inquiry form opens WhatsApp with a pre-filled message to the EduOS sales number (same flow as Pricing on the home page).
+The inquiry form opens WhatsApp with a pre-filled message to the Tutorsala sales number (same flow as Pricing on the home page).
 
 ## Auto-Scheduling (like Epic LMS)
 

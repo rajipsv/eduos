@@ -1,6 +1,6 @@
 # Pillar 3 — Communication
 
-**Product:** EduOS · **Layer:** 3 · **Sidebar:** Communication → Communication Hub
+**Product:** Tutorsala · **Layer:** 3 · **Sidebar:** Communication → Communication Hub
 
 ---
 

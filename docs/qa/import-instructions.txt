@@ -1,7 +1,7 @@
-EduOS Manual QA — Google Sheets Import
+Tutorsala Manual QA — Google Sheets Import
 ======================================
 
-Production URL: https://eduos-nine.vercel.app/
+Production URL: https://tutorsala-nine.vercel.app/
 Local URL:      http://127.0.0.1:8888/ (run start.bat)
 Password:       demo123 (all demo accounts)
 

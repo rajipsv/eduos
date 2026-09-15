@@ -1,15 +1,15 @@
 Tier,Model,Price INR,Included,Overage,Billing Unit,Best For,Notes
-Starter,Flat annual per center,18000,1 branch up to 100 active students,30 per student per year above 100 per branch,Per center year,Single-location centers up to ~100 students,One academy = one EduOS center registration
+Starter,Flat annual per center,18000,1 branch up to 100 active students,30 per student per year above 100 per branch,Per center year,Single-location centers up to ~100 students,One academy = one Tutorsala center registration
 Branch add-on,Per additional branch on same center,12000 per extra branch per year,Full platform on that branch,30 per student per year above 100 on that branch,Per branch year,2nd location and beyond,Add branch in app — do not register a second Starter center
 Design Partner,Pilot,0,Same as agreed tier,None,90 days,First 5-10 centers in pilot,Feedback and case study; converts to paid plan after pilot
 
 Metric,Definition
-Active student,Enrolled student on EduOS with assigned batch (not lead-only)
+Active student,Enrolled student on Tutorsala with assigned batch (not lead-only)
 Branch,Physical or logical location under one center (Mumbai HQ Thane Online)
-One center rule,Same legal academy uses one EduOS center; multiple locations are branches not duplicate signups
+One center rule,Same legal academy uses one Tutorsala center; multiple locations are branches not duplicate signups
 Billing cycle,Annual invoice (monthly optional by agreement)
 Fee collection,Centers collect tuition via own UPI cash or bank — not required for platform fee
-GST,May apply on EduOS platform fee — confirm with accountant
+GST,May apply on Tutorsala platform fee — confirm with accountant
 
 Example Scenario,Branches,Students,Calculation,Total INR Year,Notes
 Starter fit,1,80,Starter flat,18000,
@@ -20,7 +20,7 @@ Two branches scale,2,280 total 140 per branch,30000 + 80 x 30,32400,40 overage p
 
 Model Comparison,Setup,Students,Tiered INR,Per Student 150 INR,Per Student 200 INR,Per Student 225 INR,Notes
 Tiered vs per-student,1 branch,80,18000,12000,16000,18000,Tiered anchors small centers at 18k floor
-Tiered vs per-student,1 branch,140,19200,21000,28000,31500,Per-student wins EduOS revenue at 200+ rate
+Tiered vs per-student,1 branch,140,19200,21000,28000,31500,Per-student wins Tutorsala revenue at 200+ rate
 Tiered vs per-student,2 branches,280,32400,42000,56000,63000,Volume discount built into tiered model
 Effective per student tiered,1 branch,80,225 per student,,,,
 Effective per student tiered,1 branch,140,137 per student,,,,

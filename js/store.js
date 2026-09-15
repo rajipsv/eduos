@@ -173,7 +173,7 @@ function loadFromLocalStorage() {
     }
     return hydrateState(JSON.parse(raw));
   } catch (err) {
-    console.error('EduOS loadData failed, resetting demo:', err);
+    console.error('Tutorsala loadData failed, resetting demo:', err);
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
     return seedDemoData();
   }
@@ -221,7 +221,7 @@ function scheduleDbPersist() {
   clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
     persistToDatabase(state).catch((err) => {
-      console.warn('EduOS database save failed:', err.message);
+      console.warn('Tutorsala database save failed:', err.message);
     });
   }, 400);
 }
@@ -255,14 +255,14 @@ export async function initStore() {
           return state;
         }
         storageBackendReason = info.reason || 'database_not_connected';
-        console.warn('EduOS: API server running but database not connected.', storageBackendReason);
+        console.warn('Tutorsala: API server running but database not connected.', storageBackendReason);
       } else if (health.status !== 404) {
         storageBackendReason = `health_${health.status}`;
-        console.warn('EduOS: /api/health returned', health.status);
+        console.warn('Tutorsala: /api/health returned', health.status);
       }
     } catch (err) {
       storageBackendReason = 'api_unavailable';
-      console.warn('EduOS using localStorage (API unavailable):', err.message);
+      console.warn('Tutorsala using localStorage (API unavailable):', err.message);
       dbMode = false;
     }
 
@@ -931,7 +931,7 @@ function applySeedDemoUsers(data) {
   const t2 = data.teachers[1];
   const s1 = data.students[0];
   data.users = [
-    { id: uid('user'), email: 'owner@eduos.app', password: 'demo123', role: 'platform_owner', name: 'Platform Owner' },
+    { id: uid('user'), email: 'owner@tutorsala.app', password: 'demo123', role: 'platform_owner', name: 'Platform Owner' },
     { id: uid('user'), centerId, email: 'admin@brightminds.demo', password: 'demo123', role: 'center_admin', name: 'Center Admin' },
     { id: uid('user'), centerId, email: 'anita@tutorhub.com', password: 'demo123', role: 'teacher', name: t1?.name || 'Teacher 1', linkedTeacherId: t1?.id },
     { id: uid('user'), centerId, email: 'vikram@tutorhub.com', password: 'demo123', role: 'teacher', name: t2?.name || 'Teacher 2', linkedTeacherId: t2?.id },

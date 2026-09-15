@@ -2,7 +2,7 @@
 export const DEMO_PASSWORD = 'demo123';
 
 export const DEMO_EMAILS = [
-  'owner@eduos.app',
+  'owner@tutorsala.app',
   'admin@brightminds.demo',
   'anita@tutorhub.com',
   'vikram@tutorhub.com',

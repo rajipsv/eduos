@@ -636,7 +636,7 @@ function parentFeesView(studentId) {
     ${billing.upiId || billing.bankDetails ? `<div class="panel" style="margin-top:16px"><div class="panel-header"><h3>How to pay</h3></div><div class="panel-body">
       ${billing.upiId ? `<p><strong>UPI:</strong> ${billing.upiId}</p>` : ''}
       ${billing.bankDetails ? `<p style="margin-top:8px;font-size:0.88rem;color:var(--text-muted)">${billing.bankDetails}</p>` : ''}
-      <p style="margin-top:10px;font-size:0.82rem;color:var(--text-muted)">After paying offline, tap <strong>I've paid — notify center</strong>. The center verifies and confirms in EduOS.</p>
+      <p style="margin-top:10px;font-size:0.82rem;color:var(--text-muted)">After paying offline, tap <strong>I've paid — notify center</strong>. The center verifies and confirms in Tutorsala.</p>
     </div></div>` : ''}
     <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Invoices — ${student?.name || 'Student'}</h3></div>
     <div class="panel-body table-wrap">
@@ -824,7 +824,7 @@ function sendHtml() {
 function renderMarketplace() {
   const stats = getMarketplaceStats();
   return `
-    <div class="vision-banner"><h3>Extensions &amp; Partners</h3><p>Connect the tools you already use for teaching. EduOS handles operations — scheduling, communication, and parent updates — not course content.</p></div>
+    <div class="vision-banner"><h3>Extensions &amp; Partners</h3><p>Connect the tools you already use for teaching. Tutorsala handles operations — scheduling, communication, and parent updates — not course content.</p></div>
     <div class="stats-grid">
       <div class="stat-card"><div class="label">Integrations</div><div class="value">${stats.integrations}</div></div>
       <div class="stat-card"><div class="label">Ops templates</div><div class="value">${stats.templates}</div></div>
@@ -844,7 +844,7 @@ function mpBrowseHtml() {
   return `
     <div class="mp-partner-banner" style="margin-top:12px">
       <h4>Need tutor payroll or GST?</h4>
-      <p>Partner services below handle salaries, tax filing, and fee reconciliation. EduOS tracks student fees — payroll stays with your bookkeeper or partner.</p>
+      <p>Partner services below handle salaries, tax filing, and fee reconciliation. Tutorsala tracks student fees — payroll stays with your bookkeeper or partner.</p>
     </div>
     <div class="toolbar" style="margin-top:12px">
       <input id="mpSearch" placeholder="Search extensions… (try payroll, GST)" style="flex:1;max-width:280px">
@@ -865,7 +865,7 @@ function mpConnectionsHtml() {
   return `
     <div class="panel" style="margin-top:12px"><div class="panel-header"><h3>Connected tools</h3></div>
     <div class="panel-body">
-      <p style="font-size:0.84rem;color:var(--text-muted);margin-bottom:14px">Link the apps you already use for teaching and parent communication. EduOS handles scheduling and ops — not lesson content.</p>
+      <p style="font-size:0.84rem;color:var(--text-muted);margin-bottom:14px">Link the apps you already use for teaching and parent communication. Tutorsala handles scheduling and ops — not lesson content.</p>
       <div class="card-grid">${sdks.map((s) => `
         <div class="batch-card"><h4>${s.name}</h4><div class="meta">v${s.version}</div>
         <p style="font-size:0.78rem;margin:8px 0;color:var(--text-muted)">${s.command}</p>
@@ -1358,7 +1358,7 @@ function bindParentPortalEvents({ toast, refresh, showModal, closeModal }) {
     if (!showModal || !closeModal) return;
     showModal({
       title: 'Report offline payment',
-      body: `<p style="margin:0 0 12px;font-size:0.88rem;color:var(--text-muted)">Tell the center you've paid outside EduOS. They will verify and confirm — this does not process payment in the app.</p>
+      body: `<p style="margin:0 0 12px;font-size:0.88rem;color:var(--text-muted)">Tell the center you've paid outside Tutorsala. They will verify and confirm — this does not process payment in the app.</p>
       <div class="form-grid">
         <div class="form-group"><label>Payment method</label>
           <select id="parentPayMethod">

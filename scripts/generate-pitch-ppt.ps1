@@ -1,7 +1,7 @@
-# Generates EduOS customer pitch PowerPoint (.pptx)
+# Generates Tutorsala customer pitch PowerPoint (.pptx)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-$outPath = Join-Path $root 'docs\pitch\EduOS-Customer-Pitch.pptx'
+$outPath = Join-Path $root 'docs\pitch\Tutorsala-Customer-Pitch.pptx'
 
 function Get-PptRgb([int]$r, [int]$g, [int]$b) {
     return $r + ($g -shl 8) + ($b -shl 16)
@@ -53,7 +53,7 @@ try {
     $s1 = $pres.Slides.Add(1, 12)
     Set-SlideBackground $s1 $greenMid
     Add-TextBox $s1 40 80 640 36 'TUITION CENTER OPERATIONS PLATFORM' 11 (Get-PptRgb 220 235 228) $false | Out-Null
-    Add-TextBox $s1 40 130 640 90 'EduOS' 60 (Get-PptRgb 255 255 255) $true | Out-Null
+    Add-TextBox $s1 40 130 640 90 'Tutorsala' 60 (Get-PptRgb 255 255 255) $true | Out-Null
     Add-TextBox $s1 40 230 580 80 'The operating system for education businesses. Acquire students, run operations, keep parents informed, and grow with confidence.' 20 (Get-PptRgb 240 248 244) $false | Out-Null
     Add-TextBox $s1 40 480 640 30 'Product overview for tuition centers and coaching institutes | Confidential | 2026' 11 (Get-PptRgb 200 220 210) $false | Out-Null
 
@@ -73,7 +73,7 @@ try {
         '- Reactive parent calls', '- No decision support', '- LMS is not business ops'
     ) -join "`r"
     $rightCol = @(
-        'With EduOS', '', '- CRM pipeline to enrollment', '- Auto-schedule and meeting links',
+        'With Tutorsala', '', '- CRM pipeline to enrollment', '- Auto-schedule and meeting links',
         '- WhatsApp and email automations', '- BI: what to do today', '- Works with Zoom and Meet'
     ) -join "`r"
     Add-TextBox $s3 40 90 310 280 $leftCol 16 (Get-PptRgb 120 40 40) $false | Out-Null
@@ -82,10 +82,10 @@ try {
     $s4 = $pres.Slides.Add($pres.Slides.Count + 1, 12)
     Set-SlideBackground $s4 (Get-PptRgb 250 252 251)
     Add-TextBox $s4 40 28 640 44 'Ops platform - not an LMS' 32 $greenDark $true | Out-Null
-    Add-TextBox $s4 40 90 300 200 'EduOS handles operations' 18 $greenMid $true | Out-Null
+    Add-TextBox $s4 40 90 300 200 'Tutorsala handles operations' 18 $greenMid $true | Out-Null
     Add-TextBox $s4 40 118 300 180 'CRM, batches, schedules, attendance, tests, homework tracking, parent communication, tutor performance, and business intelligence.' 14 $textDark $false | Out-Null
     Add-TextBox $s4 370 90 300 200 'Tutors keep teaching their way' 18 $greenMid $true | Out-Null
-    Add-TextBox $s4 370 118 300 180 'EduOS does not replace Zoom, Google Meet, or your curriculum platforms. It coordinates logistics and gives everyone visibility.' 14 $textDark $false | Out-Null
+    Add-TextBox $s4 370 118 300 180 'Tutorsala does not replace Zoom, Google Meet, or your curriculum platforms. It coordinates logistics and gives everyone visibility.' 14 $textDark $false | Out-Null
     Add-TextBox $s4 40 340 640 100 '9 pillars | 5 role portals | Multi-center ready | No content hosting required' 16 $greenMid $true 2 | Out-Null
 
     Add-BulletSlide $pres 'Nine pillars - part 1' @(
@@ -144,14 +144,14 @@ try {
     Add-TextBox $s10 370 125 300 200 'Parents see homework and progress without admin clutter. Students submit work; parents stay informed via portal and WhatsApp.' 14 $textDark $false | Out-Null
 
     Add-BulletSlide $pres 'Multi-center ready' @(
-        'Platform dashboard - all tuition centers on one EduOS instance',
+        'Platform dashboard - all tuition centers on one Tutorsala instance',
         'Support view - help a center without sharing passwords',
         'Self-serve registration - new center gets full workspace instantly',
         'Isolated data per center - teachers, students, parents scoped',
         'Suspend and monitor centers from platform owner console'
     ) 'Built for franchise operators and independent academies alike.'
 
-    Add-BulletSlide $pres 'Why centers choose EduOS' @(
+    Add-BulletSlide $pres 'Why centers choose Tutorsala' @(
         'Lead-to-enrollment CRM - built in, not bolted on',
         'Topic-based auto scheduling - not manual calendar entry',
         'Parent WhatsApp automations - event-driven, not manual blasts',
@@ -162,14 +162,14 @@ try {
 
     $s13 = $pres.Slides.Add($pres.Slides.Count + 1, 12)
     Set-SlideBackground $s13 $greenMid
-    Add-TextBox $s13 40 60 640 50 'See EduOS in action' 36 (Get-PptRgb 255 255 255) $true | Out-Null
+    Add-TextBox $s13 40 60 640 50 'See Tutorsala in action' 36 (Get-PptRgb 255 255 255) $true | Out-Null
     $cta = @(
         'Live demo - every role in one session:', '',
         '- Center owner: CRM, batch, schedule, BI decisions',
         '- Teacher: classes, attendance, homework',
         '- Parent: progress portal and automated updates',
         '- Platform operator: multi-center dashboard', '',
-        'Contact: hello@eduos.app',
+        'Contact: hello@tutorsala.app',
         'Demo: run start.bat then open http://127.0.0.1:8888'
     ) -join "`r"
     Add-TextBox $s13 48 130 640 260 $cta 18 (Get-PptRgb 240 248 244) $false | Out-Null

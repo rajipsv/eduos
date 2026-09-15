@@ -4,9 +4,9 @@ import { PLATFORM_LAYERS } from './intelligence.js';
 import { getUpcomingSessions, formatTime } from './scheduler.js';
 
 export const platformPageMeta = {
-  platformDashboard: { title: 'Platform Dashboard', subtitle: 'EduOS operator — all tuition centers' },
+  platformDashboard: { title: 'Platform Dashboard', subtitle: 'Tutorsala operator — all tuition centers' },
   platformInboundLeads: { title: 'Demo requests', subtitle: 'Inbound leads from start-page and Meta ads' },
-  platformCenters: { title: 'All Centers', subtitle: 'Registered tuition centers on EduOS' },
+  platformCenters: { title: 'All Centers', subtitle: 'Registered tuition centers on Tutorsala' },
   platformCenterDetail: { title: 'Center detail', subtitle: 'Inspect and manage a center' },
   platformRoadmap: { title: 'Product Roadmap', subtitle: 'Capabilities included in every tuition center' },
 };
@@ -36,7 +36,7 @@ export function renderPlatformDashboard(rawState) {
   const totalTeachers = (rawState.teachers || []).length;
   const totalStudents = (rawState.students || []).length;
   return `
-    <div class="vision-banner"><h3>Platform owner</h3><p>You see every tuition center on EduOS — onboard, support, and monitor usage.</p></div>
+    <div class="vision-banner"><h3>Platform owner</h3><p>You see every tuition center on Tutorsala — onboard, support, and monitor usage.</p></div>
     <div class="stats-grid">
       <div class="stat-card"><div class="label">Centers</div><div class="value">${centers.length}</div></div>
       <div class="stat-card"><div class="label">Active</div><div class="value">${active}</div></div>
@@ -84,7 +84,7 @@ function renderInboundLeadRows(leads) {
         <td>${lead.students || '—'}</td>
         <td><span class="badge badge-gray">${lead.source || 'Start Page'}</span></td>
         <td><select class="inbound-stage-select" data-inbound-stage="${lead.id}">${inboundStageOptions(lead.stage)}</select></td>
-        <td><a class="btn btn-sm btn-secondary" href="https://wa.me/919553371972?text=${encodeURIComponent(`Hi ${lead.firstName}, following up on your EduOS demo request for ${lead.centerName}.`)}" target="_blank" rel="noopener noreferrer">WhatsApp</a></td>
+        <td><a class="btn btn-sm btn-secondary" href="https://wa.me/919553371972?text=${encodeURIComponent(`Hi ${lead.firstName}, following up on your Tutorsala demo request for ${lead.centerName}.`)}" target="_blank" rel="noopener noreferrer">WhatsApp</a></td>
       </tr>`).join('')}
     </tbody></table></div>`;
 }
@@ -131,7 +131,7 @@ export async function hydrateInboundLeadsPanels({ toast, navigate, full = false 
   } catch (err) {
     body.innerHTML = `<p class="empty-state">${err.message}</p>`;
     if (full && err.message.includes('platform owner')) {
-      body.innerHTML += '<p class="empty-state">Local dev: log in as <code>owner@eduos.app</code> or disable JWT auth.</p>';
+      body.innerHTML += '<p class="empty-state">Local dev: log in as <code>owner@tutorsala.app</code> or disable JWT auth.</p>';
     }
   }
 }
@@ -213,7 +213,7 @@ export function renderPlatformCenterDetail(centerId, rawState) {
 
 export function renderPlatformRoadmap() {
   return `
-    <div class="vision-banner"><h3>EduOS product roadmap</h3><p>What each tuition center gets on the platform.</p></div>
+    <div class="vision-banner"><h3>Tutorsala product roadmap</h3><p>What each tuition center gets on the platform.</p></div>
     <div class="layer-grid">
       ${PLATFORM_LAYERS.map((layer) => `
         <div class="batch-card">

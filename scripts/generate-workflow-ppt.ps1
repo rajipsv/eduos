@@ -1,7 +1,7 @@
-# Generates EduOS-Workflow.pptx from docs/EDUOS-WORKFLOW.md content
+# Generates Tutorsala-Workflow.pptx from docs/TUTORSALA-WORKFLOW.md content
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-$outPath = Join-Path $root 'docs\EduOS-Workflow.pptx'
+$outPath = Join-Path $root 'docs\Tutorsala-Workflow.pptx'
 
 function Get-PptRgb([int]$r, [int]$g, [int]$b) { return $r + ($g -shl 8) + ($b -shl 16) }
 
@@ -62,18 +62,18 @@ try {
     $s1 = $pres.Slides.Add(1, 12)
     Set-SlideBackground $s1 $greenMid
     Add-TextBox $s1 40 100 640 36 'WORKFLOW AND HIGH-LEVEL DESIGN' 12 (Get-PptRgb 220 235 228) $false | Out-Null
-    Add-TextBox $s1 40 140 640 70 'EduOS' 54 (Get-PptRgb 255 255 255) $true | Out-Null
+    Add-TextBox $s1 40 140 640 70 'Tutorsala' 54 (Get-PptRgb 255 255 255) $true | Out-Null
     Add-TextBox $s1 40 220 620 60 'Tutoring operations platform - not an LMS | Multi-tenant MVP | Local-first demo' 18 (Get-PptRgb 240 248 244) $false | Out-Null
-    Add-TextBox $s1 40 460 640 30 'Source: docs/EDUOS-WORKFLOW.md | tutor-hub codebase' 11 (Get-PptRgb 200 220 210) $false | Out-Null
+    Add-TextBox $s1 40 460 640 30 'Source: docs/TUTORSALA-WORKFLOW.md | tutor-hub codebase' 11 (Get-PptRgb 200 220 210) $false | Out-Null
 
-    Add-BulletSlide $pres '1. What EduOS is' @(
+    Add-BulletSlide $pres '1. What Tutorsala is' @(
         'Operating system for tuition centers - everything around teaching',
         'Acquire and enroll students (CRM)',
         'Run batches, schedules, attendance, tests',
         'Message parents and staff; track success signals',
         'Business intelligence and external tool connections',
         'Teaching happens on Zoom, Meet, Khan Academy, etc.',
-        'EduOS coordinates logistics and visibility'
+        'Tutorsala coordinates logistics and visibility'
     )
 
     Add-BulletSlide $pres 'Multi-tenant architecture' @(
@@ -82,7 +82,7 @@ try {
         'Per center: Admin, Teachers, Students, Parents',
         'Platform owner can enter support view into one center workspace',
         'New centers register on auth screen and get empty scoped workspace'
-    ) 'Data scoped per center; one EduOS instance serves many academies.'
+    ) 'Data scoped per center; one Tutorsala instance serves many academies.'
 
     Add-BulletSlide $pres '2. Design principles' @(
         'Ops-first: CRM, schedule, attendance, comms - not course hosting',
@@ -230,7 +230,7 @@ try {
     )
 
     Add-BulletSlide $pres '8. Demo accounts (password: demo123)' @(
-        'Platform owner: owner@eduos.app',
+        'Platform owner: owner@tutorsala.app',
         'Center admin: admin@brightminds.demo',
         'Teacher: anita@tutorhub.com or vikram@tutorhub.com',
         'Student: aarav@email.com',

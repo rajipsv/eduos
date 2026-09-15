@@ -1,11 +1,11 @@
 @echo off
 cd /d "%~dp0..\docs\pitch"
-set HTML=%CD%\EduOS-Customer-Pitch.html
-set PDF=%CD%\EduOS-Customer-Pitch.pdf
+set HTML=%CD%\Tutorsala-Customer-Pitch.html
+set PDF=%CD%\Tutorsala-Customer-Pitch.pdf
 set CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe
 
 if not exist "%CHROME%" (
-  echo Chrome not found. Open EduOS-Customer-Pitch.html in your browser and Print to PDF.
+  echo Chrome not found. Open Tutorsala-Customer-Pitch.html in your browser and Print to PDF.
   pause
   exit /b 1
 )

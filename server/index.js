@@ -130,7 +130,7 @@ app.listen(port, host, async () => {
     }
   }
   const url = `http://${host}:${port}/`;
-  console.log(`EduOS running at ${url}`);
+  console.log(`Tutorsala running at ${url}`);
   console.log(dbReady ? 'Database: Neon PostgreSQL connected' : 'Database: localStorage fallback (no DATABASE_URL or connection failed)');
   if (isAuthConfigured()) console.log('Auth: JWT enabled (access + refresh cookies)');
   else console.log('Auth: local-only (set JWT_SECRET and JWT_REFRESH_SECRET for server auth)');

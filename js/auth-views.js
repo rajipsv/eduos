@@ -57,7 +57,7 @@ function renderAuthHome() {
 
 export function renderLoginChooserHtml() {
   return `
-    <p class="auth-modal-lead">Choose your portal — each role gets a focused workspace on EduOS.</p>
+    <p class="auth-modal-lead">Choose your portal — each role gets a focused workspace on Tutorsala.</p>
     <div class="auth-grid auth-grid-modal">
       ${LOGIN_PORTALS.map((p) => `
         <button type="button" class="auth-tile" data-auth-portal="${p.id}">
@@ -272,7 +272,7 @@ export function bindAuthEvents({ onAuthed, toast, onModeChange, showModal, close
 
   const showLoginChooser = () => {
     showModal({
-      title: 'Sign in to EduOS',
+      title: 'Sign in to Tutorsala',
       body: renderLoginChooserHtml(),
       footer: '<button type="button" class="btn btn-secondary" data-modal-cancel>Close</button>',
       wide: true,
