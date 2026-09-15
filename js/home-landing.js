@@ -164,7 +164,7 @@ export function renderLandingHeader() {
           <span class="brand-icon"><img src="img/tutorsala_logo.png" alt="Tutorsala Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;"></span>
           <span class="landing-logo-text">
             <strong>Tutorsala</strong>
-            <small>Education Business Platform</small>
+            <small>Less Chasing. More Teaching.</small>
           </span>
         </a>
         <nav class="landing-nav" aria-label="Main">
