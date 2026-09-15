@@ -63,9 +63,9 @@ img, svg { display: block; }
   border-radius: 10px;
   display: grid;
   place-items: center;
-  color: var(--white);
+  color: var(--primary);
   font-weight: 700;
-  background: linear-gradient(135deg, var(--primary), var(--primary-bright));
+  background: var(--green-soft);
 }
 
 .start-topbar__link {
