@@ -282,8 +282,25 @@ function ssTabContent(tab, studentId) {
   return studentSuccessOverview();
 }
 
-function renderTutorHub() {
+// A signed-in teacher only works with their own profile. Center admins (and platform owners
+// viewing a center) see and switch between every tutor.
+function tutorSelfOnly() {
+  return getEffectiveRole() === 'teacher';
+}
+
+function tutorHubTeachers() {
   const teachers = getTeachers();
+  if (!tutorSelfOnly()) return teachers;
+  const own = getLinkedTeacherId();
+  return teachers.filter((t) => t.id === own);
+}
+
+function renderTutorHub() {
+  const selfOnly = tutorSelfOnly();
+  const teachers = tutorHubTeachers();
+  if (selfOnly && !teachers.length) {
+    return `<div class="panel"><div class="panel-body empty-state"><h4>No teacher profile linked</h4><p>Your login isn't linked to a teacher profile yet. Ask your center admin to link it.</p></div></div>`;
+  }
   const students = getStudents();
   const linkedTeacherId = getLinkedTeacherId();
   const sel = (linkedTeacherId && teachers.some((t) => t.id === linkedTeacherId))
@@ -294,9 +311,13 @@ function renderTutorHub() {
     ? studentSuccessManageToolbar(students, studentSel, 'tutorStudent')
     : '';
   return `
-    <div class="vision-banner"><h3>Tutor Success Platform</h3><p>Performance insights, lesson planning, homework review, schedule, and professional development — all in one tutor workspace.</p></div>
+    <div class="vision-banner"><h3>${selfOnly ? 'My Teaching Workspace' : 'Tutor Success Platform'}</h3><p>${selfOnly
+      ? 'Your performance, lesson plans, homework to review, schedule, and professional development.'
+      : 'Performance insights, lesson planning, homework review, schedule, and professional development — all in one tutor workspace.'}</p></div>
     <div class="toolbar">
-      <select id="tutorSel">${teachers.map((t) => `<option value="${esc(t.id)}" ${t.id === sel ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>
+      ${selfOnly
+        ? `<input type="hidden" id="tutorSel" value="${esc(sel)}"><strong>${esc(teachers[0].name)}</strong>`
+        : `<select id="tutorSel">${teachers.map((t) => `<option value="${esc(t.id)}" ${t.id === sel ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>`}
       <button class="btn btn-primary" data-action="gen-lesson">AI Lesson Plan</button>
       <button class="btn btn-secondary" data-action="add-lesson">+ Lesson Plan</button>
     </div>
@@ -312,7 +333,8 @@ function renderTutorHub() {
     <div id="tutorContent">${tutorOverview(sel)}</div>`;
 }
 
-function tutorTabContent(tab, teacherId) {
+function tutorTabContent(tab, requestedId) {
+  const teacherId = tutorSelfOnly() ? getLinkedTeacherId() : requestedId;
   if (tab === 'overview') return tutorOverview(teacherId);
   if (tab === 'performance') return tutorPerformanceView(teacherId);
   if (tab === 'lessons') return tutorLessonsView(teacherId);
@@ -323,17 +345,19 @@ function tutorTabContent(tab, teacherId) {
 }
 
 function tutorOverview(selectedId) {
-  const rows = getAllTutorsOverview();
-  const detailId = selectedId || rows[0]?.id || '';
+  const selfOnly = tutorSelfOnly();
+  const allowed = new Set(tutorHubTeachers().map((t) => t.id));
+  const rows = getAllTutorsOverview().filter((r) => allowed.has(r.id));
+  const detailId = (allowed.has(selectedId) && selectedId) || rows[0]?.id || '';
   return `
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">Tutors</div><div class="value">${esc(rows.length)}</div></div>
+      ${selfOnly ? '' : `<div class="stat-card"><div class="label">Tutors</div><div class="value">${esc(rows.length)}</div></div>`}
       <div class="stat-card"><div class="label">Pending homework reviews</div><div class="value">${rows.reduce((s, r) => s + r.pendingReview, 0)}</div></div>
       <div class="stat-card"><div class="label">Upcoming classes (7d)</div><div class="value">${rows.reduce((s, r) => s + r.upcoming, 0)}</div></div>
-      <div class="stat-card"><div class="label">Avg tutor score</div><div class="value">${rows.length ? Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length) : 0}</div></div>
+      <div class="stat-card"><div class="label">${selfOnly ? 'My score' : 'Avg tutor score'}</div><div class="value">${rows.length ? Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length) : 0}</div></div>
     </div>
     <div class="panel" style="margin-top:16px">
-      <div class="panel-header"><h3>All Tutors</h3></div>
+      <div class="panel-header"><h3>${selfOnly ? 'My summary' : 'All Tutors'}</h3></div>
       <div class="panel-body table-wrap">
         <table><thead><tr><th>Tutor</th><th>Subjects</th><th>Batches</th><th>Students</th><th>Score</th><th>Pending Review</th><th>Upcoming</th></tr></thead>
         <tbody>${rows.map((r) => `<tr data-tutor-row="${esc(r.id)}" style="cursor:pointer">
