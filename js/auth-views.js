@@ -5,7 +5,6 @@ import {
   resetPasswordWithToken,
   getPasswordResetTokenInfo,
   validatePassword,
-  DEMO_PASSWORD,
 } from './auth.js';
 import { getRawState } from './store.js';
 import { renderTuitionMarketplace, bindTuitionMarketplaceEvents, TUITION_PENDING_KEY } from './tuition-marketplace.js';
@@ -67,32 +66,26 @@ export function renderLoginChooserHtml() {
     </div>
     <div class="auth-modal-footer">
       <button type="button" class="btn btn-primary" data-auth-register-modal>Register your tuition center</button>
-      <p class="auth-demo">Demo password for center, teacher, and family accounts: <code>${DEMO_PASSWORD}</code></p>
     </div>`;
 }
 
 const PORTAL_META = {
-  platform: { title: 'Platform owner login', hint: 'your email', hideDemoHints: true },
-  center: { title: 'Center admin login', hint: 'admin@brightminds.demo' },
-  teacher: { title: 'Teacher login', hint: 'anita@tutorhub.com' },
-  family: { title: 'Family login', hint: 'sharma@family.demo' },
-  student: { title: 'Student login', hint: 'aarav@email.com' },
-  parent: { title: 'Parent login', hint: 'rajesh@email.com' },
+  platform: { title: 'Platform owner login', label: 'platform owner' },
+  center: { title: 'Center admin login', label: 'center admin' },
+  teacher: { title: 'Teacher login', label: 'teacher' },
+  family: { title: 'Family login', label: 'family' },
+  student: { title: 'Student login', label: 'student' },
+  parent: { title: 'Parent login', label: 'parent' },
 };
 
 export function renderLoginFormHtml(portal, { compact = false } = {}) {
-  const meta = PORTAL_META[portal] || { title: 'Login', hint: 'your email' };
-  const hideDemo = Boolean(meta.hideDemoHints);
-  const subtitle = hideDemo
-    ? '<p class="auth-sub">Sign in with your platform owner credentials.</p>'
-    : `<p class="auth-sub">Try <code>${meta.hint}</code> · password <code>${DEMO_PASSWORD}</code></p>`;
-  const emailPlaceholder = hideDemo ? 'your email' : meta.hint;
-  const passwordValue = hideDemo ? '' : DEMO_PASSWORD;
+  const meta = PORTAL_META[portal] || { title: 'Login', label: '' };
+  const subtitle = `<p class="auth-sub">Sign in with your ${meta.label ? `${meta.label} ` : ''}email and password.</p>`;
   return `
     ${subtitle}
     <div class="form-grid" style="margin-top:${compact ? 12 : 20}px">
-      <div class="form-group full"><label>Email</label><input id="authEmail" type="email" placeholder="${emailPlaceholder}" autocomplete="username"></div>
-      <div class="form-group full"><label>Password</label><input id="authPassword" type="password" value="${passwordValue}" autocomplete="current-password"></div>
+      <div class="form-group full"><label>Email</label><input id="authEmail" type="email" placeholder="your email" autocomplete="username"></div>
+      <div class="form-group full"><label>Password</label><input id="authPassword" type="password" value="" autocomplete="current-password"></div>
     </div>
     <p class="auth-forgot-row"><button type="button" class="btn btn-ghost auth-forgot-link" data-auth-forgot>Forgot password?</button></p>
     <button class="btn btn-primary" type="button" style="width:100%;margin-top:8px" data-auth-submit="${portal}">Sign in</button>`;

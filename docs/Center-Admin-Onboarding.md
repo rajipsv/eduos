@@ -13,7 +13,7 @@
 | **Login URL** | Open the app (local: run `start.bat`, then open the URL shown in the terminal) |
 | **Role** | Use the **Center admin** portal tile on the login screen |
 | **Password rules** | At least 8 characters (enforced at registration) |
-| **Demo reference** | See `docs/qa/accounts.csv` — e.g. `admin@brightminds.demo` / `demo123` |
+| **Demo reference** | Ask the Tutorsala team for demo login details |
 
 **Recommended order:** Register → Settings → Teaching profile (if you teach) → Availability slots → Teachers (staff) → Batches → Students → Class Schedule → Fees.
 
@@ -397,13 +397,13 @@ Register → Dashboard
 
 ## Demo walkthrough (5-minute smoke test)
 
-1. Log in as `admin@brightminds.demo` / `demo123` (**Center admin**)
+1. Log in with a demo **Center admin** account
 2. **Settings** — confirm teaching profile or enable **I also teach classes**
 3. **Tutor Success → Schedule** — review **Manage slots**
 4. **Batches** — open an existing batch or create a test batch; confirm slot picker
 5. **Class Schedule** — reschedule one session; confirm calendar updates
-6. Log in as `anita@tutorhub.com` / `demo123` (**Teacher**) — confirm **My schedule** matches her batches only
+6. Log in with a demo **Teacher** account — confirm **My schedule** matches her batches only
 
 ---
 
-*Related docs: [TUTORSALA-WORKFLOW.md](./TUTORSALA-WORKFLOW.md) · [QA accounts](./qa/accounts.csv)*
+*Related docs: [TUTORSALA-WORKFLOW.md](./TUTORSALA-WORKFLOW.md)*

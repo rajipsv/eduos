@@ -1,7 +1,7 @@
-Role,Email,Password,Portal Tile,Notes
-Platform owner,owner@tutorsala.app,demo123,Platform owner,Full platform console
-Center admin,admin@brightminds.demo,demo123,Center admin,Bright Minds multi-branch demo
-Teacher,anita@tutorhub.com,demo123,Teacher,Physics and chemistry batches
-Teacher,vikram@tutorhub.com,demo123,Teacher,Mathematics batches
-Family,sharma@family.demo,demo123,Family,One login; switch Parent view and Student view in top bar
-Guest,,,,No login required for marketplace inquiry
+Role,Email,Portal Tile,Notes
+Platform owner,owner@tutorsala.app,Platform owner,Full platform console
+Center admin,admin@brightminds.demo,Center admin,Bright Minds multi-branch demo
+Teacher,anita@tutorhub.com,Teacher,Physics and chemistry batches
+Teacher,vikram@tutorhub.com,Teacher,Mathematics batches
+Family,sharma@family.demo,Family,One login; switch Parent view and Student view in top bar
+Guest,,,No login required for marketplace inquiry
