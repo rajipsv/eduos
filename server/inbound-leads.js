@@ -54,7 +54,7 @@ export function validateInboundLeadBody(body) {
   const email = cleanText(body.email, 160);
   const students = cleanText(body.students, 40);
   const centerType = cleanText(body.center_type, 80);
-  const pain = cleanText(body.pain, 120);
+  const pain = cleanText(body.pain, 500);
 
   const missing = [];
   if (!firstName) missing.push('first_name');

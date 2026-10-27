@@ -88,13 +88,14 @@ function renderInboundLeadRows(leads) {
     return '<p class="empty-state">No demo requests yet. Share <code>start-page.html</code> in Meta ads or from the website.</p>';
   }
   return `<div class="table-wrap"><table>
-    <thead><tr><th>When</th><th>Contact</th><th>Center</th><th>Students</th><th>Source</th><th>Stage</th><th></th></tr></thead>
+    <thead><tr><th>When</th><th>Contact</th><th>Center</th><th>Students</th><th>What breaks every month</th><th>Source</th><th>Stage</th><th></th></tr></thead>
     <tbody>${leads.map((lead) => `
       <tr data-inbound-id="${esc(lead.id)}">
         <td><small>${(lead.createdAt || '').slice(0, 10)}</small></td>
         <td><strong>${esc(lead.name)}</strong><br><small>${esc(lead.phone)}<br>${esc(lead.email)}</small></td>
         <td>${esc(lead.centerName)}<br><small>${esc(lead.city)}</small></td>
         <td>${esc(lead.students || '—')}</td>
+        <td style="max-width:260px;white-space:pre-wrap">${esc(lead.pain || '—')}</td>
         <td><span class="badge badge-gray">${esc(lead.source || 'Start Page')}</span></td>
         <td><select class="inbound-stage-select" data-inbound-stage="${esc(lead.id)}">${inboundStageOptions(lead.stage)}</select></td>
         <td><a class="btn btn-sm btn-secondary" href="https://wa.me/919553371972?text=${encodeURIComponent(`Hi ${lead.firstName}, following up on your Tutorsala demo request for ${lead.centerName}.`)}" target="_blank" rel="noopener noreferrer">WhatsApp</a></td>
@@ -111,6 +112,7 @@ function renderInboundLeadCards(leads) {
       <div class="session-info">
         <h4>${esc(lead.centerName)} · ${esc(lead.city)}</h4>
         <p>${esc(lead.name)} · ${esc(lead.phone)} · ${esc(lead.students)} students · <span class="badge badge-gray">${esc(lead.source || 'Start Page')}</span></p>
+        ${lead.pain ? `<p style="font-size:0.85rem;color:var(--text-muted)">“${esc(lead.pain.length > 140 ? `${lead.pain.slice(0, 140)}…` : lead.pain)}”</p>` : ''}
       </div>
       <span class="badge badge-orange">${esc(lead.stage || 'inquiry')}</span>
     </div>`).join('');
