@@ -1557,6 +1557,25 @@ tr.invoice-reported { background: color-mix(in srgb, var(--accent, #e67700) 6%, 
   line-height: 1.1;
 }
 
+.landing-pricing-list {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  flex-basis: 100%;
+}
+
+.landing-pricing-discount {
+  display: inline-block;
+  align-self: flex-start;
+  width: fit-content;
+  margin: 0 0 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  background: #c0392b;
+}
+
 .landing-pricing-period {
   font-size: 0.88rem;
   color: var(--text-muted);

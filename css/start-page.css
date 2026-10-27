@@ -171,53 +171,6 @@ img, svg { display: block; }
 
 .hero__subtitle strong { font-weight: 700; }
 
-/* Video */
-.video__frame {
-  width: 70%;
-  margin: 0 auto;
-  border-radius: 10px;
-  box-shadow: 0 0 15px 0 rgba(45, 106, 79, 0.35);
-  overflow: hidden;
-}
-
-.video__placeholder {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  display: grid;
-  place-items: center;
-  gap: 8px;
-  padding: 24px;
-  text-align: center;
-  background:
-    radial-gradient(circle at 30% 20%, rgba(82, 183, 136, 0.3), transparent 45%),
-    linear-gradient(135deg, var(--green-dark) 0%, var(--green-deep) 100%);
-  color: var(--white);
-}
-
-.video__play {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid rgba(183, 228, 199, 0.45);
-}
-
-.video__play svg { width: 32px; height: 32px; margin-left: 4px; }
-
-.video__label {
-  margin: 0;
-  font-size: clamp(14px, 2vw, 18px);
-  font-weight: 600;
-}
-
-.video__hint {
-  margin: 0;
-  font-size: 12px;
-  opacity: 0.75;
-}
-
 /* Trust badge */
 .trust-wrap {
   display: flex;
@@ -759,8 +712,6 @@ img, svg { display: block; }
 }
 
 @media (max-width: 760px) {
-  .video__frame { width: 100%; }
-
   .objections__head { margin-bottom: 22px; }
 
   .objections__pair {

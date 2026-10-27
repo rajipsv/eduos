@@ -102,7 +102,9 @@ export const LANDING_PRICING_TIERS = [
   {
     id: 'starter',
     name: 'Starter',
+    listPrice: '₹36,000',
     price: '₹18,000',
+    discount: '50% off',
     period: '/ year',
     note: '1 branch · up to 100 active students',
     featured: true,
@@ -115,7 +117,9 @@ export const LANDING_PRICING_TIERS = [
   {
     id: 'branch',
     name: 'Multi-branch add-on',
+    listPrice: '₹24,000',
     price: '+ ₹12,000',
+    discount: '50% off',
     period: '/ branch / year',
     note: '+ ₹30 / student / year above 100 per branch',
     featured: false,
@@ -254,9 +258,11 @@ export function renderLandingPricing() {
             ${tier.featured ? '<span class="landing-pricing-badge">Most popular</span>' : ''}
             <h3>${esc(tier.name)}</h3>
             <div class="landing-pricing-price">
+              ${tier.listPrice ? `<span class="landing-pricing-list"><s>${esc(tier.listPrice)}</s></span>` : ''}
               <span class="landing-pricing-amount">${esc(tier.price)}</span>
               <span class="landing-pricing-period">${esc(tier.period)}</span>
             </div>
+            ${tier.discount ? `<span class="landing-pricing-discount">${esc(tier.discount)}</span>` : ''}
             <p class="landing-pricing-note">${esc(tier.note)}</p>
             <ul class="landing-pricing-features">
               ${tier.features.map((f) => `<li>${f}</li>`).join('')}
