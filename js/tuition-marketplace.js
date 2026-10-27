@@ -27,6 +27,9 @@ function rawByCenter(arr, centerId) {
 }
 
 function getCenterStats(centerId, rawState) {
+  // Server mode: public listings carry their own counts.
+  const listed = rawState?.centers?.find((c) => c.id === centerId)?._stats;
+  if (listed) return listed;
   return {
     teachers: rawByCenter(rawState?.teachers, centerId).length,
     students: rawByCenter(rawState?.students, centerId).length,

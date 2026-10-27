@@ -8,6 +8,15 @@ import {
 } from './scheduler.js';
 import { ensurePlatformData, seedPlatformDemo, findBatchAvailabilitySlot, getTutorAvailability } from './platform.js';
 import { apiFetch, getAccessToken, isServerAuthEnabled, setServerAuthEnabled } from './api-client.js';
+import {
+  COLLECTION_NAMES,
+  COLLECTIONS,
+  SINGLE_ID,
+  ADMIN_ROLES,
+  recordKey,
+  toRecordMap,
+  writableCollections,
+} from './sync-rules.js';
 
 const STORAGE_KEY = 'tutorhub_data_v5';
 const SESSION_KEY = 'tutorhub_session';
@@ -180,51 +189,281 @@ function loadFromLocalStorage() {
   }
 }
 
-async function loadFromDatabase() {
-  const res = await apiFetch('/api/state');
-  if (res.status === 404) return null;
-  if (res.status === 401) return null;
-  if (!res.ok) throw new Error(`Database load failed (${res.status})`);
-  const payload = await res.json();
-  return hydrateState(payload.data);
-}
-
-async function persistToDatabase(data) {
-  const res = await apiFetch('/api/state', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (res.status === 401) throw new Error('Not authenticated');
-  if (!res.ok) throw new Error(`Database save failed (${res.status})`);
-}
-
 let state = null;
 let dbMode = false;
 let storageBackendReason = null;
-let persistTimer = null;
 let initPromise = null;
 
 function saveDataLocal(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-function canPersistToDatabase() {
-  return dbMode && (!isServerAuthEnabled() || getAccessToken());
+// --- Server mode ------------------------------------------------------------------------
+// With a database and server sign-in, data comes from /api/bootstrap (only what this user
+// may see) and changes go to /api/sync as a list of changed records. Nothing is cached in
+// localStorage, so a shared computer keeps no copy after sign-out.
+
+// Old in-browser migrations add demo data; in server mode they must never run.
+const LOCAL_MIGRATION_FLAGS = ['_migratedV5', '_migratedV6', '_migratedV7', '_migratedV8', '_migratedV9', '_migratedV10'];
+
+function hydrateServerState(data = {}, extra = {}) {
+  const s = { ...defaultData(), ...data };
+  s.batches = (s.batches || []).map(migrateBatch);
+  s.users = s.users || [];
+  s.centers = s.centers || [];
+  s.centerSettings = s.centerSettings || {};
+  ensurePlatformData(s);
+  for (const flag of LOCAL_MIGRATION_FLAGS) s[flag] = true;
+  if (extra.centerStats) s.centerStats = extra.centerStats;
+  return s;
+}
+
+// Last synced copy of every record: collection -> id -> { json, version }
+let synced = new Map();
+// True once a signed-in user's data is loaded. Before that (public page, mid sign-in)
+// there is nothing of theirs to save.
+let userDataLoaded = false;
+
+function syncedFor(collection) {
+  if (!synced.has(collection)) synced.set(collection, new Map());
+  return synced.get(collection);
+}
+
+function recordsOf(collection) {
+  if (collection === 'centers') {
+    return new Map((state.centers || []).map((c) => [String(c.id), c]));
+  }
+  return toRecordMap(collection, state[collection]);
+}
+
+function setSyncedFromState(versions = {}) {
+  synced = new Map();
+  for (const collection of [...COLLECTION_NAMES, 'centers']) {
+    const known = versions[collection] || {};
+    const base = syncedFor(collection);
+    for (const [id, rec] of recordsOf(collection)) {
+      if (known[id] != null) base.set(id, { json: JSON.stringify(rec), version: known[id] });
+    }
+  }
+}
+
+function putStateRecord(collection, id, record) {
+  if (collection === 'centers') {
+    const idx = state.centers.findIndex((c) => String(c.id) === id);
+    if (record == null) {
+      if (idx >= 0) state.centers.splice(idx, 1);
+    } else if (idx >= 0) state.centers[idx] = record;
+    else state.centers.push(record);
+    return;
+  }
+  const shape = COLLECTIONS[collection].shape;
+  if (shape === 'list') {
+    const list = (state[collection] = state[collection] || []);
+    const idx = list.findIndex((x) => String(recordKey(collection, x)) === id);
+    if (record == null) {
+      if (idx >= 0) list.splice(idx, 1);
+    } else if (idx >= 0) list[idx] = record;
+    else list.push(record);
+  } else if (shape === 'map') {
+    state[collection] = state[collection] || {};
+    if (record == null) delete state[collection][id];
+    else state[collection][id] = record;
+  } else if (id === SINGLE_ID) {
+    state[collection] = record;
+  }
+}
+
+function sessionInfo() {
+  try {
+    return JSON.parse(localStorage.getItem(SESSION_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** The role used for writes: a platform owner viewing a center acts as its admin. */
+function syncRole() {
+  const s = sessionInfo();
+  if (!s) return null;
+  if (s.role === 'platform_owner') return s.viewCenterId ? 'center_admin' : 'platform_owner';
+  return s.role;
+}
+
+const MAX_CHANGES_PER_SYNC = 500;
+
+function computeChanges() {
+  const role = syncRole();
+  if (!role) return [];
+  // A platform owner who isn't viewing a center can only change centers (e.g. suspend one).
+  const collections = role === 'platform_owner' ? [] : writableCollections(role);
+  const changes = [];
+
+  for (const collection of collections) {
+    const base = syncedFor(collection);
+    const current = recordsOf(collection);
+    for (const [id, rec] of current) {
+      const json = JSON.stringify(rec);
+      const prev = base.get(id);
+      if (!prev || prev.json !== json) {
+        changes.push({ collection, id, op: 'upsert', data: rec, baseVersion: prev?.version ?? null, json });
+      }
+    }
+    for (const [id, prev] of base) {
+      if (!current.has(id)) changes.push({ collection, id, op: 'delete', baseVersion: prev.version, json: null });
+    }
+  }
+
+  // Centers are edited, never created or deleted, from the browser.
+  if (ADMIN_ROLES.includes(role)) {
+    const base = syncedFor('centers');
+    for (const [id, rec] of recordsOf('centers')) {
+      const prev = base.get(id);
+      const json = JSON.stringify(rec);
+      if (prev && prev.json !== json) {
+        changes.push({ collection: 'centers', id, op: 'upsert', data: rec, baseVersion: prev.version, json });
+      }
+    }
+  }
+  return changes;
+}
+
+function notifySyncIssue(detail) {
+  try {
+    window.dispatchEvent(new CustomEvent('tutorsala:sync-issue', { detail }));
+  } catch {
+    /* not in a browser */
+  }
+}
+
+function applySyncResults(sent, results) {
+  const sentByKey = new Map(sent.map((c) => [`${c.collection}/${c.id}`, c]));
+  let conflicts = 0;
+  let rejected = 0;
+  for (const r of results || []) {
+    const key = `${r.collection}/${r.id}`;
+    const change = sentByKey.get(key);
+    if (!change) continue;
+    const base = syncedFor(r.collection);
+    const current = recordsOf(r.collection).get(r.id);
+    // If the record changed again while this request was in flight, keep the newer local copy.
+    const untouched = (current ? JSON.stringify(current) : null) === change.json;
+
+    if (r.status === 'ok') {
+      if (r.deleted) base.delete(r.id);
+      else {
+        base.set(r.id, { json: JSON.stringify(r.record), version: r.version });
+        if (untouched) putStateRecord(r.collection, r.id, r.record);
+      }
+    } else if (r.status === 'conflict') {
+      conflicts += 1;
+      if (r.record) {
+        base.set(r.id, { json: JSON.stringify(r.record), version: r.version });
+        putStateRecord(r.collection, r.id, r.record);
+      } else {
+        base.delete(r.id);
+        putStateRecord(r.collection, r.id, null);
+      }
+    } else {
+      // forbidden or invalid: put back the last saved copy so it isn't sent again.
+      rejected += 1;
+      console.warn(`Tutorsala: change to ${key} was ${r.status}`, r.error || '');
+      const prev = base.get(r.id);
+      putStateRecord(r.collection, r.id, prev ? JSON.parse(prev.json) : null);
+    }
+  }
+  if (conflicts || rejected) notifySyncIssue({ conflicts, rejected });
+}
+
+let syncTimer = null;
+let syncing = null;
+let syncAgain = false;
+
+function canSync() {
+  return dbMode && userDataLoaded && Boolean(getAccessToken()) && Boolean(sessionInfo());
+}
+
+async function syncOnce() {
+  if (!canSync()) return;
+  const all = computeChanges();
+  if (!all.length) return;
+  const sent = all.slice(0, MAX_CHANGES_PER_SYNC);
+  if (all.length > sent.length) syncAgain = true;
+  const body = JSON.stringify({ changes: sent.map(({ json: _json, ...c }) => c) });
+  let res;
+  try {
+    res = await apiFetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      // Lets a save started as the tab closes finish (browsers cap keepalive bodies at 64 KB).
+      keepalive: body.length < 60000,
+    });
+  } catch (err) {
+    console.warn('Tutorsala: save failed, will retry:', err.message);
+    syncTimer = setTimeout(runSync, 5000);
+    return;
+  }
+  if (!res.ok) {
+    console.warn('Tutorsala: save failed', res.status);
+    notifySyncIssue({ failed: true, status: res.status });
+    if (res.status >= 500) syncTimer = setTimeout(runSync, 5000);
+    return;
+  }
+  const payload = await res.json().catch(() => ({}));
+  applySyncResults(sent, payload.results);
+}
+
+function runSync() {
+  if (syncing) {
+    syncAgain = true;
+    return syncing;
+  }
+  syncing = (async () => {
+    try {
+      do {
+        syncAgain = false;
+        await syncOnce();
+      } while (syncAgain);
+    } finally {
+      syncing = null;
+    }
+  })();
+  return syncing;
+}
+
+function scheduleSync() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(runSync, 400);
+}
+
+/** Sends any unsaved changes now. */
+export async function flushSync() {
+  clearTimeout(syncTimer);
+  if (dbMode) await runSync();
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushSync();
+  });
+}
+
+async function loadPublicCenters() {
+  try {
+    const res = await fetch('/api/public/centers');
+    if (!res.ok) return [];
+    return (await res.json()).centers || [];
+  } catch {
+    return [];
+  }
 }
 
 function saveData(data) {
+  if (dbMode) {
+    scheduleSync();
+    return;
+  }
   saveDataLocal(data);
-  if (canPersistToDatabase()) scheduleDbPersist();
-}
-
-function scheduleDbPersist() {
-  clearTimeout(persistTimer);
-  persistTimer = setTimeout(() => {
-    persistToDatabase(state).catch((err) => {
-      console.warn('Tutorsala database save failed:', err.message);
-    });
-  }, 400);
 }
 
 export async function initStore() {
@@ -237,26 +476,15 @@ export async function initStore() {
       const health = await fetch('/api/health');
       if (health.ok) {
         const info = await health.json();
-        if (info.db) {
+        if (info.db && info.auth) {
           dbMode = true;
-          storageBackendReason = null;
-          if (info.auth) {
-            setServerAuthEnabled(true);
-            state = loadFromLocalStorage();
-            return state;
-          }
-          const remote = await loadFromDatabase();
-          if (remote) {
-            state = remote;
-            saveDataLocal(state);
-            return state;
-          }
-          state = loadFromLocalStorage();
-          await persistToDatabase(state);
+          setServerAuthEnabled(true);
+          // Until sign-in, only the public center listing is loaded.
+          state = hydrateServerState({ centers: await loadPublicCenters() });
           return state;
         }
-        storageBackendReason = info.reason || 'database_not_connected';
-        console.warn('Tutorsala: API server running but database not connected.', storageBackendReason);
+        storageBackendReason = info.db ? 'auth_not_configured' : info.reason || 'database_not_connected';
+        console.warn('Tutorsala: using browser storage.', storageBackendReason);
       } else if (health.status !== 404) {
         storageBackendReason = `health_${health.status}`;
         console.warn('Tutorsala: /api/health returned', health.status);
@@ -274,14 +502,65 @@ export async function initStore() {
   return initPromise;
 }
 
+/**
+ * Loads everything the signed-in user may see. Call after sign-in or when switching center.
+ * It never saves: callers that switch center send pending changes first (see auth.js), and
+ * until the new data arrives nothing is sent, so changes can't land in the wrong center.
+ */
 export async function reloadStoreFromServer() {
   if (!dbMode) return getState();
-  const remote = await loadFromDatabase();
-  if (remote) {
-    state = remote;
-    saveDataLocal(state);
-  }
+  clearTimeout(syncTimer);
+  userDataLoaded = false;
+  const res = await apiFetch('/api/bootstrap');
+  if (res.status === 401) return state;
+  if (!res.ok) throw new Error(`Could not load data (${res.status})`);
+  const payload = await res.json();
+  state = hydrateServerState(payload.data, { centerStats: payload.centerStats });
+  setSyncedFromState(payload.versions);
+  userDataLoaded = true;
   return state;
+}
+
+/** After sign-out: forget the user's data, keep only the public listing. */
+export async function clearServerData() {
+  if (!dbMode) return;
+  clearTimeout(syncTimer);
+  synced = new Map();
+  userDataLoaded = false;
+  state = hydrateServerState({ centers: await loadPublicCenters() });
+}
+
+/** Creates a login on the server (server mode). Returns the new user or null. */
+export async function createServerUser(fields) {
+  const res = await apiFetch('/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(fields),
+  });
+  if (!res.ok) {
+    console.warn('Tutorsala: could not create login', res.status);
+    return null;
+  }
+  const { user } = await res.json();
+  state.users = state.users || [];
+  if (!state.users.some((u) => u.id === user.id)) state.users.push(user);
+  return user;
+}
+
+const SERVER_USER_FIELDS = ['name', 'linkedTeacherId', 'linkedStudentId', 'linkedStudentIds', 'parentName'];
+
+function updateServerUser(userId, fields) {
+  const body = Object.fromEntries(Object.entries(fields).filter(([k]) => SERVER_USER_FIELDS.includes(k)));
+  if (!Object.keys(body).length) return;
+  apiFetch(`/api/users/${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+    .then((res) => {
+      if (!res.ok) console.warn('Tutorsala: could not update login', res.status);
+    })
+    .catch((err) => console.warn('Tutorsala: could not update login', err.message));
 }
 
 export function isDatabaseMode() {
@@ -555,6 +834,7 @@ function applyCenterListingMigration(data) {
 export function migrateCenterListings(data) {
   const run = (d) => applyBillingMigration(applyFamilyLoginMigration(applyBranchMigration(applyTuitionCategoriesMigration(applyCenterListingMigration(d)))));
   if (arguments.length > 0) return run(data);
+  if (dbMode) return state;
   state = run(state);
   saveData(state);
   return state;
@@ -919,6 +1199,7 @@ function applyMultiTenantMigration(data) {
 
 export function migrateMultiTenant(data) {
   if (arguments.length > 0) return applyMultiTenantMigration(data);
+  if (dbMode) return state;
   state = applyMultiTenantMigration(state);
   saveData(state);
   return state;
@@ -952,6 +1233,7 @@ function applySeedDemoUsers(data) {
 
 export function seedDemoUsers(data) {
   if (arguments.length > 0) return applySeedDemoUsers(data);
+  if (dbMode) return;
   if (state.users?.length) return;
   applySeedDemoUsers(state);
   saveData(state);
@@ -1038,6 +1320,12 @@ export function findUserByEmail(email) {
 }
 
 export function createUser(user) {
+  if (dbMode) {
+    // Logins are created on the server; no password means "set one via Forgot password".
+    const { password: _password, ...fields } = user;
+    createServerUser(fields);
+    return null;
+  }
   const entry = {
     ...user,
     id: uid('user'),
@@ -1053,11 +1341,14 @@ export function updateUser(userId, fields) {
   const idx = (state.users || []).findIndex((u) => u.id === userId);
   if (idx < 0) return null;
   state.users[idx] = { ...state.users[idx], ...fields };
-  persist();
+  if (dbMode) updateServerUser(userId, fields);
+  else persist();
   return state.users[idx];
 }
 
 export function updateUserPassword(userId, password) {
+  // Server mode changes passwords through the reset-password endpoints only.
+  if (dbMode) return null;
   return updateUser(userId, { password });
 }
 
@@ -1149,9 +1440,21 @@ export function initCenterSettings(centerId, name) {
   persist();
 }
 
+// getState() hands out the real state, so code like `s.list = s.list.filter(...)` is saved.
+// Only `settings` is redirected to the active center's settings.
+const stateViews = new WeakMap();
+
 export function getState() {
   ensureState();
-  return { ...state, settings: getSettings() };
+  if (!stateViews.has(state)) {
+    stateViews.set(
+      state,
+      new Proxy(state, {
+        get: (target, prop) => (prop === 'settings' ? getSettings() : target[prop]),
+      }),
+    );
+  }
+  return stateViews.get(state);
 }
 
 export function persist() {
@@ -1160,22 +1463,10 @@ export function persist() {
 }
 
 export async function resetDemo() {
+  // Server data is reset with `npm run seed:demo`, never from a browser.
+  if (dbMode) throw new Error('Reset is only available in browser-only demo mode');
   try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
-  if (dbMode) {
-    try {
-      await apiFetch('/api/state', { method: 'DELETE' });
-    } catch (err) {
-      console.warn('Could not reset database state:', err.message);
-    }
-  }
   state = seedDemoData();
-  if (canPersistToDatabase()) {
-    try {
-      await persistToDatabase(state);
-    } catch (err) {
-      console.warn('Could not seed database:', err.message);
-    }
-  }
   return state;
 }
 
@@ -1339,9 +1630,8 @@ function ensureFamilyAccountForStudent(student, lead) {
     if (user.role === 'family') {
       const ids = new Set(user.linkedStudentIds || []);
       ids.add(student.id);
-      user.linkedStudentIds = [...ids];
+      updateUser(user.id, { linkedStudentIds: [...ids] });
     }
-    persist();
     return user;
   }
 
@@ -1349,6 +1639,8 @@ function ensureFamilyAccountForStudent(student, lead) {
     centerId: student.centerId,
     name: lead.parentName || `${student.name}'s Family`,
     email: parentEmail,
+    // Browser-only demo mode. In server mode the password is dropped and the family
+    // sets their own with "Forgot password".
     password: 'demo123',
     role: 'family',
     parentName: lead.parentName || undefined,

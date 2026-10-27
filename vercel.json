@@ -1,9 +1,15 @@
 {
   "functions": {
-    "api/**/*.js": {
+    "api/index.js": {
       "maxDuration": 15
     }
   },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index?__path=:path*"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -53,11 +59,6 @@
     },
     {
       "source": "/test/:path*",
-      "destination": "/",
-      "permanent": false
-    },
-    {
-      "source": "/api/auth/_util.js",
       "destination": "/",
       "permanent": false
     },

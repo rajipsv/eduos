@@ -2691,7 +2691,12 @@ function bindSettingsEvents({ toast, refresh }) {
 
   document.querySelector('[data-action="reset-demo"]')?.addEventListener('click', async () => {
     if (confirm('Reset all data to demo sample?')) {
-      await resetDemo();
+      try {
+        await resetDemo();
+      } catch (err) {
+        toast(err.message, 'error');
+        return;
+      }
       toast('Demo data restored', 'success');
       refresh();
     }

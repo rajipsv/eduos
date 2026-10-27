@@ -33,9 +33,21 @@ async function refreshAccessToken() {
   }
 }
 
+// A platform owner viewing a center sends its id; the server ignores it for other roles.
+function viewedCenterId() {
+  try {
+    const s = JSON.parse(localStorage.getItem('tutorhub_session'));
+    return s?.role === 'platform_owner' ? s.viewCenterId || null : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function apiFetch(url, options = {}) {
   const headers = { ...(options.headers || {}) };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  const centerId = viewedCenterId();
+  if (centerId) headers['X-Center-Id'] = centerId;
 
   const res = await fetch(url, {
     ...options,

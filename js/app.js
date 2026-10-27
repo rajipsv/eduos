@@ -207,8 +207,8 @@ function buildShellForSession(session) {
     banner.className = 'support-banner';
     banner.innerHTML = `<span>Support view — viewing center data</span> <button type="button" class="btn btn-sm btn-secondary" id="exitSupport">Back to platform</button>`;
     content.parentElement.insertBefore(banner, content);
-    document.getElementById('exitSupport')?.addEventListener('click', () => {
-      platformExitCenterView();
+    document.getElementById('exitSupport')?.addEventListener('click', async () => {
+      await platformExitCenterView();
       buildShellForSession(getSession());
       navigate('platformCenters');
     });
@@ -303,6 +303,15 @@ familyViewSelect?.addEventListener('change', () => {
   setFamilyView(familyViewSelect.value);
   buildShellForSession(getSession());
   navigate(getDefaultView('family'));
+});
+
+// The server refused or rolled back some changes: tell the user and show the saved data.
+window.addEventListener('tutorsala:sync-issue', (e) => {
+  const { conflicts, rejected, failed } = e.detail || {};
+  if (failed) toast('Could not save your changes. They will be retried.', 'error');
+  else if (rejected) toast("Some changes weren't allowed and were undone.", 'error');
+  else if (conflicts) toast('Someone else changed this at the same time. Showing the latest version.', 'default');
+  if (getSession() && (rejected || conflicts)) ctx.refresh();
 });
 
 try {

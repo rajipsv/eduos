@@ -4,30 +4,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { testConnection } from './db.js';
-import {
-  getHealthPayload,
-  loadAppStateForRequest,
-  saveAppStateForRequest,
-  removeAppStateForRequest,
-} from './state-api.js';
-import {
-  handleLogin,
-  handleLogout,
-  handleRefresh,
-  handleMe,
-  handleRegisterCenter,
-  handleForgotPassword,
-  handleResetPasswordInfo,
-  handleResetPassword,
-} from './auth/handlers.js';
+import { isAuthConfigured } from './auth/config.js';
 import { runMigrations } from './migrate.js';
 import { seedDemoIfMissing } from './demo-seed.js';
-import { isAuthConfigured } from './auth/config.js';
-import {
-  handleCreateInboundLead,
-  handleListInboundLeads,
-  handleUpdateInboundLead,
-} from './leads-handler.js';
+import { handleApi } from './router.js';
 import { allowedOrigins, missingRequiredEnv } from './env.js';
 import { securityHeaders } from './security-headers.js';
 
@@ -61,35 +41,7 @@ app.use(express.json({ limit: '1mb' }));
 // Express 4 doesn't catch rejected promises from async handlers; send them to the error handler.
 const route = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
 
-const sendResult = (res, result) => {
-  if (res.headersSent) return;
-  if (result.error) return res.status(result.status).json({ error: result.error });
-  res.status(result.status).json(result.body);
-};
-
-app.get(
-  '/api/health',
-  route(async (_req, res) => res.json(await getHealthPayload())),
-);
-
-app.post('/api/auth/login', route(handleLogin));
-app.post('/api/auth/logout', route(handleLogout));
-app.post('/api/auth/refresh', route(handleRefresh));
-app.get('/api/auth/me', route(handleMe));
-app.post('/api/auth/register-center', route(handleRegisterCenter));
-app.post('/api/auth/forgot-password', route(handleForgotPassword));
-app.get('/api/auth/reset-password-info', route(handleResetPasswordInfo));
-app.post('/api/auth/reset-password', route(handleResetPassword));
-
-app.get('/api/state', route(async (req, res) => sendResult(res, await loadAppStateForRequest(req, res))));
-app.put('/api/state', route(async (req, res) => sendResult(res, await saveAppStateForRequest(req, res, req.body))));
-app.delete('/api/state', route(async (req, res) => sendResult(res, await removeAppStateForRequest(req, res))));
-
-app.post('/api/leads', route(handleCreateInboundLead));
-app.get('/api/leads', route(handleListInboundLeads));
-app.patch('/api/leads', route(handleUpdateInboundLead));
-
-app.use('/api', (_req, res) => res.status(404).json({ error: 'not_found' }));
+app.all(/^\/api(\/|$)/, route((req, res) => handleApi(req, res, req.path)));
 
 // Only public files are served. Server code, scripts, docs and config stay private.
 const PUBLIC_PAGES = { '/': 'index.html', '/index.html': 'index.html', '/start-page.html': 'start-page.html' };

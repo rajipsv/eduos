@@ -5,6 +5,8 @@ import {
   getDefaultBranch, getBranch, getStudent, getTeacher,
   createPasswordResetToken, findValidPasswordResetToken, markPasswordResetTokenUsed, updateUserPassword,
   reloadStoreFromServer,
+  flushSync,
+  clearServerData,
 } from './store.js';
 import { sendViaChannel } from './communication.js';
 import {
@@ -409,6 +411,7 @@ export async function login(email, password, expectedPortal) {
 
 export async function logout() {
   if (isServerAuthEnabled()) {
+    await flushSync().catch(() => {});
     try {
       await authPost('/api/auth/logout', {});
     } catch {
@@ -417,6 +420,7 @@ export async function logout() {
     setAccessToken(null);
   }
   clearSession();
+  await clearServerData();
 }
 
 export async function registerCenter({ centerName, ownerName, email, phone, city, password }) {
@@ -493,20 +497,25 @@ export async function registerCenter({ centerName, ownerName, email, phone, city
   return { ok: true, center, user };
 }
 
-export function platformViewCenter(centerId) {
+// Unsaved changes are sent before switching, so they are saved to the center they belong to.
+export async function platformViewCenter(centerId) {
   const session = getSession();
   if (!session || session.role !== 'platform_owner') return;
+  await flushSync();
   session.viewCenterId = centerId;
   session.branchId = null;
   session.branchName = null;
   setSession(session);
+  await reloadStoreFromServer();
 }
 
-export function platformExitCenterView() {
+export async function platformExitCenterView() {
   const session = getSession();
   if (!session || session.role !== 'platform_owner') return;
+  await flushSync();
   session.viewCenterId = null;
   setSession(session);
+  await reloadStoreFromServer();
 }
 
 export function setCenterStatus(centerId, status) {

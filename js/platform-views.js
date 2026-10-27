@@ -1,4 +1,5 @@
 import { esc, safeUrl } from './html.js';
+import { apiFetch } from './api-client.js';
 import { getCenters, getTeachers, getStudents, getBatches, getLeads } from './store.js';
 import { getSession, platformViewCenter, platformExitCenterView, setCenterStatus, isPlatformOwner } from './auth.js';
 import { PLATFORM_LAYERS } from './intelligence.js';
@@ -23,6 +24,16 @@ function rawByCenter(arr, centerId) {
 }
 
 export function getCenterOpsStats(centerId, rawState) {
+  // Server mode: the platform owner gets counts per center instead of every center's records.
+  const counted = rawState.centerStats?.[centerId];
+  if (rawState.centerStats) {
+    return {
+      teachers: counted?.teachers || 0,
+      students: counted?.students || 0,
+      batches: counted?.batches || 0,
+      leads: counted?.leads || 0,
+    };
+  }
   return {
     teachers: rawByCenter(rawState.teachers, centerId).length,
     students: rawByCenter(rawState.students, centerId).length,
@@ -34,8 +45,9 @@ export function getCenterOpsStats(centerId, rawState) {
 export function renderPlatformDashboard(rawState) {
   const centers = getCenters();
   const active = centers.filter((c) => c.status !== 'suspended').length;
-  const totalTeachers = (rawState.teachers || []).length;
-  const totalStudents = (rawState.students || []).length;
+  const sumStats = (key) => Object.values(rawState.centerStats || {}).reduce((n, st) => n + (st[key] || 0), 0);
+  const totalTeachers = rawState.centerStats ? sumStats('teachers') : (rawState.teachers || []).length;
+  const totalStudents = rawState.centerStats ? sumStats('students') : (rawState.students || []).length;
   return `
     <div class="vision-banner"><h3>Platform owner</h3><p>You see every tuition center on Tutorsala — onboard, support, and monitor usage.</p></div>
     <div class="stats-grid">
@@ -111,7 +123,7 @@ export function renderPlatformInboundLeads() {
 }
 
 async function fetchInboundLeads() {
-  const res = await fetch('/api/leads', { credentials: 'include' });
+  const res = await apiFetch('/api/leads');
   if (res.status === 401 || res.status === 403) {
     throw new Error('Sign in as platform owner to view demo requests.');
   }
@@ -143,7 +155,7 @@ function bindInboundStageHandlers({ toast }) {
       const id = e.target.dataset.inboundStage;
       const stage = e.target.value;
       try {
-        const res = await fetch('/api/leads', {
+        const res = await apiFetch('/api/leads', {
           method: 'PATCH',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -241,8 +253,8 @@ export function bindPlatformEvents(ctx) {
 
   document.querySelector('[data-action="go-platformInboundLeads"]')?.addEventListener('click', () => navigate('platformInboundLeads'));
 
-  document.querySelector('[data-action="support-view"]')?.addEventListener('click', (e) => {
-    platformViewCenter(e.target.dataset.id);
+  document.querySelector('[data-action="support-view"]')?.addEventListener('click', async (e) => {
+    await platformViewCenter(e.target.dataset.id);
     toast('Support view enabled — open center workspace', 'success');
     refresh();
   });
