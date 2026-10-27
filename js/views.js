@@ -54,6 +54,11 @@ import {
 } from './store.js';
 import {
   generateMonthlyInvoices,
+  generateClassPackInvoices,
+  isPerClassBatch,
+  getClassesPerBill,
+  defaultClassesPerBill,
+  getPerClassProgress,
   sendInvoiceReminder,
   sendBulkFeeReminders,
   markInvoicePaid,
@@ -99,6 +104,7 @@ import {
   formatTime,
   getAllSessions,
   sessionStatusBadge,
+  sessionNotesHtml,
   normalizeSession,
 } from './scheduler.js';
 import { renderWeekCalendarHtml, getMondayOfWeek, addDays } from './schedule-calendar.js';
@@ -110,7 +116,7 @@ import {
   renderTeacherHome, renderStudentHome, bindPlatformEvents,
 } from './platform-views.js';
 import { renderTuitionMarketplace, bindTuitionMarketplaceEvents } from './tuition-marketplace.js';
-import { getCurrentUser, saveCenterAdminTeacherLink } from './auth.js';
+import { getCurrentUser, saveCenterAdminTeacherLink, getEffectiveRole } from './auth.js';
 
 let chartInstance = null;
 
@@ -654,7 +660,9 @@ function renderBatches() {
           <div class="meta">${esc(b.schedule || 'No schedule')}</div>
           <div class="tags">${(b.subjects || []).map((s) => `<span class="tag">${s}</span>`).join('')}</div>
           <div class="meta">${teacher ? `👩‍🏫 ${teacher.name} · ` : ''}${count}/${esc(b.capacity)} students ${atCapacity ? '· <span class="badge badge-orange">Full</span>' : ''}</div>
-          <div class="meta">Fee: ₹${(b.monthlyFee || 0).toLocaleString('en-IN')}/mo · due day ${esc(b.feeDueDay || 5)}</div>
+          <div class="meta">${isPerClassBatch(b)
+            ? `Fee: ₹${(Number(b.perClassFee) || 0).toLocaleString('en-IN')}/class · bill every ${esc(getClassesPerBill(b))} classes`
+            : `Fee: ₹${(b.monthlyFee || 0).toLocaleString('en-IN')}/mo · due day ${esc(b.feeDueDay || 5)}`}</div>
           <div class="meta">Curriculum: ${esc(progress.completed)}/${esc(progress.total)} classes (${esc(progress.percent)}%)</div>
           <div class="progress-bar"><span style="width:${esc(progress.percent)}%"></span></div>
           ${nextClass ? `<div class="meta" style="margin-top:10px">Next: ${esc(nextClass.topic)} on ${esc(nextClass.date)}</div>` : ''}
@@ -754,6 +762,7 @@ function scheduleListHtml(sessions, { showManage = false } = {}) {
     <div class="session-row" data-batch-id="${esc(s.batchId)}" data-session-id="${esc(s.id)}">
       <div class="session-info">
         <h4>${esc(s.topic)} ${sessionStatusBadge(s)}</h4>
+        ${sessionNotesHtml(st) ? `<p style="margin:2px 0">${sessionNotesHtml(st).replace(/^<br>/, '')}</p>` : ''}
         <p><strong>${esc(s.batchName)}</strong> · ${esc(s.date)} · ${formatTime(s.startTime)}–${formatTime(s.endTime)}${sessionRescheduleNote(s)}</p>
         ${st.cancelReason ? `<p style="font-size:0.82rem;color:var(--text-muted)">Cancel note: ${esc(st.cancelReason)}</p>` : ''}
       </div>
@@ -901,17 +910,46 @@ function studentRows(students) {
   }).join('');
 }
 
+// Monthly invoices belong to the month they cover; per-class bills to the month they were made.
+function invoiceInMonth(inv, monthKey) {
+  if (inv.billingType === 'per_class') return (inv.createdAt || '').slice(0, 7) === monthKey;
+  return inv.periodStart === `${monthKey}-01`;
+}
+
+function perClassProgressPanel() {
+  const rows = getStudents()
+    .map((s) => ({ student: s, progress: getPerClassProgress(s) }))
+    .filter((r) => r.progress);
+  if (!rows.length) return '';
+  return `
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-header"><h3>Per-class students</h3></div>
+      <div class="panel-body table-wrap">
+        <table>
+          <thead><tr><th>Student</th><th>Batch</th><th>Classes since last bill</th><th>Amount so far</th></tr></thead>
+          <tbody>${rows.map(({ student, progress: p }) => `<tr>
+            <td>${esc(student.name)}</td>
+            <td>${esc(p.batch.name)}</td>
+            <td>${esc(p.count)} of ${esc(p.perBill)}${p.count >= p.perBill ? ' <span class="badge badge-orange">Ready to bill</span>' : ''}</td>
+            <td>₹${p.amount.toLocaleString('en-IN')} <small>(₹${p.rate.toLocaleString('en-IN')}/class)</small></td>
+          </tr>`).join('')}</tbody>
+        </table>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-top:8px">A bill is made automatically when attendance completes a pack of classes (present or late).</p>
+      </div>
+    </div>`;
+}
+
 function renderFees() {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
   const periodStart = `${year}-${String(month).padStart(2, '0')}-01`;
   const batches = getBatches();
-  const stats = getBillingStats(getInvoices().filter((i) => i.periodStart === periodStart));
+  const stats = getBillingStats(getInvoices().filter((i) => invoiceInMonth(i, periodStart.slice(0, 7))));
   const invoices = getInvoices();
 
   return `
-    ${academyBanner('Fees & Invoices', 'Bill each student per batch monthly. Generate invoices, send WhatsApp reminders with UPI, and mark offline payments.')}
+    ${academyBanner('Fees & Invoices', 'Bill each student per batch monthly or per class attended. Generate invoices, send WhatsApp reminders with UPI, and mark offline payments.')}
     <div class="fee-stats">
       <div class="stat-card"><div class="stat-label">Expected this month</div><div class="stat-value">₹${stats.expected.toLocaleString('en-IN')}</div></div>
       <div class="stat-card"><div class="stat-label">Collected</div><div class="stat-value stat-green">₹${stats.collected.toLocaleString('en-IN')}</div></div>
@@ -944,6 +982,7 @@ function renderFees() {
       <button class="btn btn-primary" data-action="generate-invoices">Generate invoices</button>
       <button class="btn btn-secondary" data-action="send-overdue-reminders">Send overdue reminders</button>
     </div>
+    ${perClassProgressPanel()}
     <div class="panel">
       <div class="panel-header"><h3>Invoices — ${periodLabel(year, month)}</h3></div>
       <div class="panel-body table-wrap">
@@ -966,10 +1005,9 @@ function invoiceRows(invoices, periodStart) {
 
   let list = invoices;
   if (monthFilter) {
-    const ps = `${monthFilter}-01`;
-    list = list.filter((i) => i.periodStart === ps);
+    list = list.filter((i) => invoiceInMonth(i, monthFilter));
   } else if (periodStart) {
-    list = list.filter((i) => i.periodStart === periodStart);
+    list = list.filter((i) => invoiceInMonth(i, periodStart.slice(0, 7)));
   }
   if (batchFilter) list = list.filter((i) => i.batchId === batchFilter);
   if (statusFilter) list = list.filter((i) => i.status === statusFilter);
@@ -1739,8 +1777,16 @@ function showBatchForm(batch, { showModal, closeModal, toast, refresh }) {
         </select>
       </div>
       <div class="form-group"><label>Capacity</label><input type="number" id="fCapacity" value="${esc(batch?.capacity || 20)}"></div>
-      <div class="form-group"><label>Monthly fee (₹)</label><input type="number" id="fMonthlyFee" value="${esc(batch?.monthlyFee ?? 3000)}" min="0" step="100"></div>
-      <div class="form-group"><label>Fee due day</label><input type="number" id="fFeeDueDay" value="${esc(batch?.feeDueDay ?? 5)}" min="1" max="28"></div>
+      <div class="form-group"><label>Fee type</label>
+        <select id="fFeeType">
+          <option value="monthly" ${!isPerClassBatch(batch) ? 'selected' : ''}>Monthly fee</option>
+          <option value="per_class" ${isPerClassBatch(batch) ? 'selected' : ''}>Per class attended</option>
+        </select>
+      </div>
+      <div class="form-group" data-fee-monthly><label>Monthly fee (₹)</label><input type="number" id="fMonthlyFee" value="${esc(batch?.monthlyFee ?? 3000)}" min="0" step="100"></div>
+      <div class="form-group" data-fee-monthly><label>Fee due day</label><input type="number" id="fFeeDueDay" value="${esc(batch?.feeDueDay ?? 5)}" min="1" max="28"></div>
+      <div class="form-group" data-fee-perclass><label>Fee per class (₹)</label><input type="number" id="fPerClassFee" value="${esc(batch?.perClassFee ?? 300)}" min="0" step="50"></div>
+      <div class="form-group" data-fee-perclass><label>Bill every … classes attended</label><input type="number" id="fClassesPerBill" value="${esc(batch?.classesPerBill ?? '')}" min="1" max="60" placeholder="Auto: ${esc(defaultClassesPerBill(batch))} (classes per week × 4)"></div>
       <div class="form-group"><label>Subjects (comma-separated)</label><input id="fSubjects" value="${batch?.subjects?.join(', ') || ''}"></div>
       <div class="form-group full"><label>Notes</label><textarea id="fNotes">${esc(batch?.notes || '')}</textarea></div>
     </div>
@@ -1801,6 +1847,16 @@ function showBatchForm(batch, { showModal, closeModal, toast, refresh }) {
 
       document.getElementById('generateScheduleBtn').onclick = runGenerate;
 
+      // Show only the fee fields for the chosen fee type.
+      const feeType = document.getElementById('fFeeType');
+      const syncFeeFields = () => {
+        const perClass = feeType.value === 'per_class';
+        document.querySelectorAll('[data-fee-monthly]').forEach((el) => el.classList.toggle('hidden', perClass));
+        document.querySelectorAll('[data-fee-perclass]').forEach((el) => el.classList.toggle('hidden', !perClass));
+      };
+      feeType.addEventListener('change', syncFeeFields);
+      syncFeeFields();
+
       document.getElementById('saveBatchBtn').onclick = () => {
         const name = document.getElementById('fName').value.trim();
         if (!name) return toast('Name is required', 'error');
@@ -1849,6 +1905,10 @@ function showBatchForm(batch, { showModal, closeModal, toast, refresh }) {
           capacity: Number(document.getElementById('fCapacity').value) || 20,
           monthlyFee: Number(document.getElementById('fMonthlyFee').value) || 0,
           feeDueDay: Number(document.getElementById('fFeeDueDay').value) || 5,
+          feeType: document.getElementById('fFeeType').value,
+          perClassFee: Number(document.getElementById('fPerClassFee').value) || 0,
+          // Blank = classes per week x 4, worked out from the schedule days.
+          classesPerBill: Number(document.getElementById('fClassesPerBill').value) || null,
           notes: document.getElementById('fNotes').value.trim(),
         });
         closeModal();
@@ -1928,6 +1988,33 @@ function showSessionDetailModal(batchId, sessionId, ctx) {
         toast('Class restored to schedule', 'success');
         refresh?.();
       });
+    },
+  });
+}
+
+// Mark a class done and note what was actually covered.
+function showCompleteSessionModal(batchId, sessionId, ctx, onDone) {
+  const session = getBatchSession(batchId, sessionId);
+  if (!session) return;
+  const planned = session.carryOver ? `${session.carryOver}; ${session.topic}` : session.topic;
+  ctx.showModal({
+    title: 'Mark class done',
+    body: `
+      <p style="margin:0 0 12px;color:var(--text-muted)">${esc(session.topic)} · ${esc(session.batchName)} · ${esc(session.date)}</p>
+      <div class="form-group full"><label>What was covered?</label><textarea id="coveredNotes" rows="3">${esc(planned)}</textarea></div>
+      <div class="form-group full"><label><input type="checkbox" id="coveredCarryOver"> Not finished — continue in the next class</label></div>`,
+    footer: `<button type="button" class="btn btn-secondary" data-modal-cancel>Back</button><button type="button" class="btn btn-primary" id="confirmCompleteSession">Mark done</button>`,
+    onMount: () => {
+      document.getElementById('confirmCompleteSession').onclick = () => {
+        markSessionComplete(batchId, sessionId, true, {
+          coveredNotes: document.getElementById('coveredNotes')?.value || '',
+          carryOver: document.getElementById('coveredCarryOver')?.checked || false,
+        });
+        ctx.closeModal();
+        ctx.toast('Class marked done', 'success');
+        ctx.refresh?.();
+        onDone?.();
+      };
     },
   });
 }
@@ -2093,12 +2180,7 @@ function bindScheduleEvents({ showModal, closeModal, toast, refresh }) {
   });
 
   document.querySelectorAll('[data-action="complete-session"]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      markSessionComplete(btn.dataset.batch, btn.dataset.session, true);
-      toast('Class marked complete', 'success');
-      refresh?.();
-      reloadSchedule();
-    });
+    btn.addEventListener('click', () => showCompleteSessionModal(btn.dataset.batch, btn.dataset.session, ctx, reloadSchedule));
   });
 
   document.querySelectorAll('[data-action="undo-session"]').forEach((btn) => {
@@ -2234,6 +2316,7 @@ function showStudentForm(student, { showModal, closeModal, toast, refresh }) {
       <div class="form-group"><label>Parent phone (WhatsApp)</label><input id="sParentPhone" value="${esc(student?.parentPhone || '')}"></div>
       <div class="form-group"><label>Parent email</label><input id="sParentEmail" value="${esc(student?.parentEmail || '')}"></div>
       <div class="form-group"><label>Monthly fee override (₹)</label><input type="number" id="sFeeOverride" value="${esc(student?.monthlyFeeOverride ?? '')}" placeholder="Leave blank for batch fee" min="0" step="100"></div>
+      <div class="form-group"><label>Per-class fee override (₹)</label><input type="number" id="sPerClassOverride" value="${esc(student?.perClassFeeOverride ?? '')}" placeholder="For per-class batches; blank = batch fee" min="0" step="50"></div>
       <div class="form-group"><label>Fee billing status</label>
         <select id="sFeeStatus">
           <option value="active" ${student?.feeStatus !== 'paused' ? 'selected' : ''}>Active</option>
@@ -2262,6 +2345,9 @@ function showStudentForm(student, { showModal, closeModal, toast, refresh }) {
           parentPhone: document.getElementById('sParentPhone').value.trim(),
           parentEmail: document.getElementById('sParentEmail').value.trim(),
           monthlyFeeOverride: feeOverrideRaw === '' ? null : Number(feeOverrideRaw),
+          perClassFeeOverride: document.getElementById('sPerClassOverride').value.trim() === ''
+            ? null
+            : Number(document.getElementById('sPerClassOverride').value),
           feeStatus: document.getElementById('sFeeStatus').value,
           feeStartDate: document.getElementById('sFeeStart').value,
           address: document.getElementById('sAddress').value.trim(),
@@ -2319,6 +2405,15 @@ function bindAttendanceEvents({ toast, refresh }) {
       toast(`Attendance saved & ${sent} parent notification(s) sent`, 'success');
     } else {
       toast('Attendance saved', 'success');
+    }
+
+    // Per-class batches: a bill is made as soon as a student completes a pack of classes.
+    // Only people who manage fees create bills; others' attendance is billed from the Fees screen.
+    if (isPerClassBatch(getBatch(batchId)) && ['center_admin', 'platform_owner'].includes(getEffectiveRole())) {
+      const { created } = generateClassPackInvoices({ studentIds: Object.keys(records) });
+      for (const inv of created) {
+        toast(`Bill ready for ${inv.studentName} — ${inv.lineItems[0].qty} classes, ₹${inv.amount.toLocaleString('en-IN')}`, 'success');
+      }
     }
     refresh();
   });
@@ -2594,6 +2689,8 @@ function bindFeesEvents({ showModal, closeModal, toast, refresh }) {
     if (!monthVal) return toast('Select a month', 'error');
     const [y, m] = monthVal.split('-').map(Number);
     const result = generateMonthlyInvoices(y, m);
+    // Also bill any per-class students who have completed a pack of classes.
+    result.created.push(...generateClassPackInvoices().created);
     if (result.created.length) {
       toast(`Created ${result.created.length} invoice(s) for ${result.periodLabel}`, 'success');
     } else {

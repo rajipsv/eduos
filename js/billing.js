@@ -12,6 +12,7 @@ import {
   persist,
   addMessage,
   getCenter,
+  getAttendanceHistory,
 } from './store.js';
 import { sendWhatsApp } from './whatsapp.js';
 
@@ -44,6 +45,136 @@ export function getStudentBatchFee(student, batch) {
     return Number(student.monthlyFeeOverride) || 0;
   }
   return Number(batch?.monthlyFee) || 0;
+}
+
+// --- Per-class fees ---------------------------------------------------------------------
+// A per-class batch charges for each class a student attends (present or late), and a bill
+// is made every `classesPerBill` attended classes (e.g. 4 for once a week, 8 for twice).
+
+export function isPerClassBatch(batch) {
+  return batch?.feeType === 'per_class';
+}
+
+/** Default pack size: classes per week x 4, so a bill covers about a month. */
+export function defaultClassesPerBill(batch) {
+  return Math.max(1, (batch?.scheduleDays?.length || 1) * 4);
+}
+
+export function getClassesPerBill(batch) {
+  const n = Number(batch?.classesPerBill);
+  return n >= 1 ? Math.round(n) : defaultClassesPerBill(batch);
+}
+
+export function getStudentPerClassFee(student, batch) {
+  if (student?.perClassFeeOverride != null && student.perClassFeeOverride !== '') {
+    return Number(student.perClassFeeOverride) || 0;
+  }
+  return Number(batch?.perClassFee) || 0;
+}
+
+const ATTENDED = new Set(['present', 'late']);
+
+/** Dates the student attended this batch, oldest first. */
+export function getAttendedClasses(studentId, batchId) {
+  return getAttendanceHistory(batchId)
+    .filter((a) => ATTENDED.has(a.records?.[studentId]))
+    .map((a) => a.date)
+    .sort();
+}
+
+/** Attended dates not yet on a (non-void) per-class bill. Voiding a bill frees its classes. */
+export function getUnbilledClasses(studentId, batchId) {
+  const billed = new Set(
+    getInvoices()
+      .filter((inv) => inv.studentId === studentId && inv.batchId === batchId && inv.billingType === 'per_class' && inv.status !== 'void')
+      .flatMap((inv) => inv.classDates || []),
+  );
+  return getAttendedClasses(studentId, batchId).filter((d) => !billed.has(d));
+}
+
+/** Where a per-class student stands: classes since the last bill, amount so far, pack size. */
+export function getPerClassProgress(student) {
+  const batch = student?.batchId ? getBatch(student.batchId) : null;
+  if (!isPerClassBatch(batch)) return null;
+  const unbilled = getUnbilledClasses(student.id, batch.id);
+  const rate = getStudentPerClassFee(student, batch);
+  const perBill = getClassesPerBill(batch);
+  return { batch, rate, perBill, count: unbilled.length, amount: unbilled.length * rate };
+}
+
+function shortDate(iso) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+function addDays(iso, days) {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Makes a draft bill for every full pack of attended, unbilled classes.
+ * Run after attendance is saved and from the Fees screen.
+ * @param {{ studentIds?: string[] }} [opts] limit to some students
+ */
+export function generateClassPackInvoices({ studentIds = null } = {}) {
+  const created = [];
+  const today = new Date().toISOString().slice(0, 10);
+  for (const student of getStudents()) {
+    if (studentIds && !studentIds.includes(student.id)) continue;
+    if (student.feeStatus === 'paused' || !student.batchId) continue;
+    const batch = getBatch(student.batchId);
+    if (!isPerClassBatch(batch)) continue;
+    const rate = getStudentPerClassFee(student, batch);
+    if (rate <= 0) continue;
+    const perBill = getClassesPerBill(batch);
+    let unbilled = getUnbilledClasses(student.id, batch.id);
+
+    while (unbilled.length >= perBill) {
+      const classDates = unbilled.slice(0, perBill);
+      unbilled = unbilled.slice(perBill);
+      const amount = perBill * rate;
+      const first = classDates[0];
+      const last = classDates[classDates.length - 1];
+      const [y, m] = today.split('-').map(Number);
+      const invoice = {
+        id: uid('inv'),
+        billingType: 'per_class',
+        studentId: student.id,
+        batchId: batch.id,
+        studentName: student.name,
+        batchName: batch.name,
+        parentName: student.parentName,
+        parentPhone: student.parentPhone,
+        parentEmail: student.parentEmail,
+        classDates,
+        periodStart: first,
+        periodEnd: last,
+        periodLabel: `${perBill} classes · ${shortDate(first)} – ${shortDate(last)}`,
+        amount,
+        currency: 'INR',
+        dueDate: addDays(today, 5),
+        status: 'draft',
+        invoiceNumber: nextInvoiceNumber(y, m),
+        lineItems: [{
+          label: `Classes — ${batch.name} (${perBill} × ₹${rate.toLocaleString('en-IN')})`,
+          qty: perBill,
+          unitAmount: rate,
+          amount,
+        }],
+        remindersSent: [],
+        createdAt: new Date().toISOString(),
+        sentAt: null,
+        paidAt: null,
+        paidAmount: null,
+        paymentMethod: null,
+        paymentRef: null,
+      };
+      saveInvoice(invoice);
+      created.push(invoice);
+    }
+  }
+  return { created };
 }
 
 export function findInvoiceForPeriod(studentId, batchId, periodStart) {
@@ -94,6 +225,10 @@ export function generateMonthlyInvoices(year, month) {
     const batch = getBatch(student.batchId);
     if (!batch) {
       skipped.push({ student, reason: 'Batch missing' });
+      continue;
+    }
+    if (isPerClassBatch(batch)) {
+      skipped.push({ student, batch, reason: 'Billed per class' });
       continue;
     }
     const amount = getStudentBatchFee(student, batch);

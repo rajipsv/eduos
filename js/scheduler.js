@@ -167,6 +167,18 @@ export function getSelectedDays(containerId) {
   return [...picker.querySelectorAll('.day-chip.active')].map((c) => c.dataset.day);
 }
 
+/** "Covered: …" for a done class and "Continue: …" for one picking up an unfinished topic. */
+export function sessionNotesHtml(session) {
+  const lines = [];
+  if (session?.carryOver && !session.completed) {
+    lines.push(`<small class="session-note">Continue: ${esc(session.carryOver)}</small>`);
+  }
+  if (session?.coveredNotes && session.completed) {
+    lines.push(`<small class="session-note">Covered: ${esc(session.coveredNotes)}</small>`);
+  }
+  return lines.length ? `<br>${lines.join('<br>')}` : '';
+}
+
 export function sessionsPreviewHtml(sessions, editable = false) {
   if (!sessions.length) {
     return '<p class="empty-state" style="padding:20px">Add topics and click Generate Schedule to preview classes.</p>';
@@ -181,7 +193,7 @@ export function sessionsPreviewHtml(sessions, editable = false) {
             (s, i) => `<tr data-session-id="${esc(s.id)}">
               <td>${i + 1}</td>
               <td>${esc(s.date)}</td>
-              <td>${esc(s.topic)}</td>
+              <td>${esc(s.topic)}${sessionNotesHtml(s)}</td>
               <td>${formatTime(s.startTime)}–${formatTime(s.endTime)}</td>
               <td>${editable ? `<input class="meeting-link-input" data-session-link="${esc(s.id)}" value="${esc(s.meetingLink)}">` : `<a href="${safeUrl(s.meetingLink)}" target="_blank" class="link-btn">Join Class</a>`}</td>
               ${editable ? `<td><input type="checkbox" data-session-done="${esc(s.id)}" ${s.completed ? 'checked' : ''}></td>` : ''}

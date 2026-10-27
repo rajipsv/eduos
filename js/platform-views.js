@@ -3,7 +3,7 @@ import { apiFetch } from './api-client.js';
 import { getCenters, getTeachers, getStudents, getBatches, getLeads } from './store.js';
 import { getSession, platformViewCenter, platformExitCenterView, setCenterStatus, isPlatformOwner } from './auth.js';
 import { PLATFORM_LAYERS } from './intelligence.js';
-import { getUpcomingSessions, formatTime } from './scheduler.js';
+import { getUpcomingSessions, formatTime, sessionNotesHtml } from './scheduler.js';
 
 export const platformPageMeta = {
   platformDashboard: { title: 'Platform Dashboard', subtitle: 'Tutorsala operator — all tuition centers' },
@@ -305,10 +305,11 @@ export function renderTeacherHome() {
         <div class="session-row">
           <div class="session-info">
             <h4>${esc(s.topic)}</h4>
-            <p>${esc(s.batchName)} · ${esc(s.date)} · ${formatTime(s.startTime)}–${formatTime(s.endTime)}</p>
+            <p>${esc(s.batchName)} · ${esc(s.date)} · ${formatTime(s.startTime)}–${formatTime(s.endTime)}${sessionNotesHtml(s)}</p>
           </div>
           <div class="session-actions">
             <a href="${safeUrl(s.meetingLink)}" target="_blank" class="btn btn-sm btn-primary">Join</a>
+            <button type="button" class="btn btn-sm btn-secondary" data-action="complete-session" data-batch="${esc(s.batchId)}" data-session="${esc(s.id)}">Mark done</button>
             <button type="button" class="btn btn-sm btn-secondary" data-action="open-session" data-batch="${esc(s.batchId)}" data-session="${esc(s.id)}">Cancel / reschedule</button>
           </div>
         </div>`).join('') : '<p class="empty-state">No upcoming classes</p>'}

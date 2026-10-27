@@ -673,6 +673,10 @@ function seedDemoData() {
     teacherId: teacher2.id,
     monthlyFee: 3500,
     feeDueDay: 5,
+    // Charged per class attended, billed every 8 classes (2 classes a week).
+    feeType: 'per_class',
+    perClassFee: 300,
+    classesPerBill: 8,
     scheduleDays: ['tue', 'thu'],
     startTime: '17:00',
     endTime: '19:00',
@@ -1671,13 +1675,31 @@ function ensureFamilyAccountForStudent(student, lead) {
   return user;
 }
 
-export function markSessionComplete(batchId, sessionId, completed = true) {
+/**
+ * Marks a class done (or not). When done, `coveredNotes` records what was actually taught;
+ * `carryOver` puts "<topic> (continued)" on the batch's next scheduled class. Planned topics
+ * are never changed.
+ */
+export function markSessionComplete(batchId, sessionId, completed = true, { coveredNotes, carryOver = false } = {}) {
   const batch = getBatch(batchId);
   const session = batch?.sessions?.find((s) => s.id === sessionId);
   if (!session) return false;
   normalizeSession(session);
   session.status = completed ? 'completed' : 'scheduled';
   session.completed = completed;
+  if (completed) {
+    if (coveredNotes !== undefined) session.coveredNotes = String(coveredNotes).trim();
+    session.completedAt = new Date().toISOString();
+    const next = (batch.sessions || [])
+      .filter((s) => s.id !== session.id && normalizeSession(s).status === 'scheduled' && s.date >= session.date)
+      .sort((a, b) => `${a.date}${a.startTime || ''}`.localeCompare(`${b.date}${b.startTime || ''}`))[0];
+    if (next) {
+      if (carryOver) next.carryOver = `${session.topic} (continued)`;
+      else if (next.carryOver === `${session.topic} (continued)`) delete next.carryOver;
+    }
+  } else {
+    delete session.completedAt;
+  }
   persist();
   return true;
 }

@@ -69,6 +69,10 @@ export function buildDemoAppState() {
     teacherId: teacher2.id,
     monthlyFee: 3500,
     feeDueDay: 5,
+    // Charged per class attended, billed every 8 classes (2 classes a week).
+    feeType: 'per_class',
+    perClassFee: 300,
+    classesPerBill: 8,
     scheduleDays: ['tue', 'thu'],
     startTime: '17:00',
     endTime: '19:00',

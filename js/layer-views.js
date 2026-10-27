@@ -33,7 +33,7 @@ import { formatTime, dayPickerHtml, bindDayPicker, getSelectedDays } from './sch
 import { getRecentWebInquiries } from './crm.js';
 import { academyBanner } from './academy.js';
 import { getEffectiveRole, getLinkedTeacherId } from './auth.js';
-import { getStudentFeeSummary, canParentReportPayment, parentInvoiceStatusLabel, reportParentPayment } from './billing.js';
+import { getStudentFeeSummary, canParentReportPayment, parentInvoiceStatusLabel, reportParentPayment, getPerClassProgress } from './billing.js';
 import { getBillingSettings } from './store.js';
 
 function canManageStudentSuccess() {
@@ -585,6 +585,22 @@ function parentHomeView(studentId) {
     </div></div>`;
 }
 
+// The child's last few classes, with what the teacher noted was covered.
+function parentRecentClassesPanel(student) {
+  const batch = student?.batchId ? getBatch(student.batchId) : null;
+  const done = (batch?.sessions || [])
+    .filter((s) => s.status === 'completed' || s.completed)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 6);
+  if (!done.length) return '';
+  return `
+    <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Recent classes — ${esc(batch.name)}</h3></div>
+    <div class="panel-body table-wrap">
+      <table><thead><tr><th>Date</th><th>Planned topic</th><th>Covered</th></tr></thead>
+      <tbody>${done.map((s) => `<tr><td>${esc(s.date)}</td><td>${esc(s.topic)}</td><td>${esc(s.coveredNotes || '—')}</td></tr>`).join('')}</tbody></table>
+    </div></div>`;
+}
+
 function parentProgressView(studentId) {
   const dash = getParentDashboard(studentId);
   if (!dash) return '<div class="empty-state">No data</div>';
@@ -607,6 +623,7 @@ function parentProgressView(studentId) {
         <tbody>${skills.map((sk) => `<tr><td>${esc(sk.subject)}</td><td>${esc(sk.level)}</td><td>${esc(sk.progress)}%</td></tr>`).join('') || '<tr><td colspan="3">Not tracked</td></tr>'}</tbody></table>
       </div></div>
     </div>
+    ${parentRecentClassesPanel(student)}
     <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Test History — ${esc(student.name)}</h3></div>
     <div class="panel-body table-wrap">
       <table><thead><tr><th>Test</th><th>Subject</th><th>Date</th><th>Score</th></tr></thead>
@@ -647,14 +664,26 @@ function parentAttendanceView(studentId) {
     </div></div>`;
 }
 
+// Per-class batches: how many attended classes count towards the next bill.
+function parentPerClassNote(student) {
+  const p = getPerClassProgress(student);
+  if (!p) return '';
+  return `<div class="panel" style="margin-bottom:16px"><div class="panel-body">
+    <strong>${esc(p.count)} of ${esc(p.perBill)} classes</strong> attended since the last bill ·
+    ₹${p.amount.toLocaleString('en-IN')} so far (₹${p.rate.toLocaleString('en-IN')} per class).
+    A bill is sent after every ${esc(p.perBill)} classes attended.
+  </div></div>`;
+}
+
 function parentFeesView(studentId) {
   const student = getStudent(studentId);
   const fees = getStudentFeeSummary(studentId);
   const billing = getBillingSettings();
   if (!fees.invoices.length) {
-    return `<div class="panel"><div class="panel-body empty-state"><h4>No invoices yet</h4><p>When the center generates a fee invoice and sends a reminder, it will appear here.</p></div></div>`;
+    return `${parentPerClassNote(student)}<div class="panel"><div class="panel-body empty-state"><h4>No invoices yet</h4><p>When the center generates a fee invoice and sends a reminder, it will appear here.</p></div></div>`;
   }
   return `
+    ${parentPerClassNote(student)}
     <div class="stats-grid">
       <div class="stat-card"><div class="label">Outstanding</div><div class="value ${fees.outstanding ? 'stat-red' : ''}">₹${fees.outstanding.toLocaleString('en-IN')}</div></div>
       <div class="stat-card"><div class="label">Overdue</div><div class="value">${esc(fees.overdue.length)}</div></div>
