@@ -127,7 +127,7 @@ export const LANDING_PRICING_TIERS = [
   {
     id: 'pilot',
     name: 'Design partner',
-    price: '90-day pilot',
+    price: '30-day pilot',
     period: ' · no charge',
     note: 'Limited early centers',
     featured: false,
