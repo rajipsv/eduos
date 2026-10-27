@@ -1,12 +1,15 @@
 import { generateSchedule, formatScheduleLabel } from '../js/scheduler.js';
-import { loadAppState, saveAppState, STATE_ID } from './state-api.js';
+import { ensurePlatformData, seedPlatformDemo } from '../js/platform.js';
 import { getPool } from './db.js';
 import { hashPassword } from './auth/crypto.js';
 import { upsertAuthUser } from './auth/users.js';
 import { DEMO_IDS, DEMO_PASSWORD, DEMO_EMAILS, isDemoEmail } from './demo-accounts.js';
 import { isDemoModeEnabled } from './env.js';
+import { blobToCenterRows } from './db/blob.js';
+import { upsertCenter, getCenter } from './db/centers.js';
+import { insertRecords, purgeCenterRecords } from './db/records.js';
 
-function buildDemoAppState() {
+export function buildDemoAppState() {
   const centerId = DEMO_IDS.center;
   const teacher1 = {
     id: DEMO_IDS.teacherAnita,
@@ -140,6 +143,8 @@ function buildDemoAppState() {
     billing: { invoicePrefix: 'INV', upiId: '', bankDetails: '', defaultDueDay: 5 },
   };
 
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
   const users = [
     { id: DEMO_IDS.userOwner, email: 'owner@tutorsala.app', role: 'platform_owner', name: 'Platform Owner' },
     { id: DEMO_IDS.userAdmin, email: 'admin@brightminds.demo', role: 'center_admin', name: 'Center Admin', centerId },
@@ -160,9 +165,15 @@ function buildDemoAppState() {
     batches: [batch1, batch2],
     students,
     teachers: [teacher1, teacher2],
-    leads: [],
-    attendance: [],
-    tests: [],
+    leads: demoLeads(centerId),
+    attendance: [
+      { id: 'att_demo_1', centerId, batchId: batch1.id, date: yesterday, records: { [students[0].id]: 'present', [students[1].id]: 'absent' } },
+      { id: 'att_demo_2', centerId, batchId: batch2.id, date: yesterday, records: { [students[2].id]: 'present' } },
+    ],
+    tests: [
+      { id: 'test_demo_physics', centerId, name: 'Unit Test 1 — Physics', batchId: batch1.id, subject: 'Physics', date: '2025-07-10', maxMarks: 50, marks: { [students[0].id]: 42, [students[1].id]: 35 } },
+      { id: 'test_demo_algebra', centerId, name: 'Algebra Quiz', batchId: batch2.id, subject: 'Algebra', date: '2025-07-12', maxMarks: 30, marks: { [students[2].id]: 24 } },
+    ],
     messages: [],
     invoices: [],
     passwordResetTokens: [],
@@ -201,75 +212,78 @@ function buildDemoAppState() {
   };
 }
 
-async function loadAppStateData() {
-  const result = await loadAppState();
-  if (result.error) return null;
-  return result.body.data;
+function demoLeads(centerId) {
+  const lead = (n, fields) => ({ id: `lead_demo_${n}`, centerId, activities: [], ...fields });
+  return [
+    lead(1, { name: 'Kavya Reddy', phone: '9876510001', email: 'kavya@email.com', source: 'Website', stage: 'lead', grade: '9', course: 'Science', notes: 'Interested in weekend batch', followUpDate: '2025-07-23', createdAt: '2025-07-18' }),
+    lead(2, { name: 'Arjun Nair', phone: '9876510002', email: 'arjun@email.com', source: 'WhatsApp', stage: 'inquiry', grade: '10', course: 'Science', notes: 'Asked about fees', followUpDate: '2025-07-22', createdAt: '2025-07-17' }),
+    lead(3, { name: 'Sneha Iyer', phone: '9876510003', email: 'sneha@email.com', source: 'Facebook Ads', stage: 'demo', grade: '8', course: 'Mathematics', notes: 'Demo scheduled Fri 5 PM', demoDate: '2025-07-25', demoTime: '17:00', createdAt: '2025-07-16' }),
+    lead(4, { name: 'Dev Kapoor', phone: '9876510004', email: 'dev@email.com', source: 'Referral', stage: 'counseling', grade: '10', course: 'Science', notes: 'Parent wants career guidance', createdAt: '2025-07-14' }),
+    lead(5, { name: 'Isha Gupta', phone: '9876510005', email: 'isha@email.com', source: 'Walk-in', stage: 'batch_allocation', grade: '8', course: 'Mathematics', notes: 'Ready to enroll — pick batch', createdAt: '2025-07-12' }),
+  ];
 }
 
-async function saveAppStateData(data) {
-  return saveAppState(data);
+/** Demo data in the old single-document shape, including the platform demo content. */
+export function buildFullDemoState() {
+  const data = buildDemoAppState();
+  ensurePlatformData(data);
+  seedPlatformDemo(data, data.students, data.batches, data.teachers);
+  return data;
 }
 
-function demoAppStateMissing(data) {
-  if (!data) return true;
-  if (!data.users?.some((u) => u.email === 'admin@brightminds.demo')) return true;
-  if (!data.users?.some((u) => u.email === 'owner@tutorsala.app')) return true;
-  return false;
-}
-
-async function upsertDemoAuthUsersFromState(data) {
-  const passwordHash = hashPassword(DEMO_PASSWORD);
-  let upserted = 0;
-
-  for (const u of data.users || []) {
-    // Only the fixed demo accounts. Never touch real users' passwords or roles.
-    if (!u.email || !isDemoEmail(u.email)) continue;
-    await upsertAuthUser({
-      id: u.id,
-      email: u.email,
-      passwordHash,
-      role: u.role,
-      name: u.name || u.email,
-      centerId: u.centerId || null,
-      linkedTeacherId: u.linkedTeacherId || null,
-      linkedStudentId: u.linkedStudentId || null,
-      linkedStudentIds: u.linkedStudentIds || [],
-      parentName: u.parentName || null,
-    });
-    upserted += 1;
-  }
-
-  return upserted;
-}
-
-/** Idempotent: seed Bright Minds demo app_state + all demo auth_users (password demo123). */
-export async function ensureNeonDemoSeeded({ forceAppState = false } = {}) {
-  if (!process.env.DATABASE_URL) {
-    return { ok: false, skipped: true, reason: 'no_database' };
-  }
+/**
+ * Replaces the demo center's data and resets the demo logins (password demo123).
+ * Other centers and real users are never touched.
+ */
+export async function seedDemo(pool = getPool()) {
   if (!isDemoModeEnabled()) {
     return { ok: false, skipped: true, reason: 'demo_mode_disabled' };
   }
+  const data = buildFullDemoState();
+  const { centers, rows } = blobToCenterRows(data);
+  const passwordHash = hashPassword(DEMO_PASSWORD);
 
-  let data = await loadAppStateData();
-  let appStateSeeded = false;
-
-  if (forceAppState || demoAppStateMissing(data)) {
-    data = buildDemoAppState();
-    await saveAppStateData(data);
-    appStateSeeded = true;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const center of centers) {
+      await upsertCenter(client, center);
+      await purgeCenterRecords(client, center.id);
+    }
+    const records = await insertRecords(client, rows);
+    for (const u of data.users) {
+      if (!isDemoEmail(u.email)) continue;
+      await upsertAuthUser(
+        {
+          id: u.id,
+          email: u.email,
+          passwordHash,
+          role: u.role,
+          name: u.name || u.email,
+          centerId: u.centerId || null,
+          linkedTeacherId: u.linkedTeacherId || null,
+          linkedStudentId: u.linkedStudentId || null,
+          linkedStudentIds: u.linkedStudentIds || [],
+          parentName: u.parentName || null,
+        },
+        client,
+      );
+    }
+    await client.query('COMMIT');
+    return { ok: true, records, demoEmails: DEMO_EMAILS };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
+}
 
-  const authUsers = await upsertDemoAuthUsersFromState(data);
-
-  return {
-    ok: true,
-    appStateSeeded,
-    authUsers,
-    demoEmails: DEMO_EMAILS,
-    password: DEMO_PASSWORD,
-  };
+/** Seeds the demo center only if it doesn't exist yet (local server start-up). */
+export async function seedDemoIfMissing(pool = getPool()) {
+  if (!isDemoModeEnabled()) return { ok: false, skipped: true, reason: 'demo_mode_disabled' };
+  if (await getCenter(pool, DEMO_IDS.center)) return { ok: true, skipped: true, reason: 'exists' };
+  return seedDemo(pool);
 }
 
 export async function runDemoSeedCli() {
@@ -278,7 +292,7 @@ export async function runDemoSeedCli() {
     process.exitCode = 1;
     return;
   }
-  const result = await ensureNeonDemoSeeded({ forceAppState: true });
-  console.log('Neon demo seed complete:', result);
+  const result = await seedDemo();
+  console.log(`Demo seed complete: ${result.records} records; logins ${DEMO_EMAILS.join(', ')}`);
   await getPool().end();
 }

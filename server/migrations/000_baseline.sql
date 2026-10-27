@@ -1,3 +1,4 @@
+-- Baseline: the schema before versioned migrations. Safe to re-run (IF NOT EXISTS everywhere).
 -- Tutorsala shared application state (MVP: single JSON document, same shape as localStorage blob)
 CREATE TABLE IF NOT EXISTS app_state (
   id TEXT PRIMARY KEY,

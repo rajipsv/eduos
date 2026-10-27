@@ -43,8 +43,8 @@ export async function findUserWithPasswordByEmail(email) {
   return result.rows[0] || null;
 }
 
-export async function insertUser(user) {
-  await getPool().query(
+export async function insertUser(user, db = getPool()) {
+  await db.query(
     `INSERT INTO auth_users (
       id, email, password_hash, role, name, center_id,
       linked_teacher_id, linked_student_id, linked_student_ids, parent_name
@@ -62,7 +62,6 @@ export async function insertUser(user) {
       user.parentName || null,
     ],
   );
-  return findUserById(user.id);
 }
 
 export async function updateUserPassword(userId, passwordHash) {
@@ -72,9 +71,9 @@ export async function updateUserPassword(userId, passwordHash) {
   );
 }
 
-export async function upsertAuthUser(user) {
+export async function upsertAuthUser(user, db = getPool()) {
   const email = user.email.trim().toLowerCase();
-  await getPool().query(
+  await db.query(
     `INSERT INTO auth_users (
       id, email, password_hash, role, name, center_id,
       linked_teacher_id, linked_student_id, linked_student_ids, parent_name
@@ -102,7 +101,6 @@ export async function upsertAuthUser(user) {
       user.parentName || null,
     ],
   );
-  return findUserByEmail(email);
 }
 
 export async function countAuthUsers() {

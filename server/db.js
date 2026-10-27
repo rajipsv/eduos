@@ -16,10 +16,15 @@ export function getPool() {
   if (!connectionString) {
     throw new Error('DATABASE_URL is not set. Copy .env.example to .env and add your Neon connection string.');
   }
+  // DATABASE_SCHEMA is for tests: it points every query at a scratch schema.
+  const schema = process.env.DATABASE_SCHEMA;
+  if (schema && !/^[a-z_][a-z0-9_]*$/.test(schema)) throw new Error('Invalid DATABASE_SCHEMA');
   pool = new Pool({
-    connectionString,
+    // Neon's pooler rejects the search_path start-up option, so tests use the direct host.
+    connectionString: schema ? connectionString.replace('-pooler.', '.') : connectionString,
     ssl: { rejectUnauthorized: false },
     max: 5,
+    ...(schema ? { options: `-c search_path=${schema}` } : {}),
   });
   return pool;
 }

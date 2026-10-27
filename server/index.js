@@ -19,8 +19,9 @@ import {
   handleForgotPassword,
   handleResetPasswordInfo,
   handleResetPassword,
-  runAuthMigrations,
 } from './auth/handlers.js';
+import { runMigrations } from './migrate.js';
+import { seedDemoIfMissing } from './demo-seed.js';
 import { isAuthConfigured } from './auth/config.js';
 import {
   handleCreateInboundLead,
@@ -113,10 +114,12 @@ app.listen(port, host, async () => {
     dbReady = await testConnection();
     if (dbReady) {
       try {
-        // Applies the schema; seeds demo accounts only when demo mode is on.
-        await runAuthMigrations();
+        await runMigrations();
+        // Creates the demo center and logins on first start, only when demo mode is on.
+        const seed = await seedDemoIfMissing();
+        if (seed.ok && !seed.skipped) console.log('Demo center seeded:', seed.demoEmails.join(', '));
       } catch (err) {
-        console.warn('Auth migration warning:', err.message);
+        console.warn('Database setup warning:', err.message);
       }
     }
   }

@@ -10,8 +10,9 @@
     "seed:demo": "node server/seed-demo.mjs",
     "serve:static": "node serve.js",
     "lint": "eslint .",
-    "test": "node --test \"test/**/*.test.js\"",
-    "format": "prettier --write \"server/**/*.{js,mjs}\" \"api/**/*.js\" \"test/**/*.js\""
+    "test": "node --test \"test/*.test.js\"",
+    "format": "prettier --write \"server/**/*.{js,mjs}\" \"api/**/*.js\" \"test/**/*.js\"",
+    "test:db": "node --test --test-concurrency=1 \"test/db/*.test.js\""
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -12,7 +12,7 @@ Object.assign(process.env, BLANK);
 
 const env = await import('../server/env.js');
 const { authenticateRequest } = await import('../server/auth/middleware.js');
-const { ensureNeonDemoSeeded } = await import('../server/demo-seed.js');
+const { seedDemo } = await import('../server/demo-seed.js');
 
 function withEnv(vars, fn) {
   const saved = Object.fromEntries(Object.keys(vars).map((k) => [k, process.env[k]]));
@@ -63,7 +63,7 @@ test('demo seeding is skipped when demo mode is off', async () => {
   process.env.DATABASE_URL = 'postgres://unused';
   process.env.ENABLE_DEMO_SEED = 'false';
   try {
-    const result = await ensureNeonDemoSeeded();
+    const result = await seedDemo(null);
     assert.equal(result.reason, 'demo_mode_disabled');
   } finally {
     process.env.DATABASE_URL = '';

@@ -25,9 +25,9 @@ import {
   buildClientSessionFromDbUser,
   validatePassword,
 } from './session.js';
-import { loadAppStateData, registerCenterInAppState } from './state-sync.js';
-import { ensureNeonDemoSeeded } from '../demo-seed.js';
 import { getPool } from '../db.js';
+import { getCenter, createCenterWithDefaults } from '../db/centers.js';
+import { uid } from './crypto.js';
 import { authenticateRequest } from './middleware.js';
 import { appUrl, isDemoModeEnabled } from '../env.js';
 import { hitRateLimit, clientIp } from '../rate-limit.js';
@@ -64,9 +64,13 @@ function buildResetUrl(req, token) {
   return `${getOrigin(req)}/#reset-password/${encodeURIComponent(token)}`;
 }
 
+async function sessionFor(user) {
+  const center = user.centerId ? await getCenter(getPool(), user.centerId) : null;
+  return buildClientSessionFromDbUser(user, center);
+}
+
 async function issueAuthResponse(req, res, user) {
-  const appState = await loadAppStateData();
-  const session = await buildClientSessionFromDbUser(user, appState);
+  const session = await sessionFor(user);
   const accessToken = signAccessToken(user, process.env.JWT_SECRET);
   const refreshToken = await createRefreshToken(user.id);
   setRefreshCookie(res, refreshToken);
@@ -102,16 +106,11 @@ export async function handleLogin(req, res) {
     return json(res, 401, { ok: false, error: `This account is not a ${expectedRole} login` });
   }
 
-  if (user.centerId && appStateCenterSuspended(user.centerId, await loadAppStateData())) {
+  if (user.centerId && (await getCenter(getPool(), user.centerId))?.status === 'suspended') {
     return json(res, 403, { ok: false, error: 'This center has been suspended. Contact Tutorsala support.' });
   }
 
   return issueAuthResponse(req, res, user);
-}
-
-function appStateCenterSuspended(centerId, data) {
-  const center = data?.centers?.find((c) => c.id === centerId);
-  return center?.status === 'suspended';
 }
 
 export async function handleLogout(req, res) {
@@ -144,8 +143,7 @@ export async function handleRefresh(req, res) {
   const newRefresh = await rotateRefreshToken(token, user.id);
   setRefreshCookie(res, newRefresh);
   const accessToken = signAccessToken(user, process.env.JWT_SECRET);
-  const appState = await loadAppStateData();
-  const session = await buildClientSessionFromDbUser(user, appState);
+  const session = await sessionFor(user);
   return json(res, 200, { ok: true, accessToken, session });
 }
 
@@ -156,8 +154,7 @@ export async function handleMe(req, res) {
   const auth = await authenticateRequest(req, res);
   if (!auth.ok) return;
 
-  const appState = await loadAppStateData();
-  const session = await buildClientSessionFromDbUser(auth.user, appState);
+  const session = await sessionFor(auth.user);
   return json(res, 200, { ok: true, session, user: auth.user });
 }
 
@@ -183,19 +180,38 @@ export async function handleRegisterCenter(req, res) {
   const existing = await findUserByEmail(normEmail);
   if (existing) return json(res, 409, { ok: false, error: 'An account with this email already exists' });
 
-  const reg = await registerCenterInAppState({ centerName, ownerName, email: normEmail, phone, city });
-  if (!reg.ok) return json(res, 409, { ok: false, error: reg.error });
+  const centerId = uid('center');
+  const userId = uid('user');
+  const slug = centerName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  const client = await getPool().connect();
+  try {
+    await client.query('BEGIN');
+    await createCenterWithDefaults(client, {
+      id: centerId,
+      name: centerName.trim(),
+      slug: slug || `center-${Date.now()}`,
+      city: city?.trim() || '',
+      phone: phone?.trim() || '',
+      ownerEmail: normEmail,
+      ownerUserId: userId,
+      status: 'active',
+      plan: 'trial',
+      createdAt: new Date().toISOString().slice(0, 10),
+    });
+    await insertUser(
+      { id: userId, email: normEmail, passwordHash: hashPassword(password), role: 'center_admin', name: ownerName.trim(), centerId },
+      client,
+    );
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    if (err.code === '23505') return json(res, 409, { ok: false, error: 'An account with this email already exists' });
+    throw err;
+  } finally {
+    client.release();
+  }
 
-  await insertUser({
-    id: reg.user.id,
-    email: normEmail,
-    passwordHash: hashPassword(password),
-    role: 'center_admin',
-    name: ownerName.trim(),
-    centerId: reg.center.id,
-  });
-
-  const user = await findUserById(reg.user.id);
+  const user = await findUserById(userId);
   return issueAuthResponse(req, res, user);
 }
 
@@ -262,20 +278,6 @@ export async function handleResetPassword(req, res) {
   return json(res, 200, { ok: true, message: 'Password updated. You can sign in now.' });
 }
 
-export async function handleSyncAuthUsers(req, res) {
-  if (!isAuthConfigured()) return authUnavailable(res);
-  if (req.method !== 'POST') return methodNotAllowed(res, 'POST');
-
-  const auth = await authenticateRequest(req, res);
-  if (!auth.ok) return;
-  if (auth.user.role !== 'platform_owner') {
-    return json(res, 403, { ok: false, error: 'Platform owner only' });
-  }
-
-  const result = await ensureNeonDemoSeeded();
-  return json(res, 200, { ok: true, ...result });
-}
-
 function authUnavailable(res) {
   return json(res, 503, { ok: false, error: 'auth_not_configured' });
 }
@@ -283,16 +285,4 @@ function authUnavailable(res) {
 function methodNotAllowed(res, method) {
   res.setHeader('Allow', method);
   return json(res, 405, { error: 'method_not_allowed' });
-}
-
-export async function runAuthMigrations() {
-  if (!process.env.DATABASE_URL) return;
-  const fs = await import('fs');
-  const sql = await fs.promises.readFile(new URL('../schema.sql', import.meta.url), 'utf8');
-  await getPool().query(sql);
-  const seed = await ensureNeonDemoSeeded().catch((err) => {
-    console.warn('Demo seed after migrate skipped:', err.message);
-    return null;
-  });
-  if (seed?.ok) console.log('Demo accounts ready:', seed.demoEmails?.join(', '));
 }
