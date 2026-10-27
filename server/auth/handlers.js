@@ -32,6 +32,7 @@ import { authenticateRequest } from './middleware.js';
 import { appUrl, isDemoModeEnabled } from '../env.js';
 import { hitRateLimit, clientIp } from '../rate-limit.js';
 import { sendPasswordResetEmail } from '../email.js';
+import { isValidFullPhone } from '../../js/account-rules.js';
 
 // Compared against when the email is unknown, so response time doesn't reveal which emails exist.
 const DUMMY_PASSWORD_HASH = hashPassword('dummy-password-for-timing');
@@ -174,8 +175,11 @@ export async function handleRegisterCenter(req, res) {
     return json(res, 400, { ok: false, error: 'Please fill all required fields' });
   }
 
-  const passwordError = validatePassword(password);
+  const passwordError = validatePassword(password, { email: normEmail, name: centerName });
   if (passwordError) return json(res, 400, { ok: false, error: passwordError });
+  if (phone?.trim() && !isValidFullPhone(phone.trim())) {
+    return json(res, 400, { ok: false, error: 'Enter a valid phone number with country code' });
+  }
 
   const existing = await findUserByEmail(normEmail);
   if (existing) return json(res, 409, { ok: false, error: 'An account with this email already exists' });
@@ -270,6 +274,8 @@ export async function handleResetPassword(req, res) {
 
   const entry = await findValidPasswordResetToken(token);
   if (!entry) return json(res, 400, { ok: false, error: 'This reset link is invalid or has expired.' });
+  const personalError = validatePassword(password, { email: entry.email });
+  if (personalError) return json(res, 400, { ok: false, error: personalError });
 
   await updateUserPassword(entry.user_id, hashPassword(password));
   await markPasswordResetTokenUsed(token);

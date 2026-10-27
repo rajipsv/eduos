@@ -2538,3 +2538,19 @@ tr.invoice-reported { background: color-mix(in srgb, var(--accent, #e67700) 6%, 
 .tutor-edit-row input { flex: 1 1 200px; font-weight: 600; }
 .tutor-edit-item { display: grid; grid-template-columns: 1fr; gap: 6px; padding: 8px; background: var(--surface-2); border-radius: var(--radius-sm); }
 .session-note { color: var(--text-muted); }
+
+/* Sign-up: phone with country code, password strength */
+.phone-input { display: flex; gap: 6px; }
+.phone-input select { flex: 0 0 auto; max-width: 46%; }
+.phone-input input { flex: 1 1 auto; min-width: 0; }
+.pw-meter { margin-top: 6px; }
+.pw-meter small { color: var(--text-muted); font-size: 0.78rem; }
+.pw-meter-bar { display: block; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+.pw-meter-bar span { display: block; height: 100%; width: 0; background: #c0392b; transition: width 0.2s; }
+.pw-meter[data-score="2"] .pw-meter-bar span { background: #e0a100; }
+.pw-meter[data-score="3"] .pw-meter-bar span,
+.pw-meter[data-score="4"] .pw-meter-bar span { background: var(--primary); }
+
+/* Settings: marketplace listing categories */
+.listing-cats { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.listing-cat { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }

@@ -50,7 +50,7 @@ export async function createUser(user, req) {
   // Without a password the account can't sign in until its owner uses "Forgot password".
   let passwordHash;
   if (input.password) {
-    const err = validatePassword(input.password);
+    const err = validatePassword(input.password, { email, name: input.name });
     if (err) return { status: 400, body: { error: 'invalid_password', message: err } };
     passwordHash = hashPassword(input.password);
   } else {

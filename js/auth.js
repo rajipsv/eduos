@@ -9,6 +9,7 @@ import {
   clearServerData,
 } from './store.js';
 import { sendViaChannel } from './communication.js';
+import { validatePassword as checkPassword } from './account-rules.js';
 import {
   authPost,
   authGet,
@@ -234,7 +235,12 @@ export { isServerAuthEnabled };
 function applyServerSession(session, accessToken) {
   setAccessToken(accessToken);
   const user = getUsers().find((u) => u.id === session.userId) || session;
-  setSession(resolveSessionBranch(session, user));
+  // Keep a family's chosen parent/student view (and child) across reloads.
+  const previous = getSession();
+  const kept = previous?.userId === session.userId
+    ? { familyView: previous.familyView ?? session.familyView, activeStudentId: previous.activeStudentId ?? session.activeStudentId }
+    : {};
+  setSession(resolveSessionBranch({ ...session, ...kept }, user));
 }
 
 export async function initAuthSession() {
@@ -250,12 +256,8 @@ export async function initAuthSession() {
   return { ok: true };
 }
 
-export function validatePassword(password) {
-  if (!password || String(password).length < 8) {
-    return 'Password must be at least 8 characters';
-  }
-  return null;
-}
+// The same rules as the server (js/account-rules.js).
+export { validatePassword } from './account-rules.js';
 export function buildPasswordResetUrl(token) {
   const base = `${location.origin}${location.pathname}`;
   return `${base}#reset-password/${encodeURIComponent(token)}`;
@@ -332,7 +334,7 @@ export async function getPasswordResetTokenInfo(token) {
 }
 
 export async function resetPasswordWithToken(token, newPassword) {
-  const passwordError = validatePassword(newPassword);
+  const passwordError = checkPassword(newPassword);
   if (passwordError) return { ok: false, error: passwordError };
 
   if (isServerAuthEnabled()) {
@@ -428,7 +430,7 @@ export async function registerCenter({ centerName, ownerName, email, phone, city
   if (!centerName?.trim() || !ownerName?.trim() || !normEmail || !password) {
     return { ok: false, error: 'Please fill all required fields' };
   }
-  const passwordError = validatePassword(password);
+  const passwordError = checkPassword(password, { email: normEmail, name: centerName });
   if (passwordError) return { ok: false, error: passwordError };
 
   if (isServerAuthEnabled()) {

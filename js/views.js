@@ -50,6 +50,8 @@ import {
   getStorageLabel,
   isDatabaseMode,
   saveServerSecrets,
+  getCenter,
+  saveCenter,
   getStorageBackendReason,
 } from './store.js';
 import {
@@ -116,7 +118,8 @@ import {
   renderTeacherHome, renderStudentHome, bindPlatformEvents,
 } from './platform-views.js';
 import { renderTuitionMarketplace, bindTuitionMarketplaceEvents } from './tuition-marketplace.js';
-import { getCurrentUser, saveCenterAdminTeacherLink, getEffectiveRole } from './auth.js';
+import { getCurrentUser, saveCenterAdminTeacherLink, getEffectiveRole, getActiveCenterId } from './auth.js';
+import { TUITION_CATEGORIES } from './tuition-categories.js';
 import { openProfileEditorModal, profileStatusBadge, getTutorReviews, setReviewVisible } from './tutor-profile.js';
 import { reviewListHtml } from './layer-views.js';
 
@@ -1295,6 +1298,30 @@ function insightHtml() {
     : '<p class="empty-state">Add more data to unlock insights.</p>';
 }
 
+// How the center appears in the public "Find tuitions" marketplace and its filters.
+function renderMarketplaceListingSettings() {
+  const center = getCenter(getActiveCenterId());
+  if (!center) return '';
+  const chosen = new Set(center.categories || []);
+  return `
+    <div class="panel" style="margin-top:20px">
+      <div class="panel-header"><h3>Marketplace listing</h3></div>
+      <div class="panel-body">
+        <p style="font-size:0.82rem;color:var(--text-muted);margin:0 0 12px">How parents find you in "Find tuitions". Categories, city and programs drive the search filters.</p>
+        <div class="form-grid">
+          <div class="form-group full"><label><input type="checkbox" id="listEnabled" ${center.listingEnabled !== false ? 'checked' : ''}> Show my center in the marketplace</label></div>
+          <div class="form-group full"><label>Tagline</label><input id="listTagline" maxlength="160" value="${esc(center.publicTagline || '')}" placeholder="e.g. Board exam prep in small batches"></div>
+          <div class="form-group"><label>City</label><input id="listCity" maxlength="80" value="${esc(center.city || '')}"></div>
+          <div class="form-group"><label>Programs (comma-separated)</label><input id="listSubjects" maxlength="300" value="${esc((center.publicSubjects || []).join(', '))}" placeholder="Mathematics, Science, Bhagavad Gita"></div>
+          <div class="form-group full"><label>Categories</label>
+            <div class="listing-cats">${TUITION_CATEGORIES.map((c) => `<label class="listing-cat"><input type="checkbox" data-listing-cat="${esc(c.id)}" ${chosen.has(c.id) ? 'checked' : ''}> ${esc(c.label)}</label>`).join('')}</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:12px" data-action="save-listing">Save listing</button>
+      </div>
+    </div>`;
+}
+
 function renderAdminTeacherProfileSettings() {
   const user = getCurrentUser();
   if (!user || user.role !== 'center_admin') return '';
@@ -1398,6 +1425,7 @@ function renderSettings() {
         <button class="btn btn-primary" style="margin-top:16px" data-action="save-settings">Save Settings</button>
       </div>
     </div>
+    ${renderMarketplaceListingSettings()}
     ${renderAdminTeacherProfileSettings()}
     <div class="panel" style="margin-top:20px">
       <div class="panel-header"><h3>Data Management</h3></div>
@@ -2801,6 +2829,20 @@ function bindSettingsEvents({ toast, refresh }) {
     if (!result.ok) return toast(result.error || 'Could not save teaching profile', 'error');
     toast(enabled ? 'Teaching profile linked' : 'Teaching profile removed', 'success');
     refresh();
+  });
+
+  document.querySelector('[data-action="save-listing"]')?.addEventListener('click', () => {
+    const center = getCenter(getActiveCenterId());
+    if (!center) return;
+    saveCenter({
+      ...center,
+      listingEnabled: document.getElementById('listEnabled').checked,
+      publicTagline: document.getElementById('listTagline').value.trim(),
+      city: document.getElementById('listCity').value.trim(),
+      publicSubjects: document.getElementById('listSubjects').value.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 20),
+      categories: [...document.querySelectorAll('[data-listing-cat]:checked')].map((el) => el.dataset.listingCat),
+    });
+    toast('Marketplace listing saved', 'success');
   });
 
   document.querySelector('[data-action="save-settings"]')?.addEventListener('click', async () => {

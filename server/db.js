@@ -26,6 +26,11 @@ export function getPool() {
     max: 5,
     ...(schema ? { options: `-c search_path=${schema}` } : {}),
   });
+  // Neon closes idle connections. Without a handler, that error crashes the whole process;
+  // the pool drops the broken connection and opens a new one on the next query.
+  pool.on('error', (err) => {
+    console.warn('Database connection dropped (will reconnect):', err.message);
+  });
   return pool;
 }
 

@@ -193,7 +193,7 @@ function syncTopbarForRole(session) {
 function buildShellForSession(session) {
   document.querySelector('.support-banner')?.remove();
   const navRole = getNavRole(session);
-  openNavSectionId = getSectionIdForView(navRole, getDefaultView(session.role)) || 'command';
+  openNavSectionId = getSectionIdForView(navRole, getDefaultView(getNavRole(session))) || 'command';
   mainNav.innerHTML = renderNavHtml(navRole, { activeView: currentView, openSectionId: openNavSectionId });
   sessionLabel.textContent = getSessionLabel();
   syncBranchSwitcher(session);
@@ -231,7 +231,7 @@ function showApp(session) {
     sessionStorage.removeItem(TUITION_PENDING_KEY);
   }
 
-  navigate(getDefaultView(session.role));
+  navigate(getDefaultView(getNavRole(session)));
 }
 
 function mountAuth(mode = 'home', params = {}) {
@@ -285,7 +285,7 @@ document.getElementById('quickNotifyBtn')?.addEventListener('click', () => {
     toast('Open a center in support view first', 'error');
     return;
   }
-  navigate(canAccessView(navRole, 'commHub') ? 'commHub' : getDefaultView(session.role));
+  navigate(canAccessView(navRole, 'commHub') ? 'commHub' : getDefaultView(getNavRole(session)));
 });
 
 document.getElementById('logoutBtn')?.addEventListener('click', async () => {
@@ -302,7 +302,7 @@ branchSelect?.addEventListener('change', () => {
 familyViewSelect?.addEventListener('change', () => {
   setFamilyView(familyViewSelect.value);
   buildShellForSession(getSession());
-  navigate(getDefaultView('family'));
+  navigate(getDefaultView(getNavRole(getSession())));
 });
 
 // The server refused or rolled back some changes: tell the user and show the saved data.

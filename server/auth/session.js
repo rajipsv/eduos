@@ -24,7 +24,5 @@ export function buildClientSessionFromDbUser(user, center) {
   return buildClientSession(user, user.centerId ? { id: user.centerId, name: center?.name || null } : null);
 }
 
-export function validatePassword(password) {
-  if (!password || password.length < 8) return 'Password must be at least 8 characters';
-  return null;
-}
+// Shared with the browser so both apply the same rules.
+export { validatePassword } from '../../js/account-rules.js';

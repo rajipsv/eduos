@@ -8,6 +8,31 @@ import {
   validatePassword,
 } from './auth.js';
 import { getRawState } from './store.js';
+import { PHONE_COUNTRY_CODES, normalizePhone, passwordStrength } from './account-rules.js';
+
+const STRENGTH = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+
+function strengthMeterHtml(id) {
+  return `<div class="pw-meter" id="${id}" aria-live="polite"><span class="pw-meter-bar"><span></span></span><small></small></div>`;
+}
+
+/** Live strength meter and rule hint under a password field. */
+function bindStrengthMeter(inputId, meterId, context = () => ({})) {
+  const input = document.getElementById(inputId);
+  const meter = document.getElementById(meterId);
+  if (!input || !meter) return;
+  const update = () => {
+    const score = passwordStrength(input.value);
+    const problem = input.value ? validatePassword(input.value, context()) : null;
+    meter.dataset.score = String(score);
+    meter.querySelector('.pw-meter-bar span').style.width = `${score * 25}%`;
+    meter.querySelector('small').textContent = !input.value
+      ? 'At least 8 characters, with a letter and a number'
+      : problem || `Strength: ${STRENGTH[score] || 'Weak'}`;
+  };
+  input.addEventListener('input', update);
+  update();
+}
 import { renderTuitionMarketplace, bindTuitionMarketplaceEvents, TUITION_PENDING_KEY } from './tuition-marketplace.js';
 import {
   renderLandingHeader,
@@ -100,8 +125,13 @@ export function renderRegisterFormHtml() {
       <div class="form-group"><label>Your name *</label><input id="regOwner" placeholder="Owner name"></div>
       <div class="form-group"><label>City</label><input id="regCity" placeholder="Mumbai"></div>
       <div class="form-group full"><label>Email *</label><input id="regEmail" type="email"></div>
-      <div class="form-group"><label>Phone</label><input id="regPhone"></div>
-      <div class="form-group"><label>Password *</label><input id="regPassword" type="password"></div>
+      <div class="form-group"><label>Phone (WhatsApp)</label>
+        <div class="phone-input">
+          <select id="regPhoneCode" aria-label="Country code">${PHONE_COUNTRY_CODES.map((c) => `<option value="${c.code}">${c.label}</option>`).join('')}</select>
+          <input id="regPhone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="9876543210" maxlength="15">
+        </div>
+      </div>
+      <div class="form-group"><label>Password *</label><input id="regPassword" type="password" autocomplete="new-password">${strengthMeterHtml('regPasswordMeter')}</div>
     </div>
     <button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-register>Create center</button>`;
 }
@@ -164,7 +194,7 @@ function renderResetPasswordFormHtml(token, info) {
   return `
     <p class="auth-sub">Resetting password for <strong>${esc(info.email)}</strong></p>
     <div class="form-grid" style="margin-top:16px">
-      <div class="form-group full"><label>New password</label><input id="resetPassword" type="password" autocomplete="new-password" minlength="8"></div>
+      <div class="form-group full"><label>New password</label><input id="resetPassword" type="password" autocomplete="new-password" minlength="8">${strengthMeterHtml('resetPasswordMeter')}</div>
       <div class="form-group full"><label>Confirm password</label><input id="resetPasswordConfirm" type="password" autocomplete="new-password" minlength="8"></div>
     </div>
     <button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-reset-submit data-reset-token="${token}">Update password</button>`;
@@ -226,6 +256,7 @@ function bindForgotPasswordSubmit(toast, { closeModal, onModeChange, compact = f
 }
 
 function bindResetPasswordSubmit(toast, onModeChange) {
+  bindStrengthMeter('resetPassword', 'resetPasswordMeter');
   document.querySelector('[data-auth-reset-submit]')?.addEventListener('click', async () => {
     const token = document.querySelector('[data-auth-reset-submit]')?.dataset.resetToken;
     const password = document.getElementById('resetPassword')?.value;
@@ -243,12 +274,21 @@ function bindResetPasswordSubmit(toast, onModeChange) {
 }
 
 function bindRegisterSubmit(onAuthed, toast, closeModal) {
+  bindStrengthMeter('regPassword', 'regPasswordMeter', () => ({
+    email: document.getElementById('regEmail')?.value,
+    name: document.getElementById('regCenter')?.value,
+  }));
   document.querySelector('[data-auth-register]')?.addEventListener('click', async () => {
+    const { phone, error: phoneError } = normalizePhone(
+      document.getElementById('regPhoneCode')?.value,
+      document.getElementById('regPhone')?.value,
+    );
+    if (phoneError) return toast(phoneError, 'error');
     const result = await registerCenter({
       centerName: document.getElementById('regCenter')?.value,
       ownerName: document.getElementById('regOwner')?.value,
       email: document.getElementById('regEmail')?.value,
-      phone: document.getElementById('regPhone')?.value,
+      phone: phone || '',
       city: document.getElementById('regCity')?.value,
       password: document.getElementById('regPassword')?.value,
     });

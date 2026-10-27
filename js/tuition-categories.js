@@ -40,7 +40,8 @@ export function inferCategoriesFromSubjects(subjects = []) {
   for (const rule of rules) {
     if (rule.keys.some((k) => hay.includes(k))) found.add(rule.id);
   }
-  return found.size ? [...found] : ['academics'];
+  // Unknown stays unknown: the center then shows under "All" only, not under a guessed category.
+  return [...found];
 }
 
 export function renderCategoryChips(activeId = '') {
