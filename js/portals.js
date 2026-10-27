@@ -1,3 +1,4 @@
+import { esc } from './html.js';
 import { getLinkedTeacherId, getLinkedStudentId, getLinkedStudentIds, getSession } from './auth.js';
 
 const NAV_SVG = {
@@ -164,16 +165,16 @@ function findSectionForView(nav, view) {
 function renderNavItems(items, activeView, nested = false) {
   if (nested) {
     return items.map((item) => `
-      <button class="nav-subitem${activeView === item.view ? ' active' : ''}" type="button" data-view="${item.view}">
+      <button class="nav-subitem${activeView === item.view ? ' active' : ''}" type="button" data-view="${esc(item.view)}">
         <span class="nav-subitem-line" aria-hidden="true"></span>
-        ${item.label}
+        ${esc(item.label)}
       </button>
     `).join('');
   }
   return items.map((item) => `
-    <button class="nav-item${activeView === item.view ? ' active' : ''}" type="button" data-view="${item.view}">
-      ${item.iconKey ? navGlyph(item.iconKey) : `<span class="nav-icon">${item.icon || '•'}</span>`}
-      ${item.label}
+    <button class="nav-item${activeView === item.view ? ' active' : ''}" type="button" data-view="${esc(item.view)}">
+      ${item.iconKey ? navGlyph(item.iconKey) : `<span class="nav-icon">${esc(item.icon || '•')}</span>`}
+      ${esc(item.label)}
     </button>
   `).join('');
 }
@@ -182,9 +183,9 @@ function renderCommandShortcuts(items, activeView) {
   return `
     <div class="nav-shortcuts">
       ${items.map((item) => `
-        <button class="nav-shortcut${activeView === item.view ? ' active' : ''}" type="button" data-view="${item.view}">
+        <button class="nav-shortcut${activeView === item.view ? ' active' : ''}" type="button" data-view="${esc(item.view)}">
           ${navGlyph(item.iconKey)}
-          <span>${item.label}</span>
+          <span>${esc(item.label)}</span>
         </button>
       `).join('')}
     </div>`;
@@ -192,7 +193,7 @@ function renderCommandShortcuts(items, activeView) {
 
 function renderFlatNav(cfg, activeView) {
   return cfg.nav.map((section) => `
-    <div class="nav-section">${section.section}</div>
+    <div class="nav-section">${esc(section.section)}</div>
     ${renderNavItems(section.items, activeView)}
   `).join('');
 }
@@ -212,7 +213,7 @@ function renderPillarNav(cfg, activeView, openSectionId) {
     if (isCommand) {
       return `
         <div class="nav-block nav-block-command">
-          <div class="nav-kicker">${section.section}</div>
+          <div class="nav-kicker">${esc(section.section)}</div>
           ${renderCommandShortcuts(section.items, activeView)}
         </div>`;
     }
@@ -221,23 +222,23 @@ function renderPillarNav(cfg, activeView, openSectionId) {
     const bodyClass = ['nav-pillar-body', isOpen ? 'open' : ''].filter(Boolean).join(' ');
 
     return `
-      <div class="nav-pillar${isOpen ? ' open' : ''}${hasActive ? ' has-active' : ''}${isSingle ? ' nav-pillar-single' : ''}" data-pillar-id="${section.id}" data-accent="${accent}">
+      <div class="nav-pillar${isOpen ? ' open' : ''}${hasActive ? ' has-active' : ''}${isSingle ? ' nav-pillar-single' : ''}" data-pillar-id="${esc(section.id)}" data-accent="${accent}">
         <button
           class="${toggleClass}"
           type="button"
-          data-pillar-toggle="${section.id}"
+          data-pillar-toggle="${esc(section.id)}"
           ${isSingle ? `data-single-view="${singleItem.view}"` : ''}
           aria-expanded="${isSingle ? 'false' : isOpen}"
         >
           <span class="nav-pillar-icon">${navGlyph(accent)}</span>
           <span class="nav-pillar-copy">
-            <span class="nav-pillar-label">${section.section}</span>
-            ${isSingle && singleItem.label !== section.section ? `<span class="nav-pillar-hint">${singleItem.label}</span>` : ''}
+            <span class="nav-pillar-label">${esc(section.section)}</span>
+            ${isSingle && singleItem.label !== section.section ? `<span class="nav-pillar-hint">${esc(singleItem.label)}</span>` : ''}
           </span>
           ${isSingle ? '' : `<span class="nav-pillar-chevron">${NAV_SVG.chevron}</span>`}
         </button>
         ${isSingle ? '' : `
-        <div class="${bodyClass}" data-pillar-body="${section.id}">
+        <div class="${bodyClass}" data-pillar-body="${esc(section.id)}">
           <div class="nav-pillar-items-wrap">
             ${renderNavItems(section.items, activeView, true)}
           </div>

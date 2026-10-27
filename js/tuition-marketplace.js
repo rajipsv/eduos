@@ -1,3 +1,4 @@
+import { esc } from './html.js';
 import { getCenters, saveLead, getBranches, getDefaultBranch } from './store.js';
 import {
   getSession, getCurrentUser, getEffectiveRole,
@@ -99,19 +100,19 @@ function tuitionCard(listing, rawState) {
     : 'Multiple programs';
   const catBadges = renderCategoryBadges(listing.categories?.slice(0, 3) || []);
   return `
-    <div class="batch-card" data-tuition-card="${listing.id}" data-search="${[
+    <div class="batch-card" data-tuition-card="${esc(listing.id)}" data-search="${[
       listing.name,
       listing.city,
       ...listing.subjects,
       ...(listing.categories || []).map(getCategoryLabel),
     ].join(' ').toLowerCase()}">
-      <div class="meta">${listing.city || '—'} · ★ ${listing.rating} (${listing.reviewCount} reviews)</div>
-      <h4>${listing.name}${enrolledBadge(listing.id, rawState)}</h4>
+      <div class="meta">${esc(listing.city || '—')} · ★ ${esc(listing.rating)} (${esc(listing.reviewCount)} reviews)</div>
+      <h4>${esc(listing.name)}${enrolledBadge(listing.id, rawState)}</h4>
       <div class="tuition-card-cats">${catBadges}</div>
-      <p style="font-size:0.82rem;color:var(--text-muted);margin:8px 0">${listing.tagline}</p>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin:8px 0">${esc(listing.tagline)}</p>
       <p style="font-size:0.78rem;color:var(--text-muted)">${subjectLine}</p>
-      <div class="meta" style="margin-top:8px">${listing.batches} batch(es) · ${listing.teachers} teacher(s)</div>
-      <button class="btn btn-sm btn-primary" style="margin-top:10px" data-action="tuition-view" data-id="${listing.id}">View details</button>
+      <div class="meta" style="margin-top:8px">${esc(listing.batches)} batch(es) · ${esc(listing.teachers)} teacher(s)</div>
+      <button class="btn btn-sm btn-primary" style="margin-top:10px" data-action="tuition-view" data-id="${esc(listing.id)}">View details</button>
     </div>`;
 }
 
@@ -209,9 +210,9 @@ export function renderTuitionMarketplace(rawState, options = {}) {
   return `
     ${banner}
     <div class="stats-grid tuition-stats">
-      <div class="stat-card"><div class="label">Centers on platform</div><div class="value">${listings.length}</div></div>
+      <div class="stat-card"><div class="label">Centers on platform</div><div class="value">${esc(listings.length)}</div></div>
       <div class="stat-card"><div class="label">Categories</div><div class="value">${categoryCount || TUITION_CATEGORIES.length}</div></div>
-      <div class="stat-card"><div class="label">Cities</div><div class="value">${cities.length}</div></div>
+      <div class="stat-card"><div class="label">Cities</div><div class="value">${esc(cities.length)}</div></div>
     </div>
     ${renderCategoryChips('')}
     <div class="tuition-search-panel">
@@ -245,12 +246,12 @@ function inquiryFormHtml(listing, rawState) {
       <div class="form-grid">
         ${branchField}
         <div class="form-group"><label>Child</label>
-          <select id="tmChild">${children.map((s) => `<option value="${s.id}">${s.name} · Grade ${s.grade || '—'}</option>`).join('') || '<option value="">No linked child</option>'}
+          <select id="tmChild">${children.map((s) => `<option value="${esc(s.id)}">${esc(s.name)} · Grade ${esc(s.grade || '—')}</option>`).join('') || '<option value="">No linked child</option>'}
           </select>
         </div>
-        <div class="form-group"><label>Your name</label><input id="tmName" value="${user?.parentName || user?.name || ''}"></div>
-        <div class="form-group"><label>Email</label><input id="tmEmail" value="${user?.email || ''}"></div>
-        <div class="form-group full"><label>Message</label><textarea id="tmMessage" rows="3" placeholder="Tell ${listing.name} what you are looking for…"></textarea></div>
+        <div class="form-group"><label>Your name</label><input id="tmName" value="${esc(user?.parentName || user?.name || '')}"></div>
+        <div class="form-group"><label>Email</label><input id="tmEmail" value="${esc(user?.email || '')}"></div>
+        <div class="form-group full"><label>Message</label><textarea id="tmMessage" rows="3" placeholder="Tell ${esc(listing.name)} what you are looking for…"></textarea></div>
       </div>`;
   }
 
@@ -259,10 +260,10 @@ function inquiryFormHtml(listing, rawState) {
   return `
     <div class="form-grid">
       ${branchField}
-      <div class="form-group"><label>Your name</label><input id="tmName" value="${student?.name || user?.name || ''}"></div>
-      <div class="form-group"><label>Email</label><input id="tmEmail" value="${user?.email || ''}"></div>
-      <div class="form-group"><label>Grade</label><input id="tmGrade" value="${student?.grade || ''}"></div>
-      <div class="form-group full"><label>Message</label><textarea id="tmMessage" rows="3" placeholder="Tell ${listing.name} what you are looking for…"></textarea></div>
+      <div class="form-group"><label>Your name</label><input id="tmName" value="${esc(student?.name || user?.name || '')}"></div>
+      <div class="form-group"><label>Email</label><input id="tmEmail" value="${esc(user?.email || '')}"></div>
+      <div class="form-group"><label>Grade</label><input id="tmGrade" value="${esc(student?.grade || '')}"></div>
+      <div class="form-group full"><label>Message</label><textarea id="tmMessage" rows="3" placeholder="Tell ${esc(listing.name)} what you are looking for…"></textarea></div>
     </div>`;
 }
 
@@ -279,7 +280,7 @@ function branchPickerHtml(centerId) {
     <div class="form-group">
       <label>Preferred branch</label>
       <select id="tmBranch">${branches.map((b) =>
-    `<option value="${b.id}"${b.id === defaultId ? ' selected' : ''}>${b.name}${b.city ? ` · ${b.city}` : ''}</option>`,
+    `<option value="${esc(b.id)}"${b.id === defaultId ? ' selected' : ''}>${esc(b.name)}${b.city ? ` · ${b.city}` : ''}</option>`,
   ).join('')}</select>
     </div>`;
 }
@@ -308,7 +309,7 @@ function guestInquiryFormHtml(listing) {
     <div class="panel">
       <div class="panel-header"><h3>Send inquiry</h3></div>
       <div class="panel-body">
-        <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px">No sign-in needed. Tell <strong>${listing.name}</strong> what you are looking for — they will contact you to schedule a demo and complete enrollment.</p>
+        <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px">No sign-in needed. Tell <strong>${esc(listing.name)}</strong> what you are looking for — they will contact you to schedule a demo and complete enrollment.</p>
         <div class="form-grid">
           ${branchPickerHtml(listing.id)}
           <div class="form-group"><label>Your name</label><input id="tmName" placeholder="Parent or guardian name" autocomplete="name"></div>
@@ -318,8 +319,8 @@ function guestInquiryFormHtml(listing) {
           <div class="form-group"><label>Grade</label><input id="tmGrade" placeholder="8, 9, 10…"></div>
           <div class="form-group full"><label>Message</label><textarea id="tmMessage" rows="3" placeholder="Programs interested in, preferred timing…"></textarea></div>
         </div>
-        <button class="btn btn-primary" style="margin-top:12px" data-action="tuition-inquire" data-id="${listing.id}">Send inquiry</button>
-        <p style="font-size:0.78rem;color:var(--text-muted);margin-top:12px">Already enrolled? <button type="button" class="btn btn-ghost btn-sm" data-action="tuition-login" data-portal="family" data-id="${listing.id}">Family sign in</button></p>
+        <button class="btn btn-primary" style="margin-top:12px" data-action="tuition-inquire" data-id="${esc(listing.id)}">Send inquiry</button>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin-top:12px">Already enrolled? <button type="button" class="btn btn-ghost btn-sm" data-action="tuition-login" data-portal="family" data-id="${esc(listing.id)}">Family sign in</button></p>
       </div>
     </div>`;
 }
@@ -330,7 +331,7 @@ function inquiryBlockHtml(listing, rawState) {
       <div class="panel-header"><h3>Send inquiry</h3></div>
       <div class="panel-body">
         ${inquiryFormHtml(listing, rawState)}
-        <button class="btn btn-primary" style="margin-top:12px" data-action="tuition-inquire" data-id="${listing.id}">Send inquiry</button>
+        <button class="btn btn-primary" style="margin-top:12px" data-action="tuition-inquire" data-id="${esc(listing.id)}">Send inquiry</button>
       </div>
     </div>`;
   }
@@ -348,19 +349,19 @@ function centerDetailHtml(listing, rawState) {
   return `
     <div class="panel" style="margin-bottom:16px">
       <div class="panel-header">
-        <h3>${listing.name}</h3>
-        <span class="badge badge-green">${listing.status || 'active'}</span>
+        <h3>${esc(listing.name)}</h3>
+        <span class="badge badge-green">${esc(listing.status || 'active')}</span>
       </div>
       <div class="panel-body">
-        <p style="font-size:0.88rem;line-height:1.7">${listing.tagline}</p>
-        <p style="font-size:0.84rem;margin-top:10px"><strong>${listing.city || '—'}</strong> · ★ ${listing.rating} (${listing.reviewCount} reviews) · Joined ${listing.createdAt || '—'}</p>
-        ${listing.phone ? `<p style="font-size:0.84rem;margin-top:6px"><strong>Phone:</strong> ${listing.phone}</p>` : ''}
+        <p style="font-size:0.88rem;line-height:1.7">${esc(listing.tagline)}</p>
+        <p style="font-size:0.84rem;margin-top:10px"><strong>${esc(listing.city || '—')}</strong> · ★ ${esc(listing.rating)} (${esc(listing.reviewCount)} reviews) · Joined ${esc(listing.createdAt || '—')}</p>
+        ${listing.phone ? `<p style="font-size:0.84rem;margin-top:6px"><strong>Phone:</strong> ${esc(listing.phone)}</p>` : ''}
         ${categories ? `<div style="margin-top:12px">${categories}</div>` : ''}
         <div style="margin-top:12px"><strong style="font-size:0.82rem">Programs:</strong><br>${subjects}</div>
         <div class="stats-grid" style="margin-top:16px">
-          <div class="stat-card"><div class="label">Batches</div><div class="value">${listing.batches}</div></div>
-          <div class="stat-card"><div class="label">Teachers</div><div class="value">${listing.teachers}</div></div>
-          <div class="stat-card"><div class="label">Students</div><div class="value">${listing.students}</div></div>
+          <div class="stat-card"><div class="label">Batches</div><div class="value">${esc(listing.batches)}</div></div>
+          <div class="stat-card"><div class="label">Teachers</div><div class="value">${esc(listing.teachers)}</div></div>
+          <div class="stat-card"><div class="label">Students</div><div class="value">${esc(listing.students)}</div></div>
         </div>
       </div>
     </div>

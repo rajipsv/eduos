@@ -148,9 +148,11 @@ function hydrateState(raw) {
   data.passwordResetTokens = data.passwordResetTokens || [];
   ensurePlatformData(data);
   migrateMultiTenant(data);
+  // Seed demo logins before the listing/family migrations: they add the family user,
+  // which would otherwise make seedDemoUsers think users already exist and skip the rest.
+  if (!data.users.length) seedDemoUsers(data);
   migrateCenterListings(data);
   seedPlatformDemo(data, data.students, data.batches, data.teachers);
-  if (!data.users.length) seedDemoUsers(data);
   return data;
 }
 
@@ -495,9 +497,9 @@ function seedDemoData() {
   saveDataLocal(data);
   ensurePlatformData(data);
   migrateMultiTenant(data);
+  seedDemoUsers(data); // before migrateCenterListings, which adds the family user (see hydrateState)
   migrateCenterListings(data);
   seedPlatformDemo(data, students, [batch1, batch2], [teacher1, teacher2]);
-  seedDemoUsers(data);
   return data;
 }
 

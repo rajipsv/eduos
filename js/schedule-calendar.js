@@ -1,3 +1,4 @@
+import { esc } from './html.js';
 import { formatTime, normalizeSession } from './scheduler.js';
 
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -55,13 +56,13 @@ function sessionCardHtml(session) {
       type="button"
       class="${sessionCardClass(s)}"
       data-action="open-session"
-      data-batch="${s.batchId}"
-      data-session="${s.id}"
-      title="${s.batchName} · ${s.topic}"
+      data-batch="${esc(s.batchId)}"
+      data-session="${esc(s.id)}"
+      title="${esc(s.batchName)} · ${esc(s.topic)}"
     >
       <span class="schedule-cal-event-time">${time}</span>
-      <span class="schedule-cal-event-topic">${s.topic}</span>
-      <span class="schedule-cal-event-batch">${s.batchName}</span>
+      <span class="schedule-cal-event-topic">${esc(s.topic)}</span>
+      <span class="schedule-cal-event-batch">${esc(s.batchName)}</span>
     </button>`;
 }
 

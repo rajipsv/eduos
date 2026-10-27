@@ -1,3 +1,4 @@
+import { esc } from './html.js';
 export const TUITION_CATEGORIES = [
   { id: 'academics', label: 'Academics', emoji: '▣' },
   { id: 'dance', label: 'Dance', emoji: '♫' },
@@ -50,10 +51,10 @@ export function renderCategoryChips(activeId = '') {
         <button
           type="button"
           class="tuition-cat-chip${activeId === c.id ? ' active' : ''}"
-          data-category="${c.id}"
+          data-category="${esc(c.id)}"
           role="tab"
           aria-selected="${activeId === c.id}"
-        >${c.emoji ? `<span class="tuition-cat-emoji">${c.emoji}</span>` : ''}${c.label}</button>`).join('')}
+        >${c.emoji ? `<span class="tuition-cat-emoji">${esc(c.emoji)}</span>` : ''}${esc(c.label)}</button>`).join('')}
     </div>`;
 }
 
@@ -61,6 +62,6 @@ export function renderCategoryBadges(categoryIds = []) {
   if (!categoryIds.length) return '';
   return categoryIds.map((id) => {
     const c = getCategoryMeta(id);
-    return `<span class="badge badge-gray tuition-cat-badge">${c.emoji} ${c.label}</span>`;
+    return `<span class="badge badge-gray tuition-cat-badge">${esc(c.emoji)} ${esc(c.label)}</span>`;
   }).join('');
 }

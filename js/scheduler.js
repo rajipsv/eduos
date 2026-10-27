@@ -1,3 +1,4 @@
+import { esc, safeUrl } from './html.js';
 const DAY_LABELS = { sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat' };
 const DAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
@@ -177,13 +178,13 @@ export function sessionsPreviewHtml(sessions, editable = false) {
       <tbody>
         ${sessions
           .map(
-            (s, i) => `<tr data-session-id="${s.id}">
+            (s, i) => `<tr data-session-id="${esc(s.id)}">
               <td>${i + 1}</td>
-              <td>${s.date}</td>
-              <td>${s.topic}</td>
+              <td>${esc(s.date)}</td>
+              <td>${esc(s.topic)}</td>
               <td>${formatTime(s.startTime)}–${formatTime(s.endTime)}</td>
-              <td>${editable ? `<input class="meeting-link-input" data-session-link="${s.id}" value="${s.meetingLink}">` : `<a href="${s.meetingLink}" target="_blank" class="link-btn">Join Class</a>`}</td>
-              ${editable ? `<td><input type="checkbox" data-session-done="${s.id}" ${s.completed ? 'checked' : ''}></td>` : ''}
+              <td>${editable ? `<input class="meeting-link-input" data-session-link="${esc(s.id)}" value="${esc(s.meetingLink)}">` : `<a href="${safeUrl(s.meetingLink)}" target="_blank" class="link-btn">Join Class</a>`}</td>
+              ${editable ? `<td><input type="checkbox" data-session-done="${esc(s.id)}" ${s.completed ? 'checked' : ''}></td>` : ''}
             </tr>`
           )
           .join('')}

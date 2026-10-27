@@ -1,3 +1,4 @@
+import { esc, safeUrl } from './html.js';
 import { getCenters, getTeachers, getStudents, getBatches, getLeads } from './store.js';
 import { getSession, platformViewCenter, platformExitCenterView, setCenterStatus, isPlatformOwner } from './auth.js';
 import { PLATFORM_LAYERS } from './intelligence.js';
@@ -38,7 +39,7 @@ export function renderPlatformDashboard(rawState) {
   return `
     <div class="vision-banner"><h3>Platform owner</h3><p>You see every tuition center on Tutorsala — onboard, support, and monitor usage.</p></div>
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">Centers</div><div class="value">${centers.length}</div></div>
+      <div class="stat-card"><div class="label">Centers</div><div class="value">${esc(centers.length)}</div></div>
       <div class="stat-card"><div class="label">Active</div><div class="value">${active}</div></div>
       <div class="stat-card"><div class="label">Teachers (all)</div><div class="value">${totalTeachers}</div></div>
       <div class="stat-card"><div class="label">Students (all)</div><div class="value">${totalStudents}</div></div>
@@ -53,8 +54,8 @@ export function renderPlatformDashboard(rawState) {
     <div class="panel" style="margin-top:20px"><div class="panel-header"><h3>Recent centers</h3><button class="btn btn-sm btn-secondary" data-action="go-platformCenters">View all</button></div>
     <div class="panel-body">${centers.slice(0, 5).map((c) => {
       const st = getCenterOpsStats(c.id, rawState);
-      return `<div class="session-row"><div class="session-info"><h4>${c.name}</h4><p>${c.city || '—'} · ${st.teachers} teachers · ${st.students} students · <span class="badge ${c.status === 'suspended' ? 'badge-red' : 'badge-green'}">${c.status || 'active'}</span></p></div>
-      <button class="btn btn-sm btn-primary" data-action="open-center" data-id="${c.id}">Open</button></div>`;
+      return `<div class="session-row"><div class="session-info"><h4>${esc(c.name)}</h4><p>${esc(c.city || '—')} · ${esc(st.teachers)} teachers · ${esc(st.students)} students · <span class="badge ${c.status === 'suspended' ? 'badge-red' : 'badge-green'}">${esc(c.status || 'active')}</span></p></div>
+      <button class="btn btn-sm btn-primary" data-action="open-center" data-id="${esc(c.id)}">Open</button></div>`;
     }).join('')}</div></div>`;
 }
 
@@ -77,13 +78,13 @@ function renderInboundLeadRows(leads) {
   return `<div class="table-wrap"><table>
     <thead><tr><th>When</th><th>Contact</th><th>Center</th><th>Students</th><th>Source</th><th>Stage</th><th></th></tr></thead>
     <tbody>${leads.map((lead) => `
-      <tr data-inbound-id="${lead.id}">
+      <tr data-inbound-id="${esc(lead.id)}">
         <td><small>${(lead.createdAt || '').slice(0, 10)}</small></td>
-        <td><strong>${lead.name}</strong><br><small>${lead.phone}<br>${lead.email}</small></td>
-        <td>${lead.centerName}<br><small>${lead.city}</small></td>
-        <td>${lead.students || '—'}</td>
-        <td><span class="badge badge-gray">${lead.source || 'Start Page'}</span></td>
-        <td><select class="inbound-stage-select" data-inbound-stage="${lead.id}">${inboundStageOptions(lead.stage)}</select></td>
+        <td><strong>${esc(lead.name)}</strong><br><small>${esc(lead.phone)}<br>${esc(lead.email)}</small></td>
+        <td>${esc(lead.centerName)}<br><small>${esc(lead.city)}</small></td>
+        <td>${esc(lead.students || '—')}</td>
+        <td><span class="badge badge-gray">${esc(lead.source || 'Start Page')}</span></td>
+        <td><select class="inbound-stage-select" data-inbound-stage="${esc(lead.id)}">${inboundStageOptions(lead.stage)}</select></td>
         <td><a class="btn btn-sm btn-secondary" href="https://wa.me/919553371972?text=${encodeURIComponent(`Hi ${lead.firstName}, following up on your Tutorsala demo request for ${lead.centerName}.`)}" target="_blank" rel="noopener noreferrer">WhatsApp</a></td>
       </tr>`).join('')}
     </tbody></table></div>`;
@@ -96,10 +97,10 @@ function renderInboundLeadCards(leads) {
   return leads.slice(0, 5).map((lead) => `
     <div class="session-row">
       <div class="session-info">
-        <h4>${lead.centerName} · ${lead.city}</h4>
-        <p>${lead.name} · ${lead.phone} · ${lead.students} students · <span class="badge badge-gray">${lead.source || 'Start Page'}</span></p>
+        <h4>${esc(lead.centerName)} · ${esc(lead.city)}</h4>
+        <p>${esc(lead.name)} · ${esc(lead.phone)} · ${esc(lead.students)} students · <span class="badge badge-gray">${esc(lead.source || 'Start Page')}</span></p>
       </div>
-      <span class="badge badge-orange">${lead.stage || 'inquiry'}</span>
+      <span class="badge badge-orange">${esc(lead.stage || 'inquiry')}</span>
     </div>`).join('');
 }
 
@@ -129,7 +130,7 @@ export async function hydrateInboundLeadsPanels({ toast, navigate, full = false 
     body.innerHTML = full ? renderInboundLeadRows(leads) : renderInboundLeadCards(leads);
     if (full) bindInboundStageHandlers({ toast });
   } catch (err) {
-    body.innerHTML = `<p class="empty-state">${err.message}</p>`;
+    body.innerHTML = `<p class="empty-state">${esc(err.message)}</p>`;
     if (full && err.message.includes('platform owner')) {
       body.innerHTML += '<p class="empty-state">Local dev: log in as <code>owner@tutorsala.app</code> or disable JWT auth.</p>';
     }
@@ -170,15 +171,15 @@ export function renderPlatformCenters(rawState) {
 function centersTableRows(centers, rawState) {
   return centers.map((c) => {
     const st = getCenterOpsStats(c.id, rawState);
-    return `<tr data-center-row="${c.name.toLowerCase()}">
-      <td><strong>${c.name}</strong><br><small>${c.slug || ''}</small></td>
-      <td>${c.city || '—'}</td>
-      <td>${c.plan || 'trial'}</td>
-      <td>${st.teachers}</td>
-      <td>${st.students}</td>
-      <td>${st.leads}</td>
-      <td><span class="badge ${c.status === 'suspended' ? 'badge-red' : 'badge-green'}">${c.status || 'active'}</span></td>
-      <td><button class="btn btn-sm btn-primary" data-action="open-center" data-id="${c.id}">Open</button></td>
+    return `<tr data-center-row="${esc(c.name.toLowerCase())}">
+      <td><strong>${esc(c.name)}</strong><br><small>${esc(c.slug || '')}</small></td>
+      <td>${esc(c.city || '—')}</td>
+      <td>${esc(c.plan || 'trial')}</td>
+      <td>${esc(st.teachers)}</td>
+      <td>${esc(st.students)}</td>
+      <td>${esc(st.leads)}</td>
+      <td><span class="badge ${c.status === 'suspended' ? 'badge-red' : 'badge-green'}">${esc(c.status || 'active')}</span></td>
+      <td><button class="btn btn-sm btn-primary" data-action="open-center" data-id="${esc(c.id)}">Open</button></td>
     </tr>`;
   }).join('');
 }
@@ -192,21 +193,21 @@ export function renderPlatformCenterDetail(centerId, rawState) {
   return `
     <div class="toolbar">
       <button class="btn btn-secondary" data-action="go-platformCenters">← All centers</button>
-      ${viewing ? `<button class="btn btn-primary" data-action="enter-center-app">Enter center workspace</button>` : `<button class="btn btn-primary" data-action="support-view" data-id="${center.id}">Support view</button>`}
+      ${viewing ? `<button class="btn btn-primary" data-action="enter-center-app">Enter center workspace</button>` : `<button class="btn btn-primary" data-action="support-view" data-id="${esc(center.id)}">Support view</button>`}
     </div>
-    <div class="panel"><div class="panel-header"><h3>${center.name}</h3><span class="badge badge-gray">${center.plan || 'trial'}</span></div>
+    <div class="panel"><div class="panel-header"><h3>${esc(center.name)}</h3><span class="badge badge-gray">${esc(center.plan || 'trial')}</span></div>
     <div class="panel-body">
-      <p style="font-size:0.88rem;line-height:1.7"><strong>City:</strong> ${center.city || '—'} · <strong>Phone:</strong> ${center.phone || '—'} · <strong>Owner email:</strong> ${center.ownerEmail || '—'} · <strong>Joined:</strong> ${center.createdAt || '—'}</p>
+      <p style="font-size:0.88rem;line-height:1.7"><strong>City:</strong> ${esc(center.city || '—')} · <strong>Phone:</strong> ${esc(center.phone || '—')} · <strong>Owner email:</strong> ${esc(center.ownerEmail || '—')} · <strong>Joined:</strong> ${esc(center.createdAt || '—')}</p>
       <div class="stats-grid" style="margin-top:16px">
-        <div class="stat-card"><div class="label">Teachers</div><div class="value">${st.teachers}</div></div>
-        <div class="stat-card"><div class="label">Students</div><div class="value">${st.students}</div></div>
-        <div class="stat-card"><div class="label">Batches</div><div class="value">${st.batches}</div></div>
-        <div class="stat-card"><div class="label">Active leads</div><div class="value">${st.leads}</div></div>
+        <div class="stat-card"><div class="label">Teachers</div><div class="value">${esc(st.teachers)}</div></div>
+        <div class="stat-card"><div class="label">Students</div><div class="value">${esc(st.students)}</div></div>
+        <div class="stat-card"><div class="label">Batches</div><div class="value">${esc(st.batches)}</div></div>
+        <div class="stat-card"><div class="label">Active leads</div><div class="value">${esc(st.leads)}</div></div>
       </div>
       <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
         ${center.status === 'suspended'
-    ? `<button class="btn btn-secondary" data-action="activate-center" data-id="${center.id}">Reactivate center</button>`
-    : `<button class="btn btn-danger" data-action="suspend-center" data-id="${center.id}">Suspend center</button>`}
+    ? `<button class="btn btn-secondary" data-action="activate-center" data-id="${esc(center.id)}">Reactivate center</button>`
+    : `<button class="btn btn-danger" data-action="suspend-center" data-id="${esc(center.id)}">Suspend center</button>`}
       </div>
     </div></div>`;
 }
@@ -217,9 +218,9 @@ export function renderPlatformRoadmap() {
     <div class="layer-grid">
       ${PLATFORM_LAYERS.map((layer) => `
         <div class="batch-card">
-          <div class="meta">${layer.name} · ${layer.status} · ${layer.pct}%</div>
-          <h4>${layer.name}</h4>
-          <p style="font-size:0.82rem;color:var(--text-muted)">${layer.desc}</p>
+          <div class="meta">${esc(layer.name)} · ${esc(layer.status)} · ${esc(layer.pct)}%</div>
+          <h4>${esc(layer.name)}</h4>
+          <p style="font-size:0.82rem;color:var(--text-muted)">${esc(layer.desc)}</p>
         </div>`).join('')}
     </div>`;
 }
@@ -277,8 +278,8 @@ export function renderTeacherHome() {
   return `
     <div class="vision-banner"><h3>Teacher workspace</h3><p>Your classes and ops tasks — scoped to your batches only.</p></div>
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">My batches</div><div class="value">${batches.length}</div></div>
-      <div class="stat-card"><div class="label">My students</div><div class="value">${getStudents().length}</div></div>
+      <div class="stat-card"><div class="label">My batches</div><div class="value">${esc(batches.length)}</div></div>
+      <div class="stat-card"><div class="label">My students</div><div class="value">${esc(getStudents().length)}</div></div>
     </div>
     <div class="panel" style="margin-top:16px">
       <div class="panel-header">
@@ -288,12 +289,12 @@ export function renderTeacherHome() {
       <div class="panel-body">${upcoming.length ? upcoming.map((s) => `
         <div class="session-row">
           <div class="session-info">
-            <h4>${s.topic}</h4>
-            <p>${s.batchName} · ${s.date} · ${formatTime(s.startTime)}–${formatTime(s.endTime)}</p>
+            <h4>${esc(s.topic)}</h4>
+            <p>${esc(s.batchName)} · ${esc(s.date)} · ${formatTime(s.startTime)}–${formatTime(s.endTime)}</p>
           </div>
           <div class="session-actions">
-            <a href="${s.meetingLink}" target="_blank" class="btn btn-sm btn-primary">Join</a>
-            <button type="button" class="btn btn-sm btn-secondary" data-action="open-session" data-batch="${s.batchId}" data-session="${s.id}">Cancel / reschedule</button>
+            <a href="${safeUrl(s.meetingLink)}" target="_blank" class="btn btn-sm btn-primary">Join</a>
+            <button type="button" class="btn btn-sm btn-secondary" data-action="open-session" data-batch="${esc(s.batchId)}" data-session="${esc(s.id)}">Cancel / reschedule</button>
           </div>
         </div>`).join('') : '<p class="empty-state">No upcoming classes</p>'}
       </div>
@@ -305,7 +306,7 @@ export function renderStudentHome() {
   const batch = student ? getBatches().find((b) => b.id === student.batchId) : null;
   return `
     <div class="vision-banner"><h3>Student portal</h3><p>Your schedule and homework status — teaching happens on your tutor's platform.</p></div>
-    ${student ? `<div class="panel"><div class="panel-body"><p><strong>${student.name}</strong> · Grade ${student.grade} · ${batch?.name || 'No batch'}</p></div></div>` : '<p class="empty-state">Profile not linked</p>'}
+    ${student ? `<div class="panel"><div class="panel-body"><p><strong>${esc(student.name)}</strong> · Grade ${esc(student.grade)} · ${esc(batch?.name || 'No batch')}</p></div></div>` : '<p class="empty-state">Profile not linked</p>'}
     <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Quick links</h3></div><div class="panel-body" style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn btn-secondary" data-view-link="schedule">My classes</button>
       <button class="btn btn-secondary" data-view-link="studentSuccess">Homework</button>

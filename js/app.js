@@ -1,3 +1,4 @@
+import { esc } from './html.js';
 import { exportAll, getRawState, initStore } from './store.js';
 import { renderView, pageMeta, initCharts, bindViewEvents } from './views.js';
 import { initAuth, getSession, logout, getSessionLabel, platformExitCenterView, canSwitchBranch, setActiveBranch, getActiveBranchId, setFamilyView, isFamilyAccount, parsePasswordResetTokenFromLocation, initAuthSession } from './auth.js';
@@ -169,7 +170,7 @@ function syncBranchSwitcher(session) {
   const branches = getBranches();
   const active = getActiveBranchId() || '';
   branchSelect.innerHTML = `<option value="">All branches</option>${branches.map((b) =>
-    `<option value="${b.id}"${b.id === active ? ' selected' : ''}>${b.name}${b.city ? ` · ${b.city}` : ''}</option>`,
+    `<option value="${esc(b.id)}"${b.id === active ? ' selected' : ''}>${esc(b.name)}${b.city ? ` · ${b.city}` : ''}</option>`,
   ).join('')}`;
 }
 
@@ -247,7 +248,7 @@ function mountAuth(mode = 'home', params = {}) {
     });
   } catch (err) {
     console.error('Auth screen failed:', err);
-    authRoot.innerHTML = `<div class="auth-shell"><div class="auth-card"><h2>Could not load sign-in</h2><p>${err.message}</p></div></div>`;
+    authRoot.innerHTML = `<div class="auth-shell"><div class="auth-card"><h2>Could not load sign-in</h2><p>${esc(err.message)}</p></div></div>`;
   }
 }
 
@@ -325,7 +326,7 @@ try {
 } catch (err) {
   console.error(err);
   if (content) {
-    content.innerHTML = `<div class="panel"><div class="panel-body empty-state"><h4>Something went wrong</h4><p>${err.message}</p></div></div>`;
+    content.innerHTML = `<div class="panel"><div class="panel-body empty-state"><h4>Something went wrong</h4><p>${esc(err.message)}</p></div></div>`;
   }
 }
 

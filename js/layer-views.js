@@ -1,3 +1,4 @@
+import { esc, safeUrl } from './html.js';
 import {
   getStudents, getStudent, getBatches, getBatch, getTeachers, getTeacher, getUpcomingSessions, getMessages, getState, saveLead,
   addLeadActivity,
@@ -43,7 +44,7 @@ function canManageStudentSuccess() {
 function studentSuccessManageToolbar(students, selectedId, selectId = 'ssStudent') {
   return `
     <div class="toolbar">
-      <select id="${selectId}">${students.map((s) => `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.name}</option>`).join('')}</select>
+      <select id="${selectId}">${students.map((s) => `<option value="${esc(s.id)}" ${s.id === selectedId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select>
       <button class="btn btn-primary" data-action="add-hw">+ Assignment</button>
       <button class="btn btn-secondary" data-action="issue-cert">Issue Certificate</button>
       <button class="btn btn-secondary" data-action="add-feedback">+ Feedback</button>
@@ -93,7 +94,7 @@ function renderStudentSuccess() {
       <div class="vision-banner"><h3>Homework</h3><p>View your child's assignments, due dates, and grades.</p></div>
       <div class="toolbar">
         <label>Child:</label>
-        <select id="ssStudent">${students.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${s.name}</option>`).join('')}</select>
+        <select id="ssStudent">${students.map((s) => `<option value="${esc(s.id)}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select>
       </div>
       <div id="ssContent">${parentHomeworkView(sel)}</div>`;
   }
@@ -126,8 +127,8 @@ function studentSuccessOverview(selectedId) {
   const detailId = selectedId || rows[0]?.id || '';
   return `
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">Students tracked</div><div class="value">${rows.length}</div></div>
-      <div class="stat-card"><div class="label">At-risk (&lt;60)</div><div class="value">${rows.filter((r) => r.risk === 'high').length}</div></div>
+      <div class="stat-card"><div class="label">Students tracked</div><div class="value">${esc(rows.length)}</div></div>
+      <div class="stat-card"><div class="label">At-risk (&lt;60)</div><div class="value">${esc(rows.filter((r) => r.risk === 'high').length)}</div></div>
       <div class="stat-card"><div class="label">Active interventions</div><div class="value">${rows.reduce((s, r) => s + r.interventions, 0)}</div></div>
       <div class="stat-card"><div class="label">Avg success score</div><div class="value">${rows.length ? Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length) : 0}</div></div>
     </div>
@@ -135,11 +136,11 @@ function studentSuccessOverview(selectedId) {
       <div class="panel-header"><h3>All Students</h3></div>
       <div class="panel-body table-wrap">
         <table><thead><tr><th>Student</th><th>Batch</th><th>Score</th><th>Attendance</th><th>Tests</th><th>Homework</th><th>Risk</th><th>Interventions</th></tr></thead>
-        <tbody>${rows.map((r) => `<tr data-ss-row="${r.id}" style="cursor:pointer">
-          <td>${r.name}</td><td>${r.batch || '—'}</td><td><strong>${r.score}</strong></td>
-          <td>${r.attendance}%</td><td>${r.tests || '—'}${r.tests ? '%' : ''}</td><td>${r.homework}%</td>
-          <td><span class="badge ${r.risk === 'high' ? 'badge-red' : r.risk === 'medium' ? 'badge-orange' : 'badge-green'}">${r.risk}</span></td>
-          <td>${r.interventions || '—'}</td></tr>`).join('') || '<tr><td colspan="8">No students</td></tr>'}</tbody></table>
+        <tbody>${rows.map((r) => `<tr data-ss-row="${esc(r.id)}" style="cursor:pointer">
+          <td>${esc(r.name)}</td><td>${esc(r.batch || '—')}</td><td><strong>${esc(r.score)}</strong></td>
+          <td>${esc(r.attendance)}%</td><td>${esc(r.tests || '—')}${r.tests ? '%' : ''}</td><td>${esc(r.homework)}%</td>
+          <td><span class="badge ${r.risk === 'high' ? 'badge-red' : r.risk === 'medium' ? 'badge-orange' : 'badge-green'}">${esc(r.risk)}</span></td>
+          <td>${esc(r.interventions || '—')}</td></tr>`).join('') || '<tr><td colspan="8">No students</td></tr>'}</tbody></table>
       </div>
     </div>
     <div id="ssStudentDetail">${studentSuccessDetail(detailId)}</div>`;
@@ -155,13 +156,13 @@ function studentSuccessDetail(studentId) {
 
   return `
     <div class="panel" style="margin-top:16px">
-      <div class="panel-header"><h3>${student.name} — Success Profile</h3></div>
+      <div class="panel-header"><h3>${esc(student.name)} — Success Profile</h3></div>
       <div class="panel-body">
         <div class="stats-grid">
-          <div class="stat-card"><div class="label">Success Score</div><div class="value">${success.score}</div></div>
-          <div class="stat-card"><div class="label">Attendance</div><div class="value">${success.breakdown.attendance}%</div></div>
-          <div class="stat-card"><div class="label">Test Avg</div><div class="value">${success.breakdown.tests || '—'}${success.breakdown.tests ? '%' : ''}</div></div>
-          <div class="stat-card"><div class="label">Curriculum</div><div class="value">${success.breakdown.curriculum}%</div></div>
+          <div class="stat-card"><div class="label">Success Score</div><div class="value">${esc(success.score)}</div></div>
+          <div class="stat-card"><div class="label">Attendance</div><div class="value">${esc(success.breakdown.attendance)}%</div></div>
+          <div class="stat-card"><div class="label">Test Avg</div><div class="value">${esc(success.breakdown.tests || '—')}${success.breakdown.tests ? '%' : ''}</div></div>
+          <div class="stat-card"><div class="label">Curriculum</div><div class="value">${esc(success.breakdown.curriculum)}%</div></div>
         </div>
         <div class="grid-2" style="margin-top:16px">
           <div>
@@ -175,9 +176,9 @@ function studentSuccessDetail(studentId) {
         </div>
         <h4 style="font-size:0.85rem;margin:16px 0 8px">Skills & Projects</h4>
         <table><thead><tr><th>Subject</th><th>Level</th><th>Progress</th></tr></thead>
-        <tbody>${skills.map((sk) => `<tr><td>${sk.subject}</td><td>${sk.level}</td><td><div class="progress-bar" style="width:80px"><span style="width:${sk.progress}%"></span></div> ${sk.progress}%</td></tr>`).join('') || '<tr><td colspan="3">No skills tracked</td></tr>'}</tbody></table>
-        ${projects.map((p) => `<div class="session-row"><div class="session-info"><h4>${p.title}</h4><p>${p.status}${p.grade ? ' · Grade ' + p.grade : ''}</p></div></div>`).join('') || ''}
-        ${certs.map((c) => `<span class="badge badge-green" style="margin:6px 6px 0 0">${c.title}</span>`).join('')}
+        <tbody>${skills.map((sk) => `<tr><td>${esc(sk.subject)}</td><td>${esc(sk.level)}</td><td><div class="progress-bar" style="width:80px"><span style="width:${esc(sk.progress)}%"></span></div> ${esc(sk.progress)}%</td></tr>`).join('') || '<tr><td colspan="3">No skills tracked</td></tr>'}</tbody></table>
+        ${projects.map((p) => `<div class="session-row"><div class="session-info"><h4>${esc(p.title)}</h4><p>${esc(p.status)}${p.grade ? ' · Grade ' + p.grade : ''}</p></div></div>`).join('') || ''}
+        ${certs.map((c) => `<span class="badge badge-green" style="margin:6px 6px 0 0">${esc(c.title)}</span>`).join('')}
       </div>
     </div>`;
 }
@@ -188,12 +189,12 @@ function studentSuccessJourney(studentId) {
   const student = getStudent(studentId);
   const success = computeSuccessScore(studentId);
   return `
-    <div class="panel"><div class="panel-header"><h3>Learning Journey — ${student?.name}</h3></div>
+    <div class="panel"><div class="panel-header"><h3>Learning Journey — ${esc(student?.name)}</h3></div>
     <div class="panel-body">
-      <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 16px">Curriculum progress: ${success.breakdown.curriculum}%</p>
-      <div class="progress-bar" style="margin-bottom:20px"><span style="width:${success.breakdown.curriculum}%"></span></div>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 16px">Curriculum progress: ${esc(success.breakdown.curriculum)}%</p>
+      <div class="progress-bar" style="margin-bottom:20px"><span style="width:${esc(success.breakdown.curriculum)}%"></span></div>
       ${events.length ? events.map((e) => `
-        <div class="session-row"><div class="session-info"><h4>${e.icon} ${e.label}</h4><p>${e.date} · ${e.type}</p></div></div>`).join('') : '<p class="empty-state">No journey events yet — add attendance, tests, and homework.</p>'}
+        <div class="session-row"><div class="session-info"><h4>${esc(e.icon)} ${esc(e.label)}</h4><p>${esc(e.date)} · ${esc(e.type)}</p></div></div>`).join('') : '<p class="empty-state">No journey events yet — add attendance, tests, and homework.</p>'}
     </div></div>`;
 }
 
@@ -208,21 +209,21 @@ function studentSuccessInterventions(studentId) {
     </div>
     <div class="grid-2">
       <div class="panel">
-        <div class="panel-header"><h3>Active Interventions — ${student?.name}</h3></div>
+        <div class="panel-header"><h3>Active Interventions — ${esc(student?.name)}</h3></div>
         <div class="panel-body">
           ${interventions.length ? interventions.map((i) => `
             <div class="batch-card" style="margin-bottom:10px">
-              <h4>${i.title}</h4>
-              <div class="meta">${i.reason} · <span class="badge ${i.priority === 'high' ? 'badge-red' : i.priority === 'medium' ? 'badge-orange' : 'badge-green'}">${i.priority}</span> · ${i.status}</div>
+              <h4>${esc(i.title)}</h4>
+              <div class="meta">${esc(i.reason)} · <span class="badge ${i.priority === 'high' ? 'badge-red' : i.priority === 'medium' ? 'badge-orange' : 'badge-green'}">${esc(i.priority)}</span> · ${esc(i.status)}</div>
               <ul style="font-size:0.82rem;margin:8px 0;padding-left:18px">${(i.actions || []).map((a) => `<li>${a}</li>`).join('')}</ul>
-              ${i.status === 'active' ? `<button class="btn btn-sm btn-secondary" data-action="resolve-int" data-id="${i.id}">Mark resolved</button>` : ''}
+              ${i.status === 'active' ? `<button class="btn btn-sm btn-secondary" data-action="resolve-int" data-id="${esc(i.id)}">Mark resolved</button>` : ''}
             </div>`).join('') : '<p class="empty-state">No interventions yet — generate a plan from success data.</p>'}
         </div>
       </div>
       <div class="panel">
         <div class="panel-header"><h3>Suggested Actions</h3></div>
         <div class="panel-body">
-          ${suggested.map((s) => `<div class="insight-item"><strong>${s.title}</strong><br><span style="font-size:0.82rem">${s.reason}</span></div>`).join('')}
+          ${suggested.map((s) => `<div class="insight-item"><strong>${esc(s.title)}</strong><br><span style="font-size:0.82rem">${esc(s.reason)}</span></div>`).join('')}
         </div>
       </div>
     </div>`;
@@ -234,26 +235,26 @@ function studentSuccessAssignments(studentId, { mode = 'admin' } = {}) {
   const assignments = getAssignments().filter((a) => a.batchId === student?.batchId);
   const actionCell = (a, sub) => {
     if (mode === 'student' && sub.status === 'pending') {
-      return `<button class="btn btn-sm btn-primary" data-action="submit-hw" data-id="${a.id}">Submit</button>`;
+      return `<button class="btn btn-sm btn-primary" data-action="submit-hw" data-id="${esc(a.id)}">Submit</button>`;
     }
     if (mode !== 'admin') return '';
     if (sub.status === 'pending') {
-      return `<button class="btn btn-sm btn-primary" data-action="submit-hw" data-id="${a.id}">Submit</button>`;
+      return `<button class="btn btn-sm btn-primary" data-action="submit-hw" data-id="${esc(a.id)}">Submit</button>`;
     }
     if (sub.status !== 'pending' && !sub.grade) {
-      return `<button class="btn btn-sm btn-secondary" data-action="grade-hw" data-id="${a.id}">Grade</button>`;
+      return `<button class="btn btn-sm btn-secondary" data-action="grade-hw" data-id="${esc(a.id)}">Grade</button>`;
     }
     return '';
   };
   return `
-    <div class="panel"><div class="panel-header"><h3>Homework & Assignments — ${student?.name}</h3></div>
+    <div class="panel"><div class="panel-header"><h3>Homework & Assignments — ${esc(student?.name)}</h3></div>
     <div class="panel-body table-wrap">
       <table><thead><tr><th>Assignment</th><th>Subject</th><th>Due</th><th>Status</th><th>Grade</th>${mode === 'admin' || mode === 'student' ? '<th></th>' : ''}</tr></thead>
       <tbody>${assignments.map((a) => {
         const sub = a.submissions?.[studentId] || { status: 'pending' };
-        return `<tr><td>${a.title}</td><td>${a.subject}</td><td>${a.dueDate}</td>
-          <td><span class="badge ${sub.status === 'submitted' ? 'badge-green' : sub.status === 'late' ? 'badge-red' : 'badge-orange'}">${sub.status}</span></td>
-          <td>${sub.grade || '—'}</td>
+        return `<tr><td>${esc(a.title)}</td><td>${esc(a.subject)}</td><td>${esc(a.dueDate)}</td>
+          <td><span class="badge ${sub.status === 'submitted' ? 'badge-green' : sub.status === 'late' ? 'badge-red' : 'badge-orange'}">${esc(sub.status)}</span></td>
+          <td>${esc(sub.grade || '—')}</td>
           ${mode === 'admin' || mode === 'student' ? `<td>${actionCell(a, sub)}</td>` : ''}</tr>`;
       }).join('') || `<tr><td colspan="${mode === 'admin' || mode === 'student' ? 6 : 5}">No assignments</td></tr>`}</tbody></table>
     </div></div>`;
@@ -264,7 +265,7 @@ function studentSuccessParentSummary(studentId) {
   const summary = generateParentSummary(studentId);
   const student = getStudent(studentId);
   return `
-    <div class="panel"><div class="panel-header"><h3>Parent Summary — ${student?.name}</h3>
+    <div class="panel"><div class="panel-header"><h3>Parent Summary — ${esc(student?.name)}</h3>
       <button class="btn btn-sm btn-primary" data-action="send-parent-summary">Send to Parents</button></div>
     <div class="panel-body">
       <pre style="white-space:pre-wrap;font-family:inherit;font-size:0.88rem;line-height:1.6;background:var(--surface-2);padding:16px;border-radius:var(--radius-sm)">${summary}</pre>
@@ -295,7 +296,7 @@ function renderTutorHub() {
   return `
     <div class="vision-banner"><h3>Tutor Success Platform</h3><p>Performance insights, lesson planning, homework review, schedule, and professional development — all in one tutor workspace.</p></div>
     <div class="toolbar">
-      <select id="tutorSel">${teachers.map((t) => `<option value="${t.id}" ${t.id === sel ? 'selected' : ''}>${t.name}</option>`).join('')}</select>
+      <select id="tutorSel">${teachers.map((t) => `<option value="${esc(t.id)}" ${t.id === sel ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>
       <button class="btn btn-primary" data-action="gen-lesson">AI Lesson Plan</button>
       <button class="btn btn-secondary" data-action="add-lesson">+ Lesson Plan</button>
     </div>
@@ -326,7 +327,7 @@ function tutorOverview(selectedId) {
   const detailId = selectedId || rows[0]?.id || '';
   return `
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">Tutors</div><div class="value">${rows.length}</div></div>
+      <div class="stat-card"><div class="label">Tutors</div><div class="value">${esc(rows.length)}</div></div>
       <div class="stat-card"><div class="label">Pending homework reviews</div><div class="value">${rows.reduce((s, r) => s + r.pendingReview, 0)}</div></div>
       <div class="stat-card"><div class="label">Upcoming classes (7d)</div><div class="value">${rows.reduce((s, r) => s + r.upcoming, 0)}</div></div>
       <div class="stat-card"><div class="label">Avg tutor score</div><div class="value">${rows.length ? Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length) : 0}</div></div>
@@ -335,9 +336,9 @@ function tutorOverview(selectedId) {
       <div class="panel-header"><h3>All Tutors</h3></div>
       <div class="panel-body table-wrap">
         <table><thead><tr><th>Tutor</th><th>Subjects</th><th>Batches</th><th>Students</th><th>Score</th><th>Pending Review</th><th>Upcoming</th></tr></thead>
-        <tbody>${rows.map((r) => `<tr data-tutor-row="${r.id}" style="cursor:pointer">
-          <td>${r.name}</td><td>${r.subjects || '—'}</td><td>${r.batches}</td><td>${r.students}</td>
-          <td><strong>${r.score}</strong></td><td>${r.pendingReview || '—'}</td><td>${r.upcoming}</td></tr>`).join('') || '<tr><td colspan="7">No tutors</td></tr>'}</tbody></table>
+        <tbody>${rows.map((r) => `<tr data-tutor-row="${esc(r.id)}" style="cursor:pointer">
+          <td>${esc(r.name)}</td><td>${esc(r.subjects || '—')}</td><td>${esc(r.batches)}</td><td>${esc(r.students)}</td>
+          <td><strong>${esc(r.score)}</strong></td><td>${esc(r.pendingReview || '—')}</td><td>${esc(r.upcoming)}</td></tr>`).join('') || '<tr><td colspan="7">No tutors</td></tr>'}</tbody></table>
       </div>
     </div>
     <div id="tutorDetail">${tutorProfileCard(detailId)}</div>`;
@@ -362,13 +363,13 @@ function tutorProfileCard(teacherId) {
   if (!teacher || !perf) return '';
   return `
     <div class="panel" style="margin-top:16px">
-      <div class="panel-header"><h3>${teacher.name} — Tutor Profile</h3></div>
+      <div class="panel-header"><h3>${esc(teacher.name)} — Tutor Profile</h3></div>
       <div class="panel-body">
         <div class="stats-grid">
-          <div class="stat-card"><div class="label">Performance Score</div><div class="value">${perf.score}</div></div>
-          <div class="stat-card"><div class="label">Students</div><div class="value">${perf.breakdown.students}</div></div>
-          <div class="stat-card"><div class="label">Curriculum</div><div class="value">${perf.breakdown.curriculum}%</div></div>
-          <div class="stat-card"><div class="label">HW Review Rate</div><div class="value">${perf.breakdown.hwReviewRate}%</div></div>
+          <div class="stat-card"><div class="label">Performance Score</div><div class="value">${esc(perf.score)}</div></div>
+          <div class="stat-card"><div class="label">Students</div><div class="value">${esc(perf.breakdown.students)}</div></div>
+          <div class="stat-card"><div class="label">Curriculum</div><div class="value">${esc(perf.breakdown.curriculum)}%</div></div>
+          <div class="stat-card"><div class="label">HW Review Rate</div><div class="value">${esc(perf.breakdown.hwReviewRate)}%</div></div>
         </div>
         <p style="margin-top:12px;font-size:0.85rem"><strong>Availability:</strong> ${formatTutorAvailabilitySummary(avail)}</p>
       </div>
@@ -381,10 +382,10 @@ function tutorPerformanceView(teacherId) {
   if (!teacher || !perf) return '<div class="empty-state">Select a tutor</div>';
   return `
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">Performance Score</div><div class="value">${perf.score}</div></div>
-      <div class="stat-card"><div class="label">Student Attendance</div><div class="value">${perf.breakdown.avgAttendance}%</div></div>
-      <div class="stat-card"><div class="label">Test Average</div><div class="value">${perf.breakdown.avgTests || '—'}${perf.breakdown.avgTests ? '%' : ''}</div></div>
-      <div class="stat-card"><div class="label">Lesson Plans Delivered</div><div class="value">${perf.breakdown.delivered}/${perf.breakdown.lessonPlans}</div></div>
+      <div class="stat-card"><div class="label">Performance Score</div><div class="value">${esc(perf.score)}</div></div>
+      <div class="stat-card"><div class="label">Student Attendance</div><div class="value">${esc(perf.breakdown.avgAttendance)}%</div></div>
+      <div class="stat-card"><div class="label">Test Average</div><div class="value">${esc(perf.breakdown.avgTests || '—')}${perf.breakdown.avgTests ? '%' : ''}</div></div>
+      <div class="stat-card"><div class="label">Lesson Plans Delivered</div><div class="value">${esc(perf.breakdown.delivered)}/${esc(perf.breakdown.lessonPlans)}</div></div>
     </div>
     <div class="grid-2" style="margin-top:16px">
       <div class="panel"><div class="panel-header"><h3>Strengths</h3></div><div class="panel-body">
@@ -397,7 +398,7 @@ function tutorPerformanceView(teacherId) {
     </div>
     <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Batch Progress</h3></div><div class="panel-body table-wrap">
       <table><thead><tr><th>Batch</th><th>Students</th><th>Progress</th></tr></thead>
-      <tbody>${(perf.report?.batches || []).map((b) => `<tr><td>${b.name}</td><td>${b.students}</td><td><div class="progress-bar" style="width:100px"><span style="width:${b.progress}%"></span></div> ${b.progress}%</td></tr>`).join('') || '<tr><td colspan="3">No batches assigned</td></tr>'}</tbody></table>
+      <tbody>${(perf.report?.batches || []).map((b) => `<tr><td>${esc(b.name)}</td><td>${esc(b.students)}</td><td><div class="progress-bar" style="width:100px"><span style="width:${esc(b.progress)}%"></span></div> ${esc(b.progress)}%</td></tr>`).join('') || '<tr><td colspan="3">No batches assigned</td></tr>'}</tbody></table>
     </div></div>`;
 }
 
@@ -407,15 +408,15 @@ function tutorLessonsView(teacherId) {
     <div class="panel"><div class="panel-header"><h3>Lesson Plans</h3></div><div class="panel-body">
       ${plans.map((lp) => `
         <div class="batch-card" style="margin-bottom:10px">
-          <h4>${lp.topic} · ${lp.date}</h4>
-          <div class="meta">${getBatch(lp.batchId)?.name || ''} · <span class="badge ${lp.status === 'delivered' ? 'badge-green' : lp.status === 'ready' ? 'badge-orange' : 'badge-gray'}">${lp.status}</span></div>
-          <p style="font-size:0.82rem;margin:8px 0"><strong>Objectives:</strong> ${lp.objectives || '—'}</p>
+          <h4>${esc(lp.topic)} · ${esc(lp.date)}</h4>
+          <div class="meta">${esc(getBatch(lp.batchId)?.name || '')} · <span class="badge ${lp.status === 'delivered' ? 'badge-green' : lp.status === 'ready' ? 'badge-orange' : 'badge-gray'}">${esc(lp.status)}</span></div>
+          <p style="font-size:0.82rem;margin:8px 0"><strong>Objectives:</strong> ${esc(lp.objectives || '—')}</p>
           ${lp.activities ? `<p style="font-size:0.82rem;margin:4px 0"><strong>Activities:</strong> ${lp.activities.slice(0, 120)}${lp.activities.length > 120 ? '…' : ''}</p>` : ''}
-          ${lp.homework ? `<p style="font-size:0.82rem;margin:4px 0"><strong>Homework:</strong> ${lp.homework}</p>` : ''}
+          ${lp.homework ? `<p style="font-size:0.82rem;margin:4px 0"><strong>Homework:</strong> ${esc(lp.homework)}</p>` : ''}
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-            ${lp.status !== 'delivered' ? `<button class="btn btn-sm btn-primary" data-action="deliver-lesson" data-id="${lp.id}">Mark delivered</button>` : ''}
-            <button class="btn btn-sm btn-secondary" data-action="view-lesson" data-id="${lp.id}">View</button>
-            <button class="btn btn-sm btn-danger" data-action="del-lesson" data-id="${lp.id}">Delete</button>
+            ${lp.status !== 'delivered' ? `<button class="btn btn-sm btn-primary" data-action="deliver-lesson" data-id="${esc(lp.id)}">Mark delivered</button>` : ''}
+            <button class="btn btn-sm btn-secondary" data-action="view-lesson" data-id="${esc(lp.id)}">View</button>
+            <button class="btn btn-sm btn-danger" data-action="del-lesson" data-id="${esc(lp.id)}">Delete</button>
           </div>
         </div>`).join('') || '<p class="empty-state">No lesson plans yet — use AI or add manually.</p>'}
     </div></div>`;
@@ -426,13 +427,13 @@ function tutorHomeworkView(teacherId) {
   const batches = getBatches().filter((b) => b.teacherId === teacherId);
   const allHw = getAssignments().filter((a) => batches.some((b) => b.id === a.batchId));
   return `
-    <div class="panel"><div class="panel-header"><h3>Pending Review (${toReview.length})</h3></div>
+    <div class="panel"><div class="panel-header"><h3>Pending Review (${esc(toReview.length)})</h3></div>
     <div class="panel-body table-wrap">
       <table><thead><tr><th>Student</th><th>Assignment</th><th>Status</th><th>Submitted</th><th></th></tr></thead>
       <tbody>${toReview.map((item) => `<tr>
-        <td>${item.studentName}</td><td>${item.assignmentTitle}</td>
-        <td><span class="badge badge-orange">${item.status}</span></td><td>${item.submittedAt || '—'}</td>
-        <td><button class="btn btn-sm btn-primary" data-action="grade-hw-tutor" data-aid="${item.assignmentId}" data-sid="${item.studentId}">Grade</button></td>
+        <td>${esc(item.studentName)}</td><td>${esc(item.assignmentTitle)}</td>
+        <td><span class="badge badge-orange">${esc(item.status)}</span></td><td>${esc(item.submittedAt || '—')}</td>
+        <td><button class="btn btn-sm btn-primary" data-action="grade-hw-tutor" data-aid="${esc(item.assignmentId)}" data-sid="${esc(item.studentId)}">Grade</button></td>
       </tr>`).join('') || '<tr><td colspan="5">All caught up — no submissions waiting</td></tr>'}</tbody></table>
     </div></div>
     <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>All Assignments</h3></div>
@@ -440,7 +441,7 @@ function tutorHomeworkView(teacherId) {
       <table><thead><tr><th>Assignment</th><th>Batch</th><th>Due</th><th>Pending</th></tr></thead>
       <tbody>${allHw.map((a) => {
         const pending = Object.values(a.submissions || {}).filter((s) => s.status !== 'submitted').length;
-        return `<tr><td>${a.title}</td><td>${getBatch(a.batchId)?.name}</td><td>${a.dueDate}</td><td>${pending}</td></tr>`;
+        return `<tr><td>${esc(a.title)}</td><td>${esc(getBatch(a.batchId)?.name)}</td><td>${esc(a.dueDate)}</td><td>${pending}</td></tr>`;
       }).join('') || '<tr><td colspan="4">No homework assigned</td></tr>'}</tbody></table>
     </div></div>`;
 }
@@ -451,11 +452,11 @@ function tutorScheduleView(teacherId) {
   const avail = getTutorAvailability(teacherId);
   return `
     <div class="grid-2">
-      <div class="panel"><div class="panel-header"><h3>Upcoming Classes — ${teacher?.name || ''}</h3></div>
+      <div class="panel"><div class="panel-header"><h3>Upcoming Classes — ${esc(teacher?.name || '')}</h3></div>
       <div class="panel-body">
         ${schedule.length ? schedule.map((s) => `
-          <div class="session-row"><div class="session-info"><h4>${s.topic}</h4><p>${s.batchName} · ${s.date} · ${formatTime(s.startTime)}</p></div>
-          <a href="${s.meetingLink}" target="_blank" class="btn btn-sm btn-primary">Join</a></div>`).join('') : '<p class="empty-state">No upcoming classes scheduled</p>'}
+          <div class="session-row"><div class="session-info"><h4>${esc(s.topic)}</h4><p>${esc(s.batchName)} · ${esc(s.date)} · ${formatTime(s.startTime)}</p></div>
+          <a href="${safeUrl(s.meetingLink)}" target="_blank" class="btn btn-sm btn-primary">Join</a></div>`).join('') : '<p class="empty-state">No upcoming classes scheduled</p>'}
       </div></div>
       <div class="panel"><div class="panel-header"><h3>Availability</h3><button class="btn btn-sm btn-secondary" data-action="edit-avail">Manage slots</button></div>
       <div class="panel-body">
@@ -470,12 +471,12 @@ function tutorDevelopmentView(teacherId) {
   const totalHours = pd.reduce((s, p) => s + (p.hours || 0), 0);
   return `
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">PD Activities</div><div class="value">${pd.length}</div></div>
+      <div class="stat-card"><div class="label">PD Activities</div><div class="value">${esc(pd.length)}</div></div>
       <div class="stat-card"><div class="label">Total PD Hours</div><div class="value">${totalHours}</div></div>
     </div>
     <div class="toolbar" style="margin-top:12px"><button class="btn btn-primary" data-action="add-pd">+ Log PD Activity</button></div>
     <div class="panel"><div class="panel-header"><h3>Professional Development</h3></div><div class="panel-body">
-      ${pd.map((p) => `<div class="session-row"><div class="session-info"><h4>${p.title}</h4><p>${p.type} · ${p.hours}h · ${p.date} · ${p.status}</p></div></div>`).join('') || '<p class="empty-state">No PD logged yet</p>'}
+      ${pd.map((p) => `<div class="session-row"><div class="session-info"><h4>${esc(p.title)}</h4><p>${esc(p.type)} · ${esc(p.hours)}h · ${esc(p.date)} · ${esc(p.status)}</p></div></div>`).join('') || '<p class="empty-state">No PD logged yet</p>'}
       <p style="font-size:0.82rem;color:var(--text-muted);margin-top:14px">Ops extensions: Fee Reminder Pack, Zoom Class Connector, Academy Growth Consulting</p>
     </div></div>`;
 }
@@ -487,7 +488,7 @@ function renderParentPortal() {
     <div class="vision-banner"><h3>Parent Experience Portal</h3><p>Real-time visibility into your child's classes, progress, homework, attendance, and teacher communication.</p></div>
     <div class="toolbar">
       <label>Viewing as parent of:</label>
-      <select id="parentStudent">${students.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${s.name}</option>`).join('')}</select>
+      <select id="parentStudent">${students.map((s) => `<option value="${esc(s.id)}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select>
       <button class="btn btn-secondary" data-action="parent-request-summary">Request Progress Summary</button>
     </div>
     <div class="report-tabs">
@@ -526,36 +527,36 @@ function parentHomeView(studentId) {
       <div class="panel-header"><h3>Fee due</h3><button class="btn btn-sm btn-secondary" data-parent-tab-link="fees">View all invoices</button></div>
       <div class="panel-body">
         <p><strong>₹${fees.outstanding.toLocaleString('en-IN')}</strong> outstanding
-          ${fees.nextDue ? ` · next due <strong>${fees.nextDue.dueDate}</strong> (${fees.nextDue.batchName})` : ''}
-          ${fees.overdue.length ? ` · <span class="badge badge-red">${fees.overdue.length} overdue</span>` : ''}
+          ${fees.nextDue ? ` · next due <strong>${esc(fees.nextDue.dueDate)}</strong> (${esc(fees.nextDue.batchName)})` : ''}
+          ${fees.overdue.length ? ` · <span class="badge badge-red">${esc(fees.overdue.length)} overdue</span>` : ''}
         </p>
-        ${billing.upiId ? `<p style="font-size:0.88rem;color:var(--text-muted);margin-top:8px">Pay via UPI: <strong>${billing.upiId}</strong></p>` : ''}
-        ${fees.nextDue && canParentReportPayment(fees.nextDue) ? `<button class="btn btn-primary" style="margin-top:12px" data-action="parent-report-payment" data-id="${fees.nextDue.id}">I've paid — notify center</button>` : ''}
+        ${billing.upiId ? `<p style="font-size:0.88rem;color:var(--text-muted);margin-top:8px">Pay via UPI: <strong>${esc(billing.upiId)}</strong></p>` : ''}
+        ${fees.nextDue && canParentReportPayment(fees.nextDue) ? `<button class="btn btn-primary" style="margin-top:12px" data-action="parent-report-payment" data-id="${esc(fees.nextDue.id)}">I've paid — notify center</button>` : ''}
         ${fees.nextDue?.status === 'payment_reported' ? `<p style="margin-top:10px;font-size:0.88rem;color:var(--text-muted)">Payment reported — center will confirm shortly.</p>` : ''}
       </div>
     </div>` : '';
   return `
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">Success Score</div><div class="value">${success.score}</div></div>
-      <div class="stat-card"><div class="label">Attendance</div><div class="value">${success.breakdown.attendance}%</div></div>
+      <div class="stat-card"><div class="label">Success Score</div><div class="value">${esc(success.score)}</div></div>
+      <div class="stat-card"><div class="label">Attendance</div><div class="value">${esc(success.breakdown.attendance)}%</div></div>
       <div class="stat-card"><div class="label">Pending Homework</div><div class="value">${pendingHw}</div></div>
       <div class="stat-card"><div class="label">${fees.outstanding > 0 ? 'Fee due' : 'Fees'}</div><div class="value ${fees.overdue.length ? 'stat-red' : ''}">${fees.outstanding > 0 ? `₹${fees.outstanding.toLocaleString('en-IN')}` : 'Clear'}</div></div>
     </div>
     ${feeAlert}
     <div class="grid-2" style="margin-top:16px">
       <div class="panel"><div class="panel-header"><h3>Next Class</h3></div><div class="panel-body">
-        ${upcoming[0] ? `<div class="session-row"><div class="session-info"><h4>${upcoming[0].topic}</h4><p>${batch?.name} · ${upcoming[0].date} · ${formatTime(upcoming[0].startTime)}</p></div>
-        <a href="${upcoming[0].meetingLink}" target="_blank" class="btn btn-sm btn-primary">Join Class</a></div>` : '<p>No class scheduled soon</p>'}
+        ${upcoming[0] ? `<div class="session-row"><div class="session-info"><h4>${esc(upcoming[0].topic)}</h4><p>${esc(batch?.name)} · ${esc(upcoming[0].date)} · ${formatTime(upcoming[0].startTime)}</p></div>
+        <a href="${safeUrl(upcoming[0].meetingLink)}" target="_blank" class="btn btn-sm btn-primary">Join Class</a></div>` : '<p>No class scheduled soon</p>'}
       </div></div>
       <div class="panel"><div class="panel-header"><h3>Recent Activity</h3></div><div class="panel-body">
-        ${dash.journey.map((e) => `<div class="session-row"><div class="session-info"><h4>${e.icon} ${e.label}</h4><p>${e.date}</p></div></div>`).join('') || '<p>No recent activity</p>'}
+        ${dash.journey.map((e) => `<div class="session-row"><div class="session-info"><h4>${esc(e.icon)} ${esc(e.label)}</h4><p>${esc(e.date)}</p></div></div>`).join('') || '<p>No recent activity</p>'}
       </div></div>
     </div>
     <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Achievements</h3></div>
-    <div class="panel-body">${certificates.map((c) => `<span class="badge badge-green" style="margin:0 6px 6px 0">${c.title}</span>`).join('') || 'No achievements yet'}</div></div>
+    <div class="panel-body">${certificates.map((c) => `<span class="badge badge-green" style="margin:0 6px 6px 0">${esc(c.title)}</span>`).join('') || 'No achievements yet'}</div></div>
     <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Contact Teacher</h3></div>
     <div class="panel-body">
-      <textarea id="parentQuickMsg" rows="3" placeholder="Ask a question about ${student.name}'s progress…"></textarea>
+      <textarea id="parentQuickMsg" rows="3" placeholder="Ask a question about ${esc(student.name)}'s progress…"></textarea>
       <button class="btn btn-primary" style="margin-top:10px" data-action="parent-contact">Send Message</button>
     </div></div>`;
 }
@@ -567,10 +568,10 @@ function parentProgressView(studentId) {
   const skills = getSkills(studentId);
   return `
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">Success Score</div><div class="value">${success.score}</div></div>
-      <div class="stat-card"><div class="label">Tests</div><div class="value">${success.breakdown.tests || '—'}${success.breakdown.tests ? '%' : ''}</div></div>
-      <div class="stat-card"><div class="label">Homework</div><div class="value">${success.breakdown.homework}%</div></div>
-      <div class="stat-card"><div class="label">Curriculum</div><div class="value">${success.breakdown.curriculum}%</div></div>
+      <div class="stat-card"><div class="label">Success Score</div><div class="value">${esc(success.score)}</div></div>
+      <div class="stat-card"><div class="label">Tests</div><div class="value">${esc(success.breakdown.tests || '—')}${success.breakdown.tests ? '%' : ''}</div></div>
+      <div class="stat-card"><div class="label">Homework</div><div class="value">${esc(success.breakdown.homework)}%</div></div>
+      <div class="stat-card"><div class="label">Curriculum</div><div class="value">${esc(success.breakdown.curriculum)}%</div></div>
     </div>
     <div class="grid-2" style="margin-top:16px">
       <div class="panel"><div class="panel-header"><h3>Strengths & Recommendations</h3></div><div class="panel-body">
@@ -579,13 +580,13 @@ function parentProgressView(studentId) {
       </div></div>
       <div class="panel"><div class="panel-header"><h3>Skills</h3></div><div class="panel-body">
         <table><thead><tr><th>Subject</th><th>Level</th><th>Progress</th></tr></thead>
-        <tbody>${skills.map((sk) => `<tr><td>${sk.subject}</td><td>${sk.level}</td><td>${sk.progress}%</td></tr>`).join('') || '<tr><td colspan="3">Not tracked</td></tr>'}</tbody></table>
+        <tbody>${skills.map((sk) => `<tr><td>${esc(sk.subject)}</td><td>${esc(sk.level)}</td><td>${esc(sk.progress)}%</td></tr>`).join('') || '<tr><td colspan="3">Not tracked</td></tr>'}</tbody></table>
       </div></div>
     </div>
-    <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Test History — ${student.name}</h3></div>
+    <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Test History — ${esc(student.name)}</h3></div>
     <div class="panel-body table-wrap">
       <table><thead><tr><th>Test</th><th>Subject</th><th>Date</th><th>Score</th></tr></thead>
-      <tbody>${tests.map((t) => `<tr><td>${t.test}</td><td>${t.subject}</td><td>${t.date}</td><td>${t.score}/${t.max} (${t.pct}%)</td></tr>`).join('') || '<tr><td colspan="4">No tests yet</td></tr>'}</tbody></table>
+      <tbody>${tests.map((t) => `<tr><td>${esc(t.test)}</td><td>${esc(t.subject)}</td><td>${esc(t.date)}</td><td>${esc(t.score)}/${esc(t.max)} (${esc(t.pct)}%)</td></tr>`).join('') || '<tr><td colspan="4">No tests yet</td></tr>'}</tbody></table>
     </div></div>`;
 }
 
@@ -593,15 +594,15 @@ function parentHomeworkView(studentId) {
   const dash = getParentDashboard(studentId);
   if (!dash) return '';
   return `
-    <div class="panel"><div class="panel-header"><h3>Homework — ${dash.student.name}</h3></div>
+    <div class="panel"><div class="panel-header"><h3>Homework — ${esc(dash.student.name)}</h3></div>
     <div class="panel-body table-wrap">
       <table><thead><tr><th>Assignment</th><th>Subject</th><th>Due</th><th>Status</th><th>Grade</th><th></th></tr></thead>
       <tbody>${dash.assignments.map((a) => {
         const sub = a.submissions?.[studentId] || { status: 'pending' };
-        return `<tr><td>${a.title}</td><td>${a.subject}</td><td>${a.dueDate}</td>
-          <td><span class="badge ${sub.status === 'submitted' ? 'badge-green' : sub.status === 'late' ? 'badge-red' : 'badge-orange'}">${sub.status}</span></td>
-          <td>${sub.grade || '—'}</td>
-          <td>${sub.status === 'pending' ? `<button class="btn btn-sm btn-primary" data-action="parent-submit-hw" data-id="${a.id}">Mark submitted</button>` : ''}</td></tr>`;
+        return `<tr><td>${esc(a.title)}</td><td>${esc(a.subject)}</td><td>${esc(a.dueDate)}</td>
+          <td><span class="badge ${sub.status === 'submitted' ? 'badge-green' : sub.status === 'late' ? 'badge-red' : 'badge-orange'}">${esc(sub.status)}</span></td>
+          <td>${esc(sub.grade || '—')}</td>
+          <td>${sub.status === 'pending' ? `<button class="btn btn-sm btn-primary" data-action="parent-submit-hw" data-id="${esc(a.id)}">Mark submitted</button>` : ''}</td></tr>`;
       }).join('') || '<tr><td colspan="6">No homework</td></tr>'}</tbody></table>
     </div></div>`;
 }
@@ -612,13 +613,13 @@ function parentAttendanceView(studentId) {
   const stats = computeSuccessScore(studentId);
   return `
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">Attendance Rate</div><div class="value">${stats.breakdown.attendance}%</div></div>
-      <div class="stat-card"><div class="label">Records</div><div class="value">${records.length}</div></div>
+      <div class="stat-card"><div class="label">Attendance Rate</div><div class="value">${esc(stats.breakdown.attendance)}%</div></div>
+      <div class="stat-card"><div class="label">Records</div><div class="value">${esc(records.length)}</div></div>
     </div>
-    <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Attendance History — ${student?.name}</h3></div>
+    <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Attendance History — ${esc(student?.name)}</h3></div>
     <div class="panel-body table-wrap">
       <table><thead><tr><th>Date</th><th>Status</th></tr></thead>
-      <tbody>${records.map((r) => `<tr><td>${r.date}</td><td><span class="badge ${r.status === 'present' ? 'badge-green' : r.status === 'absent' ? 'badge-red' : 'badge-orange'}">${r.status}</span></td></tr>`).join('') || '<tr><td colspan="2">No records yet</td></tr>'}</tbody></table>
+      <tbody>${records.map((r) => `<tr><td>${esc(r.date)}</td><td><span class="badge ${r.status === 'present' ? 'badge-green' : r.status === 'absent' ? 'badge-red' : 'badge-orange'}">${esc(r.status)}</span></td></tr>`).join('') || '<tr><td colspan="2">No records yet</td></tr>'}</tbody></table>
     </div></div>`;
 }
 
@@ -632,26 +633,26 @@ function parentFeesView(studentId) {
   return `
     <div class="stats-grid">
       <div class="stat-card"><div class="label">Outstanding</div><div class="value ${fees.outstanding ? 'stat-red' : ''}">₹${fees.outstanding.toLocaleString('en-IN')}</div></div>
-      <div class="stat-card"><div class="label">Overdue</div><div class="value">${fees.overdue.length}</div></div>
-      <div class="stat-card"><div class="label">Paid invoices</div><div class="value">${fees.invoices.filter((i) => i.status === 'paid').length}</div></div>
+      <div class="stat-card"><div class="label">Overdue</div><div class="value">${esc(fees.overdue.length)}</div></div>
+      <div class="stat-card"><div class="label">Paid invoices</div><div class="value">${esc(fees.invoices.filter((i) => i.status === 'paid').length)}</div></div>
     </div>
     ${billing.upiId || billing.bankDetails ? `<div class="panel" style="margin-top:16px"><div class="panel-header"><h3>How to pay</h3></div><div class="panel-body">
-      ${billing.upiId ? `<p><strong>UPI:</strong> ${billing.upiId}</p>` : ''}
-      ${billing.bankDetails ? `<p style="margin-top:8px;font-size:0.88rem;color:var(--text-muted)">${billing.bankDetails}</p>` : ''}
+      ${billing.upiId ? `<p><strong>UPI:</strong> ${esc(billing.upiId)}</p>` : ''}
+      ${billing.bankDetails ? `<p style="margin-top:8px;font-size:0.88rem;color:var(--text-muted)">${esc(billing.bankDetails)}</p>` : ''}
       <p style="margin-top:10px;font-size:0.82rem;color:var(--text-muted)">After paying offline, tap <strong>I've paid — notify center</strong>. The center verifies and confirms in Tutorsala.</p>
     </div></div>` : ''}
-    <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Invoices — ${student?.name || 'Student'}</h3></div>
+    <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Invoices — ${esc(student?.name || 'Student')}</h3></div>
     <div class="panel-body table-wrap">
       <table class="invoice-table">
         <thead><tr><th>Invoice</th><th>Batch</th><th>Period</th><th>Amount</th><th>Due</th><th>Status</th><th></th></tr></thead>
         <tbody>${fees.invoices.map((inv) => `<tr>
-          <td><strong>${inv.invoiceNumber}</strong></td>
-          <td>${inv.batchName}</td>
+          <td><strong>${esc(inv.invoiceNumber)}</strong></td>
+          <td>${esc(inv.batchName)}</td>
           <td>${inv.periodLabel || inv.periodStart?.slice(0, 7)}</td>
           <td>₹${inv.amount.toLocaleString('en-IN')}</td>
-          <td>${inv.dueDate}</td>
+          <td>${esc(inv.dueDate)}</td>
           <td>${parentInvoiceStatusLabel(inv.status)}</td>
-          <td>${canParentReportPayment(inv) ? `<button class="btn btn-sm btn-primary" data-action="parent-report-payment" data-id="${inv.id}">I've paid — notify center</button>` : (inv.status === 'payment_reported' ? '<small>Awaiting confirmation</small>' : '')}</td>
+          <td>${canParentReportPayment(inv) ? `<button class="btn btn-sm btn-primary" data-action="parent-report-payment" data-id="${esc(inv.id)}">I've paid — notify center</button>` : (inv.status === 'payment_reported' ? '<small>Awaiting confirmation</small>' : '')}</td>
         </tr>`).join('')}</tbody>
       </table>
     </div></div>`;
@@ -661,9 +662,9 @@ function parentFeedbackView(studentId) {
   const feedback = getFeedback(studentId);
   const student = getStudent(studentId);
   return `
-    <div class="panel"><div class="panel-header"><h3>Teacher Feedback — ${student?.name}</h3></div>
+    <div class="panel"><div class="panel-header"><h3>Teacher Feedback — ${esc(student?.name)}</h3></div>
     <div class="panel-body">
-      ${feedback.map((f) => `<div class="message-item sent"><div class="meta"><span>${getTeacher(f.teacherId)?.name}</span><span>${f.date}</span><span class="badge ${f.type === 'positive' ? 'badge-green' : 'badge-orange'}">${f.type}</span></div><div class="body">${f.message}</div></div>`).join('') || '<p class="empty-state">No feedback yet</p>'}
+      ${feedback.map((f) => `<div class="message-item sent"><div class="meta"><span>${esc(getTeacher(f.teacherId)?.name)}</span><span>${esc(f.date)}</span><span class="badge ${f.type === 'positive' ? 'badge-green' : 'badge-orange'}">${esc(f.type)}</span></div><div class="body">${esc(f.message)}</div></div>`).join('') || '<p class="empty-state">No feedback yet</p>'}
     </div></div>`;
 }
 
@@ -673,13 +674,13 @@ function parentMessagesView(studentId) {
   const student = getStudent(studentId);
   return `
     <div class="grid-2">
-      <div class="panel"><div class="panel-header"><h3>Notifications — ${student?.name}</h3></div>
+      <div class="panel"><div class="panel-header"><h3>Notifications — ${esc(student?.name)}</h3></div>
       <div class="panel-body">${messages.slice(0, 15).map((m) => `
-        <div class="message-item ${m.status}"><div class="meta"><span>${m.type || 'update'} · ${m.channel || 'whatsapp'}</span><span>${new Date(m.sentAt).toLocaleString()}</span></div>
-        <div class="body">${m.message.slice(0, 200)}${m.message.length > 200 ? '…' : ''}</div></div>`).join('') || '<p class="empty-state">No messages yet</p>'}
+        <div class="message-item ${esc(m.status)}"><div class="meta"><span>${esc(m.type || 'update')} · ${esc(m.channel || 'whatsapp')}</span><span>${new Date(m.sentAt).toLocaleString()}</span></div>
+        <div class="body">${esc(m.message.slice(0, 200))}${m.message.length > 200 ? '…' : ''}</div></div>`).join('') || '<p class="empty-state">No messages yet</p>'}
       </div></div>
       <div class="panel"><div class="panel-header"><h3>Your Inquiries</h3></div>
-      <div class="panel-body">${inquiries.map((q) => `<div class="message-item"><div class="meta"><span>${q.date}</span><span>${q.status}</span></div><div class="body">${q.message}</div></div>`).join('') || '<p class="empty-state">No inquiries sent</p>'}
+      <div class="panel-body">${inquiries.map((q) => `<div class="message-item"><div class="meta"><span>${esc(q.date)}</span><span>${esc(q.status)}</span></div><div class="body">${esc(q.message)}</div></div>`).join('') || '<p class="empty-state">No inquiries sent</p>'}
         <textarea id="parentMsgBox" rows="3" placeholder="Message the teacher…" style="margin-top:12px"></textarea>
         <button class="btn btn-primary" style="margin-top:8px" data-action="parent-contact">Send to Teacher</button>
       </div></div>
@@ -690,7 +691,7 @@ function parentSettingsView(studentId) {
   const prefs = getParentPreferences(studentId);
   const student = getStudent(studentId);
   return `
-    <div class="panel"><div class="panel-header"><h3>Notification Preferences — ${student?.parentName || student?.name}</h3></div>
+    <div class="panel"><div class="panel-header"><h3>Notification Preferences — ${esc(student?.parentName || student?.name)}</h3></div>
     <div class="panel-body">
       <div class="form-grid">
         <div class="form-group full"><label><input type="checkbox" id="prefAtt" ${prefs.notifyAttendance ? 'checked' : ''}> Attendance alerts</label></div>
@@ -726,9 +727,9 @@ function commDashboardHtml(stats) {
   ).join('');
   return `
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">Total messages</div><div class="value">${stats.total}</div></div>
-      <div class="stat-card"><div class="label">Sent successfully</div><div class="value">${stats.sent}</div></div>
-      <div class="stat-card"><div class="label">Active automations</div><div class="value">${stats.activeAutomations}/${stats.totalAutomations}</div></div>
+      <div class="stat-card"><div class="label">Total messages</div><div class="value">${esc(stats.total)}</div></div>
+      <div class="stat-card"><div class="label">Sent successfully</div><div class="value">${esc(stats.sent)}</div></div>
+      <div class="stat-card"><div class="label">Active automations</div><div class="value">${esc(stats.activeAutomations)}/${esc(stats.totalAutomations)}</div></div>
       ${channelCards || '<div class="stat-card"><div class="label">Channels</div><div class="value">—</div></div>'}
     </div>
     <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Recent Messages</h3></div>
@@ -739,9 +740,9 @@ function messageLogHtml(channelFilter, limit = 20) {
   let messages = getMessages();
   if (channelFilter) messages = messages.filter((m) => (m.channel || 'whatsapp') === channelFilter);
   return `<div class="whatsapp-log">${messages.slice(0, limit).map((m) => `
-    <div class="message-item ${m.status}">
-      <div class="meta"><span>${m.channel || 'whatsapp'} · ${m.to} · ${m.type || 'general'}</span><span>${new Date(m.sentAt).toLocaleString()}</span></div>
-      <div class="body">${m.message}</div>
+    <div class="message-item ${esc(m.status)}">
+      <div class="meta"><span>${esc(m.channel || 'whatsapp')} · ${esc(m.to)} · ${esc(m.type || 'general')}</span><span>${new Date(m.sentAt).toLocaleString()}</span></div>
+      <div class="body">${esc(m.message)}</div>
     </div>`).join('') || '<p class="empty-state">No messages yet</p>'}</div>`;
 }
 
@@ -752,9 +753,9 @@ function automationsHtml(automations, templates) {
       <table><thead><tr><th>Event</th><th>Channels</th><th>Template</th><th>Status</th><th></th></tr></thead>
       <tbody>${automations.map((a) => {
         const tpl = templates.find((t) => t.id === a.templateId);
-        return `<tr><td>${a.event}</td><td>${a.channels.join(', ')}</td><td>${tpl?.name || '—'}</td><td><span class="badge ${a.enabled ? 'badge-green' : 'badge-gray'}">${a.enabled ? 'Active' : 'Off'}</span></td>
-        <td><button class="btn btn-sm btn-secondary" data-action="toggle-auto" data-id="${a.id}">${a.enabled ? 'Disable' : 'Enable'}</button>
-        <button class="btn btn-sm btn-secondary" data-action="edit-auto" data-id="${a.id}">Edit</button></td></tr>`;
+        return `<tr><td>${esc(a.event)}</td><td>${a.channels.join(', ')}</td><td>${esc(tpl?.name || '—')}</td><td><span class="badge ${a.enabled ? 'badge-green' : 'badge-gray'}">${a.enabled ? 'Active' : 'Off'}</span></td>
+        <td><button class="btn btn-sm btn-secondary" data-action="toggle-auto" data-id="${esc(a.id)}">${a.enabled ? 'Disable' : 'Enable'}</button>
+        <button class="btn btn-sm btn-secondary" data-action="edit-auto" data-id="${esc(a.id)}">Edit</button></td></tr>`;
       }).join('')}</tbody></table>
     </div></div>`;
 }
@@ -762,9 +763,9 @@ function automationsHtml(automations, templates) {
 function templatesHtml(templates) {
   return `<div class="toolbar"><button class="btn btn-primary" data-action="add-tpl">+ Template</button></div>
   <div class="panel"><div class="panel-header"><h3>Message Templates</h3></div><div class="panel-body">
-    ${templates.map((t) => `<div class="message-item"><div class="meta"><span>${t.name} · ${t.channel}</span><span>${t.event}</span>
-      <button class="btn btn-sm btn-secondary" data-action="edit-tpl" data-id="${t.id}">Edit</button></div>
-      <div class="body">${t.body}</div></div>`).join('')}
+    ${templates.map((t) => `<div class="message-item"><div class="meta"><span>${esc(t.name)} · ${esc(t.channel)}</span><span>${esc(t.event)}</span>
+      <button class="btn btn-sm btn-secondary" data-action="edit-tpl" data-id="${esc(t.id)}">Edit</button></div>
+      <div class="body">${esc(t.body)}</div></div>`).join('')}
   </div></div>`;
 }
 
@@ -772,7 +773,7 @@ function channelsHtml() {
   const s = getCommSettings();
   return `<div class="panel"><div class="panel-header"><h3>Channel Configuration</h3></div><div class="panel-body">
     <div class="form-grid">
-      <div class="form-group"><label>Email from</label><input id="commEmailFrom" value="${s.emailFrom}"></div>
+      <div class="form-group"><label>Email from</label><input id="commEmailFrom" value="${esc(s.emailFrom)}"></div>
       <div class="form-group full"><label><input type="checkbox" id="commEmail" ${s.emailEnabled ? 'checked' : ''}> Email enabled</label></div>
       <div class="form-group full"><label><input type="checkbox" id="commSms" ${s.smsEnabled ? 'checked' : ''}> SMS enabled</label></div>
       <div class="form-group full"><label><input type="checkbox" id="commPush" ${s.pushEnabled ? 'checked' : ''}> Push enabled</label></div>
@@ -828,10 +829,10 @@ function renderMarketplace() {
   return `
     <div class="vision-banner"><h3>Extensions &amp; Partners</h3><p>Connect the tools you already use for teaching. Tutorsala handles operations — scheduling, communication, and parent updates — not course content.</p></div>
     <div class="stats-grid">
-      <div class="stat-card"><div class="label">Integrations</div><div class="value">${stats.integrations}</div></div>
-      <div class="stat-card"><div class="label">Ops templates</div><div class="value">${stats.templates}</div></div>
-      <div class="stat-card"><div class="label">Partner services</div><div class="value">${stats.partners}</div></div>
-      <div class="stat-card"><div class="label">Active</div><div class="value">${stats.installed}</div></div>
+      <div class="stat-card"><div class="label">Integrations</div><div class="value">${esc(stats.integrations)}</div></div>
+      <div class="stat-card"><div class="label">Ops templates</div><div class="value">${esc(stats.templates)}</div></div>
+      <div class="stat-card"><div class="label">Partner services</div><div class="value">${esc(stats.partners)}</div></div>
+      <div class="stat-card"><div class="label">Active</div><div class="value">${esc(stats.installed)}</div></div>
     </div>
     <div class="report-tabs" style="margin-top:16px">
       <button class="report-tab active" data-mp-tab="browse">Browse</button>
@@ -858,7 +859,7 @@ function mpBrowseHtml() {
 function mpInstalledHtml() {
   const items = getInstalledMarketplaceItems();
   return `
-    <div class="panel" style="margin-top:12px"><div class="panel-header"><h3>Connected in your academy (${items.length})</h3></div>
+    <div class="panel" style="margin-top:12px"><div class="panel-header"><h3>Connected in your academy (${esc(items.length)})</h3></div>
     <div class="panel-body">${items.length ? `<div class="card-grid">${marketplaceCards(items, true)}</div>` : '<p class="empty-state">Nothing connected yet — browse integrations and ops templates to extend your workflow.</p>'}</div></div>`;
 }
 
@@ -869,10 +870,10 @@ function mpConnectionsHtml() {
     <div class="panel-body">
       <p style="font-size:0.84rem;color:var(--text-muted);margin-bottom:14px">Link the apps you already use for teaching and parent communication. Tutorsala handles scheduling and ops — not lesson content.</p>
       <div class="card-grid">${sdks.map((s) => `
-        <div class="batch-card"><h4>${s.name}</h4><div class="meta">v${s.version}</div>
-        <p style="font-size:0.78rem;margin:8px 0;color:var(--text-muted)">${s.command}</p>
+        <div class="batch-card"><h4>${esc(s.name)}</h4><div class="meta">v${esc(s.version)}</div>
+        <p style="font-size:0.78rem;margin:8px 0;color:var(--text-muted)">${esc(s.command)}</p>
         <span class="badge ${s.installed ? 'badge-green' : 'badge-gray'}">${s.installed ? 'Connected' : 'Not connected'}</span>
-        <button class="btn btn-sm btn-secondary" style="margin-top:8px" data-action="toggle-sdk" data-id="${s.id}">${s.installed ? 'Disconnect' : 'Connect'}</button>
+        <button class="btn btn-sm btn-secondary" style="margin-top:8px" data-action="toggle-sdk" data-id="${esc(s.id)}">${s.installed ? 'Disconnect' : 'Connect'}</button>
         </div>`).join('')}</div>
       <p style="font-size:0.82rem;color:var(--text-muted);margin-top:14px">OpenAI and WhatsApp credentials are configured in <strong>Settings</strong>.</p>
     </div></div>`;
@@ -887,15 +888,15 @@ function mpTabContent(tab) {
 function marketplaceCards(items, showUninstall = false) {
   return items.map((i) => `
     <div class="batch-card">
-      <div class="meta">${getMarketplaceTypeLabel(i.type)} · ★ ${i.rating} · ${i.installs} academies</div>
-      <h4>${i.title}</h4>
-      <p style="font-size:0.82rem;color:var(--text-muted);margin:8px 0">${i.description}</p>
-      <div class="meta">by ${i.author} · ${i.price}${i.contact ? ` · ${i.contact}` : ''}</div>
+      <div class="meta">${getMarketplaceTypeLabel(i.type)} · ★ ${esc(i.rating)} · ${esc(i.installs)} academies</div>
+      <h4>${esc(i.title)}</h4>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin:8px 0">${esc(i.description)}</p>
+      <div class="meta">by ${esc(i.author)} · ${esc(i.price)}${i.contact ? ` · ${i.contact}` : ''}</div>
       ${i.installed ? `<p style="font-size:0.78rem;color:var(--accent);margin-top:8px">${getMarketplaceInstallHint(i)}</p>` : ''}
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        ${i.installed && showUninstall ? `<button class="btn btn-sm btn-secondary" data-action="uninstall-mp" data-id="${i.id}">Disconnect</button>` : !i.installed ? `<button class="btn btn-sm btn-primary" data-action="install-mp" data-id="${i.id}">${getMarketplaceActionLabel(i)}</button>` : `<span class="badge badge-green">${getMarketplaceActionLabel(i, true)}</span>`}
-        <button class="btn btn-sm btn-secondary" data-action="view-mp" data-id="${i.id}">Details</button>
-        ${i.type !== 'partner' ? `<button class="btn btn-sm btn-secondary" data-action="rate-mp" data-id="${i.id}">Rate</button>` : ''}
+        ${i.installed && showUninstall ? `<button class="btn btn-sm btn-secondary" data-action="uninstall-mp" data-id="${esc(i.id)}">Disconnect</button>` : !i.installed ? `<button class="btn btn-sm btn-primary" data-action="install-mp" data-id="${esc(i.id)}">${getMarketplaceActionLabel(i)}</button>` : `<span class="badge badge-green">${getMarketplaceActionLabel(i, true)}</span>`}
+        <button class="btn btn-sm btn-secondary" data-action="view-mp" data-id="${esc(i.id)}">Details</button>
+        ${i.type !== 'partner' ? `<button class="btn btn-sm btn-secondary" data-action="rate-mp" data-id="${esc(i.id)}">Rate</button>` : ''}
       </div>
     </div>`).join('') || '<p class="empty-state">No items match your search.</p>';
 }
@@ -908,7 +909,7 @@ function renderPublicSite() {
     <div class="report-tabs" style="margin-top:16px">
       <button class="report-tab active" data-site-tab="preview">Live preview</button>
       <button class="report-tab" data-site-tab="settings">Page settings</button>
-      <button class="report-tab" data-site-tab="inquiries">Web inquiries (${inquiries.length})</button>
+      <button class="report-tab" data-site-tab="inquiries">Web inquiries (${esc(inquiries.length)})</button>
     </div>
     <div id="siteContent">${sitePreviewHtml(site)}</div>`;
 }
@@ -919,9 +920,9 @@ function sitePreviewHtml(site) {
       <div class="panel">
         <div class="panel-header"><h3>Landing Page Preview</h3></div>
         <div class="panel-body" style="text-align:center;padding:40px 24px;background:var(--surface-2);border-radius:var(--radius-sm)">
-          <h2 style="font-family:var(--font-display);font-size:2rem;margin-bottom:12px">${site.headline}</h2>
-          <p style="color:var(--text-muted);margin-bottom:20px">${site.subheadline || ''}</p>
-          <button class="btn btn-primary" type="button">${site.ctaText || 'Request Demo'}</button>
+          <h2 style="font-family:var(--font-display);font-size:2rem;margin-bottom:12px">${esc(site.headline)}</h2>
+          <p style="color:var(--text-muted);margin-bottom:20px">${esc(site.subheadline || '')}</p>
+          <button class="btn btn-primary" type="button">${esc(site.ctaText || 'Request Demo')}</button>
         </div>
       </div>
       <div class="panel">
@@ -946,9 +947,9 @@ function siteSettingsHtml(site) {
     <div class="panel" style="margin-top:12px"><div class="panel-header"><h3>Page settings</h3></div>
     <div class="panel-body">
       <div class="form-grid">
-        <div class="form-group full"><label>Headline</label><input id="siteHeadline" value="${site.headline}"></div>
-        <div class="form-group full"><label>Subheadline</label><input id="siteSubheadline" value="${site.subheadline || ''}"></div>
-        <div class="form-group"><label>Button text</label><input id="siteCta" value="${site.ctaText || ''}"></div>
+        <div class="form-group full"><label>Headline</label><input id="siteHeadline" value="${esc(site.headline)}"></div>
+        <div class="form-group full"><label>Subheadline</label><input id="siteSubheadline" value="${esc(site.subheadline || '')}"></div>
+        <div class="form-group"><label>Button text</label><input id="siteCta" value="${esc(site.ctaText || '')}"></div>
         <div class="form-group full"><label><input type="checkbox" id="siteCapture" ${site.captureEnabled ? 'checked' : ''}> Enable inquiry form → CRM</label></div>
       </div>
       <button class="btn btn-primary" style="margin-top:12px" data-action="save-site">Save settings</button>
@@ -962,8 +963,8 @@ function siteInquiriesHtml() {
     <div class="panel-body table-wrap">
       <table><thead><tr><th>Name</th><th>Grade</th><th>Course</th><th>Phone</th><th>Stage</th><th>Date</th></tr></thead>
       <tbody>${inquiries.length ? inquiries.map((l) => `<tr>
-        <td><strong>${l.name}</strong></td><td>${l.grade || '—'}</td><td>${l.course || '—'}</td><td>${l.phone}</td>
-        <td><span class="badge badge-gray">${l.stage}</span></td><td>${l.createdAt}</td></tr>`).join('') : '<tr><td colspan="6" class="empty-state">No website inquiries yet</td></tr>'}
+        <td><strong>${esc(l.name)}</strong></td><td>${esc(l.grade || '—')}</td><td>${esc(l.course || '—')}</td><td>${esc(l.phone)}</td>
+        <td><span class="badge badge-gray">${esc(l.stage)}</span></td><td>${esc(l.createdAt)}</td></tr>`).join('') : '<tr><td colspan="6" class="empty-state">No website inquiries yet</td></tr>'}
       </tbody></table>
       <p style="font-size:0.82rem;color:var(--text-muted);margin-top:12px">Open Education CRM to advance leads through demo → enrollment.</p>
     </div></div>`;
@@ -989,7 +990,7 @@ function bindStudentSuccessManageActions({ showModal, closeModal, toast, refresh
     showModal({
       title: 'Add Teacher Feedback',
       body: `<div class="form-grid">
-        <div class="form-group"><label>Teacher</label><select id="fbTeacher">${teachers.map((t) => `<option value="${t.id}">${t.name}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Teacher</label><select id="fbTeacher">${teachers.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('')}</select></div>
         <div class="form-group"><label>Type</label><select id="fbType"><option value="positive">Positive</option><option value="improvement">Improvement</option></select></div>
         <div class="form-group full"><label>Message</label><textarea id="fbMsg" rows="4"></textarea></div>
       </div>`,
@@ -1009,7 +1010,7 @@ function bindStudentSuccessManageActions({ showModal, closeModal, toast, refresh
       title: 'New Assignment',
       body: `<div class="form-grid">
         <div class="form-group full"><label>Title</label><input id="hwTitle"></div>
-        <div class="form-group"><label>Batch</label><select id="hwBatch">${batches.map((b) => `<option value="${b.id}">${b.name}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Batch</label><select id="hwBatch">${batches.map((b) => `<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')}</select></div>
         <div class="form-group"><label>Subject</label><input id="hwSubject"></div>
         <div class="form-group"><label>Due date</label><input type="date" id="hwDue"></div>
         <div class="form-group full"><label>Description</label><textarea id="hwDesc"></textarea></div>
@@ -1239,7 +1240,7 @@ function bindTutorHubEvents({ showModal, closeModal, toast, refresh }) {
       body: `<div class="form-grid">
         <div class="form-group"><label>Topic</label><input id="lpTopic"></div>
         <div class="form-group"><label>Date</label><input type="date" id="lpDate"></div>
-        <div class="form-group"><label>Batch</label><select id="lpBatch">${batches.map((b) => `<option value="${b.id}">${b.name}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Batch</label><select id="lpBatch">${batches.map((b) => `<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')}</select></div>
         <div class="form-group full"><label>Objectives</label><textarea id="lpObj"></textarea></div>
         <div class="form-group full"><label>Activities</label><textarea id="lpAct"></textarea></div>
         <div class="form-group full"><label>Homework</label><textarea id="lpHw"></textarea></div>
@@ -1270,11 +1271,11 @@ function bindTutorHubEvents({ showModal, closeModal, toast, refresh }) {
         title: lp.topic,
         wide: true,
         body: `<div style="font-size:0.88rem;line-height:1.6">
-          <p><strong>Date:</strong> ${lp.date} · <strong>Batch:</strong> ${getBatch(lp.batchId)?.name}</p>
-          <p><strong>Objectives:</strong><br>${lp.objectives || '—'}</p>
+          <p><strong>Date:</strong> ${esc(lp.date)} · <strong>Batch:</strong> ${esc(getBatch(lp.batchId)?.name)}</p>
+          <p><strong>Objectives:</strong><br>${esc(lp.objectives || '—')}</p>
           <p><strong>Activities:</strong><br>${(lp.activities || '—').replace(/\n/g, '<br>')}</p>
-          <p><strong>Homework:</strong><br>${lp.homework || '—'}</p>
-          <p><strong>Quiz:</strong><br>${lp.quiz || '—'}</p>
+          <p><strong>Homework:</strong><br>${esc(lp.homework || '—')}</p>
+          <p><strong>Quiz:</strong><br>${esc(lp.quiz || '—')}</p>
         </div>`,
         footer: `<button class="btn btn-secondary" data-modal-cancel>Close</button>`,
       });
@@ -1527,9 +1528,9 @@ function bindCommHubEvents({ showModal, closeModal, toast, refresh }) {
       showModal({
         title: 'Edit Template',
         body: `<div class="form-grid">
-          <div class="form-group"><label>Name</label><input id="tplName" value="${tpl.name}"></div>
+          <div class="form-group"><label>Name</label><input id="tplName" value="${esc(tpl.name)}"></div>
           <div class="form-group"><label>Channel</label><select id="tplChannel">${['whatsapp', 'email', 'sms', 'push'].map((c) => `<option ${tpl.channel === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
-          <div class="form-group full"><label>Body</label><textarea id="tplBody" rows="4">${tpl.body}</textarea></div>
+          <div class="form-group full"><label>Body</label><textarea id="tplBody" rows="4">${esc(tpl.body)}</textarea></div>
         </div>`,
         footer: `<button class="btn btn-secondary" data-modal-cancel>Cancel</button><button class="btn btn-primary" id="saveTpl">Save</button>`,
         onMount: () => {
@@ -1548,7 +1549,7 @@ function bindCommHubEvents({ showModal, closeModal, toast, refresh }) {
       title: 'New Automation',
       body: `<div class="form-grid">
         <div class="form-group"><label>Event</label><select id="autoEvent">${Object.entries(COMM_EVENTS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div>
-        <div class="form-group"><label>Template</label><select id="autoTpl">${templates.map((t) => `<option value="${t.id}">${t.name}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Template</label><select id="autoTpl">${templates.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('')}</select></div>
         <div class="form-group full"><label>Channels (comma-separated)</label><input id="autoChannels" value="whatsapp, email"></div>
       </div>`,
       footer: `<button class="btn btn-secondary" data-modal-cancel>Cancel</button><button class="btn btn-primary" id="saveAuto">Save</button>`,
@@ -1673,14 +1674,14 @@ function bindMarketplaceEvents({ showModal, closeModal, toast, refresh, navigate
         title: item.title,
         wide: true,
         body: `<div style="font-size:0.88rem;line-height:1.6">
-          <p><strong>Type:</strong> ${getMarketplaceTypeLabel(item.type)} · <strong>Price:</strong> ${item.price}</p>
-          <p><strong>Provider:</strong> ${item.author} · <strong>Rating:</strong> ★ ${item.rating} · <strong>Used by:</strong> ${item.installs} academies</p>
-          <p style="margin-top:12px">${item.description}</p>
-          ${item.contact ? `<p style="margin-top:10px"><strong>Contact:</strong> ${item.contact}</p>` : ''}
+          <p><strong>Type:</strong> ${getMarketplaceTypeLabel(item.type)} · <strong>Price:</strong> ${esc(item.price)}</p>
+          <p><strong>Provider:</strong> ${esc(item.author)} · <strong>Rating:</strong> ★ ${esc(item.rating)} · <strong>Used by:</strong> ${esc(item.installs)} academies</p>
+          <p style="margin-top:12px">${esc(item.description)}</p>
+          ${item.contact ? `<p style="margin-top:10px"><strong>Contact:</strong> ${esc(item.contact)}</p>` : ''}
           <p style="margin-top:12px;font-size:0.82rem;color:var(--text-muted)">${hint}</p>
           ${item.installed ? `<p style="margin-top:12px"><span class="badge badge-green">Connected${item.installedAt ? ' since ' + item.installedAt : ''}</span></p>` : ''}
         </div>`,
-        footer: `<button class="btn btn-secondary" data-modal-cancel>Close</button>${item.type === 'partner' && item.contact ? `<a class="btn btn-secondary" href="mailto:${item.contact}">Email partner</a>` : ''}${!item.installed ? `<button class="btn btn-primary" id="modalInstallMp">${getMarketplaceActionLabel(item)}</button>` : (item.linkView || item.sdkId ? `<button class="btn btn-primary" id="modalGoMp">Open ${item.linkView === 'commHub' ? 'Communication Hub' : item.linkView === 'schedule' ? 'Class Schedule' : 'Connections'}</button>` : '')}`,
+        footer: `<button class="btn btn-secondary" data-modal-cancel>Close</button>${item.type === 'partner' && item.contact ? `<a class="btn btn-secondary" href="mailto:${esc(item.contact)}">Email partner</a>` : ''}${!item.installed ? `<button class="btn btn-primary" id="modalInstallMp">${getMarketplaceActionLabel(item)}</button>` : (item.linkView || item.sdkId ? `<button class="btn btn-primary" id="modalGoMp">Open ${item.linkView === 'commHub' ? 'Communication Hub' : item.linkView === 'schedule' ? 'Class Schedule' : 'Connections'}</button>` : '')}`,
         onMount: () => {
           document.getElementById('modalInstallMp')?.addEventListener('click', () => {
             installMarketplaceItem(item.id);

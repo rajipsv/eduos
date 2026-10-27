@@ -1,3 +1,4 @@
+import { esc, safeUrl } from './html.js';
 import {
   login,
   registerCenter,
@@ -59,9 +60,9 @@ export function renderLoginChooserHtml() {
     <p class="auth-modal-lead">Choose your portal — each role gets a focused workspace on Tutorsala.</p>
     <div class="auth-grid auth-grid-modal">
       ${LOGIN_PORTALS.map((p) => `
-        <button type="button" class="auth-tile" data-auth-portal="${p.id}">
-          <strong>${p.title}</strong>
-          <span>${p.subtitle}</span>
+        <button type="button" class="auth-tile" data-auth-portal="${esc(p.id)}">
+          <strong>${esc(p.title)}</strong>
+          <span>${esc(p.subtitle)}</span>
         </button>`).join('')}
     </div>
     <div class="auth-modal-footer">
@@ -161,7 +162,7 @@ function renderResetPasswordInvalidHtml(message) {
 
 function renderResetPasswordFormHtml(token, info) {
   return `
-    <p class="auth-sub">Resetting password for <strong>${info.email}</strong></p>
+    <p class="auth-sub">Resetting password for <strong>${esc(info.email)}</strong></p>
     <div class="form-grid" style="margin-top:16px">
       <div class="form-group full"><label>New password</label><input id="resetPassword" type="password" autocomplete="new-password" minlength="8"></div>
       <div class="form-group full"><label>Confirm password</label><input id="resetPasswordConfirm" type="password" autocomplete="new-password" minlength="8"></div>
@@ -175,7 +176,7 @@ function renderLoginPage(portal) {
     <div class="auth-shell auth-shell-form">
       <div class="auth-card">
         <button class="btn btn-ghost auth-back" type="button" data-auth-mode="home">← Back to home</button>
-        <h2 style="margin-top:16px;font-family:var(--font-display)">${meta.title}</h2>
+        <h2 style="margin-top:16px;font-family:var(--font-display)">${esc(meta.title)}</h2>
         ${renderLoginFormHtml(portal)}
       </div>
     </div>`;
@@ -215,8 +216,8 @@ function bindForgotPasswordSubmit(toast, { closeModal, onModeChange, compact = f
     if (resultEl) {
       resultEl.classList.remove('hidden');
       resultEl.innerHTML = `
-        <p>${result.message}</p>
-        ${result.demoResetUrl ? `<p class="auth-demo-reset"><strong>Demo reset link:</strong> <a href="${result.demoResetUrl}">${result.demoResetUrl}</a></p><p style="font-size:0.82rem;color:var(--text-muted);margin:8px 0 0">In production this link is emailed only. It is also logged under Communication Hub when email is simulated.</p>` : ''}`;
+        <p>${esc(result.message)}</p>
+        ${result.demoResetUrl ? `<p class="auth-demo-reset"><strong>Demo reset link:</strong> <a href="${safeUrl(result.demoResetUrl)}">${esc(result.demoResetUrl)}</a></p><p style="font-size:0.82rem;color:var(--text-muted);margin:8px 0 0">In production this link is emailed only. It is also logged under Communication Hub when email is simulated.</p>` : ''}`;
     }
 
     toast(result.message, 'success');

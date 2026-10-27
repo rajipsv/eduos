@@ -1,3 +1,4 @@
+import { esc } from './html.js';
 
 export const LANDING_FEATURES = [
   {
@@ -196,8 +197,8 @@ export function renderLandingHero() {
           <div class="landing-stats">
             ${LANDING_STATS.map((s) => `
               <div class="landing-stat">
-                <span class="landing-stat-value">${s.value}</span>
-                <span class="landing-stat-label">${s.label}</span>
+                <span class="landing-stat-value">${esc(s.value)}</span>
+                <span class="landing-stat-label">${esc(s.label)}</span>
               </div>`).join('')}
           </div>
         </div>
@@ -230,9 +231,9 @@ export function renderLandingFeatures() {
       <div class="landing-features-grid">
         ${LANDING_FEATURES.map((f) => `
           <article class="landing-feature-card">
-            <span class="landing-feature-icon">${f.icon}</span>
-            <h3>${f.title}</h3>
-            <p>${f.desc}</p>
+            <span class="landing-feature-icon">${esc(f.icon)}</span>
+            <h3>${esc(f.title)}</h3>
+            <p>${esc(f.desc)}</p>
           </article>`).join('')}
       </div>
     </section>`;
@@ -251,12 +252,12 @@ export function renderLandingPricing() {
         ${LANDING_PRICING_TIERS.map((tier) => `
           <article class="landing-pricing-card${tier.featured ? ' landing-pricing-card-featured' : ''}">
             ${tier.featured ? '<span class="landing-pricing-badge">Most popular</span>' : ''}
-            <h3>${tier.name}</h3>
+            <h3>${esc(tier.name)}</h3>
             <div class="landing-pricing-price">
-              <span class="landing-pricing-amount">${tier.price}</span>
-              <span class="landing-pricing-period">${tier.period}</span>
+              <span class="landing-pricing-amount">${esc(tier.price)}</span>
+              <span class="landing-pricing-period">${esc(tier.period)}</span>
             </div>
-            <p class="landing-pricing-note">${tier.note}</p>
+            <p class="landing-pricing-note">${esc(tier.note)}</p>
             <ul class="landing-pricing-features">
               ${tier.features.map((f) => `<li>${f}</li>`).join('')}
             </ul>
@@ -284,11 +285,11 @@ export function renderLandingTestimonials() {
       <div class="landing-testimonials-grid">
         ${LANDING_TESTIMONIALS.map((t) => `
           <blockquote class="landing-testimonial">
-            <div class="landing-testimonial-stars" aria-label="${t.rating} out of 5 stars">${stars(t.rating)}</div>
-            <p>"${t.quote}"</p>
+            <div class="landing-testimonial-stars" aria-label="${esc(t.rating)} out of 5 stars">${stars(t.rating)}</div>
+            <p>"${esc(t.quote)}"</p>
             <footer>
-              <strong>${t.name}</strong>
-              <span>${t.role}${t.city ? ` · ${t.city}` : ''}</span>
+              <strong>${esc(t.name)}</strong>
+              <span>${esc(t.role)}${t.city ? ` · ${t.city}` : ''}</span>
             </footer>
           </blockquote>`).join('')}
       </div>
