@@ -106,7 +106,6 @@ function migrateBatch(batch) {
     startTime: '16:00',
     endTime: '18:00',
     startDate: new Date().toISOString().slice(0, 10),
-    topics: [],
     sessions: [],
     teacherId: null,
     meetingPlatform: 'google-meet',

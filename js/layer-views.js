@@ -32,6 +32,8 @@ import { formatTime, dayPickerHtml, bindDayPicker, getSelectedDays } from './sch
 import { getRecentWebInquiries } from './crm.js';
 import { academyBanner } from './academy.js';
 import { getEffectiveRole, getLinkedTeacherId } from './auth.js';
+import { getStudentFeeSummary, canParentReportPayment, parentInvoiceStatusLabel, reportParentPayment } from './billing.js';
+import { getBillingSettings } from './store.js';
 
 function canManageStudentSuccess() {
   const role = getEffectiveRole();

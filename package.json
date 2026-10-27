@@ -8,12 +8,25 @@
     "dev": "node server/index.js",
     "migrate": "node server/migrate.js",
     "seed:demo": "node server/seed-demo.mjs",
-    "serve:static": "node serve.js"
+    "serve:static": "node serve.js",
+    "lint": "eslint .",
+    "test": "node --test \"test/**/*.test.js\"",
+    "format": "prettier --write \"server/**/*.{js,mjs}\" \"api/**/*.js\" \"test/**/*.js\""
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "pg": "^8.13.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-plugin-no-unsanitized": "^4.1.5",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

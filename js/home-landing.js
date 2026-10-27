@@ -203,7 +203,7 @@ export function renderLandingHero() {
         </div>
         <div class="landing-hero-visual" aria-hidden="true">
           <div class="landing-hero-card landing-hero-card-1">
-            <span class="landing-hero-card-label">Today\'s decisions</span>
+            <span class="landing-hero-card-label">Today's decisions</span>
             <p>3 tutors absent · 12 fee follow-ups · Open Batch B for Physics</p>
           </div>
           <div class="landing-hero-card landing-hero-card-2">
