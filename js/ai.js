@@ -1,3 +1,4 @@
+import { apiFetch } from './api-client.js';
 import {
   getBatches,
   getStudents,
@@ -5,9 +6,9 @@ import {
   getBatch,
   getStudentAttendanceStats,
   getStudentTestStats,
-  getTests,
   getAttendanceHistory,
   getState,
+  isDatabaseMode,
 } from './store.js';
 
 function analyzeAttendance() {
@@ -167,76 +168,27 @@ ${settings.tutorName}`;
 }
 
 export async function chatWithAI(userMessage, role = 'owner') {
-  const settings = getState().settings;
   const lower = userMessage.toLowerCase();
+  let reply = null;
 
-  if (settings.openaiApiKey) {
+  // With the server, GPT runs there using the center's (or platform's) OpenAI key.
+  if (isDatabaseMode() && getState().integrationStatus?.ai) {
     try {
-      const context = buildContextSummary(role);
-      const systemPrompt = getRoleSystemPrompt(role);
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const res = await apiFetch('/api/ai/chat', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${settings.openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: `${systemPrompt}\n\nCurrent data summary:\n${context}` },
-            { role: 'user', content: userMessage },
-          ],
-          max_tokens: 600,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage, role }),
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content || 'No response generated.';
-        const { saveAIConversation } = await import('./platform.js');
-        saveAIConversation(role, userMessage, reply);
-        return reply;
-      }
+      if (res.ok) reply = (await res.json()).reply || null;
     } catch {
-      // fall through to local AI
+      // fall through to the rule-based assistant
     }
   }
 
-  const reply = await localAIResponse(userMessage, lower, role);
+  if (!reply) reply = await localAIResponse(userMessage, lower, role);
   const { saveAIConversation } = await import('./platform.js');
   saveAIConversation(role, userMessage, reply);
   return reply;
-}
-
-function getRoleSystemPrompt(role) {
-  const prompts = {
-    owner: 'You are an AI Academy Manager for Tutorsala. Help owners with operations, decisions, capacity, leads, and business health. Be concise and actionable.',
-    tutor: 'You are an AI Lesson Assistant for Tutorsala tutors. Help generate lesson plans, quizzes, homework, and teaching strategies.',
-    parent: 'You are an AI Parent Assistant for Tutorsala. Help parents understand their child\'s progress and how to support learning at home.',
-    student: 'You are an AI Tutor for students on Tutorsala. Explain concepts clearly with examples. Be encouraging and age-appropriate.',
-  };
-  return prompts[role] || prompts.owner;
-}
-
-function buildContextSummary(role) {
-  const batches = getBatches();
-  const students = getStudents();
-  const tests = getTests();
-  const insights = generateInsights().slice(0, 5);
-
-  let extra = '';
-  if (role === 'parent' && students[0]) {
-    extra = `\nSample student: ${summarizeStudent(students[0])}`;
-  }
-  if (role === 'tutor') {
-    extra = `\nBatches: ${batches.map((b) => b.name).join(', ')}`;
-  }
-
-  return `Tutor: ${getState().settings.tutorName}
-Batches: ${batches.length}
-Students: ${students.length}
-Tests recorded: ${tests.length}
-Key insights: ${insights.map((i) => i.text).join('; ') || 'None yet'}${extra}`;
 }
 
 async function localAIResponse(message, lower, role = 'owner') {

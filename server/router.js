@@ -16,6 +16,9 @@ import { buildBootstrap } from './services/bootstrap.js';
 import { applySync } from './services/sync.js';
 import { createUser, updateUser } from './services/users.js';
 import { listPublicCenters, getHealthPayload } from './services/public.js';
+import { saveSecrets, aiChat, sendWhatsApp } from './services/integrations.js';
+import { createApiKey, revokeApiKey } from './services/api-keys.js';
+import { createInquiry } from './services/inquiries.js';
 
 /** Signed-in routes: fn(user, req, ...params) returns { status, body }. */
 function signedIn(fn) {
@@ -35,7 +38,7 @@ const plain = (fn) => async (_req, res) => {
 };
 
 // [method, path, handler]. ":name" segments are passed to the handler as extra arguments.
-const ROUTES = [
+export const ROUTES = [
   ['GET', '/api/health', async (_req, res) => res.status(200).json(await getHealthPayload())],
 
   ['POST', '/api/auth/login', handleLogin],
@@ -51,8 +54,14 @@ const ROUTES = [
   ['POST', '/api/sync', signedIn((user, req) => applySync(user, req, req.body))],
   ['POST', '/api/users', signedIn(createUser)],
   ['PATCH', '/api/users/:id', signedIn(updateUser)],
+  ['PUT', '/api/settings/secrets', signedIn(saveSecrets)],
+  ['POST', '/api/ai/chat', signedIn(aiChat)],
+  ['POST', '/api/whatsapp/send', signedIn(sendWhatsApp)],
+  ['POST', '/api/api-keys', signedIn(createApiKey)],
+  ['DELETE', '/api/api-keys/:id', signedIn(revokeApiKey)],
 
   ['GET', '/api/public/centers', plain(listPublicCenters)],
+  ['POST', '/api/public/centers/:id/inquiries', createInquiry],
 
   ['POST', '/api/leads', handleCreateInboundLead],
   ['GET', '/api/leads', handleListInboundLeads],

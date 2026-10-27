@@ -1,7 +1,7 @@
 // @ts-check
 // Converts the old single-document app state (app_state.data, or the demo data)
 // into centers and per-center record rows.
-import { COLLECTIONS, COLLECTION_NAMES, toRecordMap } from '../../js/sync-rules.js';
+import { COLLECTIONS, COLLECTION_NAMES, SECRET_SETTINGS_FIELDS, toRecordMap } from '../../js/sync-rules.js';
 
 // In the old document these were shared by every center. Each center now gets its own copy.
 const SHARED_COLLECTIONS = new Set([
@@ -9,7 +9,6 @@ const SHARED_COLLECTIONS = new Set([
   'commTemplates',
   'commAutomations',
   'webhooks',
-  'apiKeys',
   'sdkIntegrations',
   'commSettings',
   'publicSite',
@@ -52,7 +51,9 @@ export function blobToCenterRows(blob) {
     // centerSettings is keyed by center id already.
     if (collection === 'centerSettings') {
       for (const [cid, settings] of toRecordMap(collection, value)) {
-        if (centerIds.has(cid)) rows.push({ centerId: cid, collection, id: cid, data: settings });
+        // API keys are not copied: they live encrypted in center_secrets.
+        const clean = Object.fromEntries(Object.entries(settings).filter(([k]) => !SECRET_SETTINGS_FIELDS.includes(k)));
+        if (centerIds.has(cid)) rows.push({ centerId: cid, collection, id: cid, data: clean });
       }
       continue;
     }

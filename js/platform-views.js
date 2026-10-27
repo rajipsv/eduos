@@ -127,6 +127,9 @@ async function fetchInboundLeads() {
   if (res.status === 401 || res.status === 403) {
     throw new Error('Sign in as platform owner to view demo requests.');
   }
+  if (res.status === 503) {
+    throw new Error('Demo requests are stored in the database, which this browser-only demo does not use.');
+  }
   if (!res.ok) throw new Error(`Could not load leads (${res.status})`);
   const payload = await res.json();
   return payload.leads || [];

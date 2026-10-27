@@ -11,6 +11,8 @@ const LISTING_FIELDS = [
   'rating',
   'reviewCount',
   'listingEnabled',
+  'phone',
+  'createdAt',
 ];
 
 /** GET /api/public/centers: listed, active centers with their public fields only. */
@@ -25,6 +27,19 @@ export async function listPublicCenters() {
      WHERE c.status <> 'suspended' AND coalesce(c.data->>'listingEnabled', 'true') <> 'false'
      ORDER BY c.created_at`,
   );
+  const branchRows = await db.query(
+    `SELECT center_id, data FROM records WHERE collection = 'branches' AND deleted_at IS NULL
+       AND coalesce(data->>'status', 'active') <> 'closed'`,
+  );
+  const branchesOf = (id) =>
+    branchRows.rows
+      .filter((b) => b.center_id === id)
+      .map((b) => ({
+        id: b.data.id,
+        name: b.data.name,
+        city: b.data.city || '',
+        isDefault: Boolean(b.data.isDefault),
+      }));
   const centers = r.rows.map((row) => ({
     id: row.id,
     name: row.name,
@@ -32,6 +47,7 @@ export async function listPublicCenters() {
     status: row.status,
     ...Object.fromEntries(LISTING_FIELDS.filter((f) => row.data?.[f] !== undefined).map((f) => [f, row.data[f]])),
     _stats: { teachers: row.teachers, students: row.students, batches: row.batches },
+    _branches: branchesOf(row.id),
   }));
   return { status: 200, body: { centers } };
 }

@@ -7,9 +7,6 @@ const COLUMN_FIELDS = ['id', 'name', 'slug', 'status', 'plan', 'ownerUserId'];
 
 export const DEFAULT_CENTER_SETTINGS = {
   tutorName: 'Your Tutoring Center',
-  whatsappApiKey: '',
-  whatsappPhoneId: '',
-  openaiApiKey: '',
   defaultCountryCode: '+91',
   defaultMeetingPlatform: 'google-meet',
   billing: { invoicePrefix: 'INV', upiId: '', bankDetails: '', defaultDueDay: 5 },

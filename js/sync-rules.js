@@ -33,7 +33,6 @@ export const COLLECTIONS = {
   commTemplates: { shape: 'list' },
   commAutomations: { shape: 'list' },
   webhooks: { shape: 'list' },
-  apiKeys: { shape: 'list' },
   apiEventLog: { shape: 'list' },
   sdkIntegrations: { shape: 'list' },
   tutorAvailability: { shape: 'map' },

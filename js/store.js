@@ -215,6 +215,7 @@ function hydrateServerState(data = {}, extra = {}) {
   ensurePlatformData(s);
   for (const flag of LOCAL_MIGRATION_FLAGS) s[flag] = true;
   if (extra.centerStats) s.centerStats = extra.centerStats;
+  if (extra.publicCenters) s.publicCenters = extra.publicCenters;
   return s;
 }
 
@@ -480,7 +481,8 @@ export async function initStore() {
           dbMode = true;
           setServerAuthEnabled(true);
           // Until sign-in, only the public center listing is loaded.
-          state = hydrateServerState({ centers: await loadPublicCenters() });
+          const listed = await loadPublicCenters();
+          state = hydrateServerState({ centers: listed }, { publicCenters: listed });
           return state;
         }
         storageBackendReason = info.db ? 'auth_not_configured' : info.reason || 'database_not_connected';
@@ -511,11 +513,11 @@ export async function reloadStoreFromServer() {
   if (!dbMode) return getState();
   clearTimeout(syncTimer);
   userDataLoaded = false;
-  const res = await apiFetch('/api/bootstrap');
+  const [res, publicCenters] = await Promise.all([apiFetch('/api/bootstrap'), loadPublicCenters()]);
   if (res.status === 401) return state;
   if (!res.ok) throw new Error(`Could not load data (${res.status})`);
   const payload = await res.json();
-  state = hydrateServerState(payload.data, { centerStats: payload.centerStats });
+  state = hydrateServerState(payload.data, { centerStats: payload.centerStats, publicCenters });
   setSyncedFromState(payload.versions);
   userDataLoaded = true;
   return state;
@@ -527,7 +529,8 @@ export async function clearServerData() {
   clearTimeout(syncTimer);
   synced = new Map();
   userDataLoaded = false;
-  state = hydrateServerState({ centers: await loadPublicCenters() });
+  const listed = await loadPublicCenters();
+  state = hydrateServerState({ centers: listed }, { publicCenters: listed });
 }
 
 /** Creates a login on the server (server mode). Returns the new user or null. */
@@ -545,6 +548,24 @@ export async function createServerUser(fields) {
   state.users = state.users || [];
   if (!state.users.some((u) => u.id === user.id)) state.users.push(user);
   return user;
+}
+
+/** Saves center API keys on the server (encrypted there). '' removes one; undefined keeps it. */
+export async function saveServerSecrets(fields) {
+  const res = await apiFetch('/api/settings/secrets', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(fields),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const reason = body.error === 'encryption_key_missing'
+      ? 'the server has no SECRETS_ENCRYPTION_KEY set'
+      : body.error || `HTTP ${res.status}`;
+    throw new Error(`Could not save API keys: ${reason}`);
+  }
+  state.integrationStatus = body.status;
+  return body.status;
 }
 
 const SERVER_USER_FIELDS = ['name', 'linkedTeacherId', 'linkedStudentId', 'linkedStudentIds', 'parentName'];

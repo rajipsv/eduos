@@ -1,4 +1,5 @@
-import { addMessage, getState } from './store.js';
+import { addMessage, getState, isDatabaseMode } from './store.js';
+import { apiFetch } from './api-client.js';
 
 function formatPhone(phone, countryCode) {
   const digits = String(phone).replace(/\D/g, '');
@@ -61,38 +62,29 @@ export async function sendWhatsApp({ to, message, type = 'general', meta = {} })
     meta,
   };
 
-  if (settings.whatsappApiKey && settings.whatsappPhoneId) {
+  if (isDatabaseMode()) {
+    // The server sends with the center's WhatsApp token; it reports "simulated" when none is set.
     try {
-      const response = await fetch(
-        `https://graph.facebook.com/v19.0/${settings.whatsappPhoneId}/messages`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${settings.whatsappApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: phone,
-            type: 'text',
-            text: { body: message },
-          }),
-        }
-      );
-
-      if (response.ok) {
+      const res = await apiFetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: phone, message }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.status === 'sent') {
         record.status = 'sent';
-        const data = await response.json();
-        record.providerId = data.messages?.[0]?.id;
+        if (data.simulated) record.simulated = true;
+        if (data.providerId) record.providerId = data.providerId;
       } else {
         record.status = 'failed';
-        record.error = await response.text();
+        record.error = data.error || `HTTP ${res.status}`;
       }
     } catch (err) {
       record.status = 'failed';
       record.error = err.message;
     }
   } else {
+    // Browser-only demo: messages are simulated.
     record.status = 'sent';
     record.simulated = true;
   }

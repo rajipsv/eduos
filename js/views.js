@@ -48,6 +48,8 @@ import {
   getBillingSettings,
   saveBillingSettings,
   getStorageLabel,
+  isDatabaseMode,
+  saveServerSecrets,
   getStorageBackendReason,
 } from './store.js';
 import {
@@ -1169,7 +1171,7 @@ function aiChatHtml() {
     </div>
     <div class="grid-2">
       <div class="panel">
-        <div class="panel-header"><h3 id="aiRoleTitle">AI Academy Manager</h3><span class="badge badge-gray" id="aiModeBadge">${getState().settings.openaiApiKey ? 'GPT enabled' : 'Rule-based'}</span></div>
+        <div class="panel-header"><h3 id="aiRoleTitle">AI Academy Manager</h3><span class="badge badge-gray" id="aiModeBadge">${getState().integrationStatus?.ai ? 'GPT enabled' : 'Rule-based'}</span></div>
         <div class="panel-body ai-chat">
           <div class="ai-suggestions" id="aiSuggestions">
             <button data-ai-prompt="Show me today's problems">Today's problems</button>
@@ -1286,8 +1288,14 @@ function renderAdminTeacherProfileSettings() {
     </div>`;
 }
 
+const secretBadge = (saved) =>
+  saved ? '<span class="badge badge-green">Saved</span>' : '<span class="badge badge-gray">Not set</span>';
+
 function renderSettings() {
   const s = getState().settings;
+  // API keys are kept on the server; the browser only learns whether they are set.
+  const secretsEditable = isDatabaseMode();
+  const integ = getState().integrationStatus || {};
   const billing = getBillingSettings();
   const storageLabel = getStorageLabel();
   const onNeon = storageLabel === 'Neon PostgreSQL';
@@ -1310,10 +1318,14 @@ function renderSettings() {
       <div class="panel-header"><h3>WhatsApp Business API</h3></div>
       <div class="panel-body">
         <div class="form-grid">
-          <div class="form-group full"><label>API Access Token</label><input id="setWaKey" type="password" value="${esc(s.whatsappApiKey)}" placeholder="Meta WhatsApp Business API token"></div>
-          <div class="form-group full"><label>Phone Number ID</label><input id="setWaPhoneId" value="${esc(s.whatsappPhoneId)}" placeholder="From Meta Developer Console"></div>
+          ${secretsEditable ? `
+          <div class="form-group full"><label>API Access Token ${secretBadge(integ.centerWhatsapp)}</label><input id="setWaKey" type="password" value="" autocomplete="off" placeholder="${integ.centerWhatsapp ? 'Saved — enter a new token to replace it' : 'Meta WhatsApp Business API token'}"></div>
+          <div class="form-group full"><label>Phone Number ID</label><input id="setWaPhoneId" value="${esc(integ.whatsappPhoneId || '')}" placeholder="From Meta Developer Console"></div>
+          ${integ.centerWhatsapp ? '<div class="form-group full"><label><input type="checkbox" id="setWaRemove"> Remove saved WhatsApp token</label></div>' : ''}` : ''}
         </div>
-        <p style="font-size:0.82rem;color:var(--text-muted);margin-top:10px">Get credentials from Meta Business Suite. Without these, messages are simulated locally.</p>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-top:10px">${secretsEditable
+          ? 'Get credentials from Meta Business Suite. Tokens are stored encrypted on the server and never shown again. Without them, messages are simulated.'
+          : 'WhatsApp sending needs the Tutorsala server. In this browser-only demo, messages are simulated.'}</p>
       </div>
     </div>
     <div class="panel" style="margin-top:20px">
@@ -1331,8 +1343,12 @@ function renderSettings() {
     <div class="panel" style="margin-top:20px">
       <div class="panel-header"><h3>AI Assistant (OpenAI)</h3></div>
       <div class="panel-body">
-        <div class="form-group"><label>OpenAI API Key</label><input id="setOpenAI" type="password" value="${esc(s.openaiApiKey)}" placeholder="sk-..."></div>
-        <p style="font-size:0.82rem;color:var(--text-muted);margin-top:10px">Optional. Enables GPT-powered conversational AI. Works offline with rule-based AI without a key.</p>
+        ${secretsEditable ? `
+        <div class="form-group"><label>OpenAI API Key ${secretBadge(integ.centerOpenAi)}</label><input id="setOpenAI" type="password" value="" autocomplete="off" placeholder="${integ.centerOpenAi ? 'Saved — enter a new key to replace it' : 'sk-...'}"></div>
+        ${integ.centerOpenAi ? '<div class="form-group"><label><input type="checkbox" id="setOpenAIRemove"> Remove saved OpenAI key</label></div>' : ''}` : ''}
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-top:10px">${secretsEditable
+          ? `Optional. Enables GPT answers in the AI assistant; the key is stored encrypted on the server.${integ.ai && !integ.centerOpenAi ? ' GPT is currently provided by Tutorsala.' : ''} Without a key the assistant is rule-based.`
+          : 'GPT answers need the Tutorsala server. The browser-only demo uses the rule-based assistant.'}</p>
         <button class="btn btn-primary" style="margin-top:16px" data-action="save-settings">Save Settings</button>
       </div>
     </div>
@@ -2672,14 +2688,29 @@ function bindSettingsEvents({ toast, refresh }) {
     refresh();
   });
 
-  document.querySelector('[data-action="save-settings"]')?.addEventListener('click', () => {
+  document.querySelector('[data-action="save-settings"]')?.addEventListener('click', async () => {
     updateSettings({
       tutorName: document.getElementById('setTutorName').value.trim(),
       defaultCountryCode: document.getElementById('setCountryCode').value.trim(),
-      whatsappApiKey: document.getElementById('setWaKey').value.trim(),
-      whatsappPhoneId: document.getElementById('setWaPhoneId').value.trim(),
-      openaiApiKey: document.getElementById('setOpenAI').value.trim(),
     });
+    if (isDatabaseMode()) {
+      // API keys go to the server only. Blank fields keep what is saved.
+      const secrets = {};
+      const waKey = document.getElementById('setWaKey')?.value.trim();
+      const openai = document.getElementById('setOpenAI')?.value.trim();
+      if (waKey) secrets.whatsappApiKey = waKey;
+      else if (document.getElementById('setWaRemove')?.checked) secrets.whatsappApiKey = '';
+      if (openai) secrets.openaiApiKey = openai;
+      else if (document.getElementById('setOpenAIRemove')?.checked) secrets.openaiApiKey = '';
+      const phoneId = document.getElementById('setWaPhoneId');
+      if (phoneId) secrets.whatsappPhoneId = phoneId.value.trim();
+      try {
+        await saveServerSecrets(secrets);
+      } catch (err) {
+        toast(err.message, 'error');
+        return;
+      }
+    }
     saveBillingSettings({
       invoicePrefix: document.getElementById('setInvPrefix').value.trim() || 'INV',
       defaultDueDay: Number(document.getElementById('setDueDay').value) || 5,

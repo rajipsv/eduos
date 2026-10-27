@@ -5,6 +5,8 @@ import { getPool } from '../db.js';
 import { getCenter, listCenters } from '../db/centers.js';
 import { loadRecords, countRecordsByCenter } from '../db/records.js';
 import { buildContext, isAdmin, project } from './access.js';
+import { integrationStatus } from './integrations.js';
+import { listApiKeys } from './api-keys.js';
 
 const PUBLIC_USER_FIELDS = [
   'id',
@@ -115,6 +117,14 @@ export async function buildBootstrap(user, req) {
   data.centers = centers;
   data.users = isAdmin(ctx) ? await centerUsers(db, centerId) : [publicUser(user)];
   if (user.role === 'platform_owner' && !data.users.some((u) => u.id === user.id)) data.users.push(publicUser(user));
+
+  const status = await integrationStatus(db, centerId);
+  if (isAdmin(ctx)) {
+    data.integrationStatus = status;
+    data.apiKeys = await listApiKeys(db, centerId);
+  } else {
+    data.integrationStatus = { ai: status.ai, whatsapp: status.whatsapp };
+  }
 
   return { status: 200, body: { centerId, data, versions } };
 }

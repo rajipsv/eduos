@@ -5,7 +5,7 @@
 //   conflict  someone else changed it first; `record` is the current copy (null if deleted)
 //   forbidden this user may not make that change
 //   invalid   the data failed validation
-import { COLLECTIONS, recordKey, writeMode, isOwnRecord } from '../../js/sync-rules.js';
+import { COLLECTIONS, SECRET_SETTINGS_FIELDS, recordKey, writeMode, isOwnRecord } from '../../js/sync-rules.js';
 import { getPool } from '../db.js';
 import { rowToCenter, upsertCenter } from '../db/centers.js';
 import { loadRecords, getRecordsForUpdate, upsertRecord, deleteRecord } from '../db/records.js';
@@ -85,6 +85,8 @@ function applyRecordChange(change, { prev, ctx, centerId, user }) {
   }
 
   next = without(next, ['_projected']);
+  // API keys never live in synced settings; they go through /api/settings/secrets.
+  if (collection === 'centerSettings') next = without(next, SECRET_SETTINGS_FIELDS);
   if (shape === 'list') {
     // The server decides which center a record is in and who created it.
     next.centerId = centerId;

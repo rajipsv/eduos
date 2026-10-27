@@ -18,7 +18,10 @@ function clientIp(req) {
 async function requirePlatformOwner(req, res) {
   const auth = await authenticateRequest(req, res);
   if (!auth.ok) return { ok: false };
-  if (!auth.auth) return { ok: true, user: null }; // local demo without JWT secrets
+  if (!auth.auth) {
+    if (!res.headersSent) res.status(503).json({ error: 'auth_not_configured' });
+    return { ok: false };
+  }
   if (auth.user.role !== 'platform_owner') {
     if (!res.headersSent) res.status(403).json({ error: 'forbidden' });
     return { ok: false };
@@ -28,7 +31,8 @@ async function requirePlatformOwner(req, res) {
 
 export async function handleCreateInboundLead(req, res) {
   try {
-    const rate = checkRateLimit(clientIp(req));
+    if (!process.env.DATABASE_URL) return res.status(503).json({ error: 'database_not_configured' });
+    const rate = await checkRateLimit(clientIp(req));
     if (rate.error) {
       return res.status(rate.status).json({
         error: rate.error,
@@ -59,6 +63,7 @@ export async function handleListInboundLeads(req, res) {
   try {
     const auth = await requirePlatformOwner(req, res);
     if (!auth.ok) return;
+    if (!process.env.DATABASE_URL) return res.status(503).json({ error: 'database_not_configured' });
 
     const leads = await listInboundLeads();
     return res.status(200).json({ ok: true, leads });

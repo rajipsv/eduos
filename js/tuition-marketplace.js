@@ -1,5 +1,6 @@
 import { esc } from './html.js';
-import { getCenters, saveLead, getBranches, getDefaultBranch } from './store.js';
+import { getCenters, saveLead, getBranches, getDefaultBranch, isDatabaseMode } from './store.js';
+import { apiFetch } from './api-client.js';
 import {
   getSession, getCurrentUser, getEffectiveRole,
   getLinkedStudentId, getLinkedStudentIds,
@@ -58,7 +59,9 @@ export function enrichCenterListing(center, rawState) {
 }
 
 export function getListedCenters(rawState) {
-  return getCenters()
+  // Server mode: the public listing of every center (signed-in users only load their own center).
+  const centers = rawState?.publicCenters?.length ? rawState.publicCenters : getCenters();
+  return centers
     .filter((c) => c.status !== 'suspended' && c.listingEnabled !== false)
     .map((c) => enrichCenterListing(c, rawState));
 }
@@ -240,7 +243,7 @@ function inquiryFormHtml(listing, rawState) {
   const role = getEffectiveRole();
   const user = getCurrentUser();
   const session = getSession();
-  const branchField = branchPickerHtml(listing.id);
+  const branchField = branchPickerHtml(listing);
 
   if (role === 'parent') {
     const childIds = getLinkedStudentIds();
@@ -275,10 +278,20 @@ function getStudentsFallback(rawState, session) {
   return (rawState?.students || []).find((s) => s.centerId === session.centerId);
 }
 
-function branchPickerHtml(centerId) {
-  const branches = getBranches(centerId);
+// Server mode: other centers' branches come with their public listing.
+function listingBranches(listing) {
+  return listing._branches || getBranches(listing.id);
+}
+
+function listingDefaultBranch(listing) {
+  if (listing._branches) return listing._branches.find((b) => b.isDefault) || listing._branches[0] || null;
+  return getDefaultBranch(listing.id);
+}
+
+function branchPickerHtml(listing) {
+  const branches = listingBranches(listing);
   if (branches.length <= 1) return '';
-  const defaultId = getDefaultBranch(centerId)?.id || branches[0]?.id;
+  const defaultId = listingDefaultBranch(listing)?.id || branches[0]?.id;
   return `
     <div class="form-group">
       <label>Preferred branch</label>
@@ -304,7 +317,7 @@ function resolveInquiryBranchId(listing, rawState, role) {
     if (child?.branchId) return child.branchId;
   }
 
-  return getDefaultBranch(listing.id)?.id || null;
+  return listingDefaultBranch(listing)?.id || null;
 }
 
 function guestInquiryFormHtml(listing) {
@@ -314,13 +327,14 @@ function guestInquiryFormHtml(listing) {
       <div class="panel-body">
         <p style="font-size:0.88rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px">No sign-in needed. Tell <strong>${esc(listing.name)}</strong> what you are looking for — they will contact you to schedule a demo and complete enrollment.</p>
         <div class="form-grid">
-          ${branchPickerHtml(listing.id)}
+          ${branchPickerHtml(listing)}
           <div class="form-group"><label>Your name</label><input id="tmName" placeholder="Parent or guardian name" autocomplete="name"></div>
           <div class="form-group"><label>Mobile</label><input id="tmPhone" type="tel" placeholder="10-digit mobile" autocomplete="tel"></div>
           <div class="form-group"><label>Email</label><input id="tmEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
           <div class="form-group"><label>Child name</label><input id="tmChildName" placeholder="Student name (optional)"></div>
           <div class="form-group"><label>Grade</label><input id="tmGrade" placeholder="8, 9, 10…"></div>
           <div class="form-group full"><label>Message</label><textarea id="tmMessage" rows="3" placeholder="Programs interested in, preferred timing…"></textarea></div>
+          <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"><label>Website <input id="tmWebsite" tabindex="-1" autocomplete="off"></label></div>
         </div>
         <button class="btn btn-primary" style="margin-top:12px" data-action="tuition-inquire" data-id="${esc(listing.id)}">Send inquiry</button>
         <p style="font-size:0.78rem;color:var(--text-muted);margin-top:12px">Already enrolled? <button type="button" class="btn btn-ghost btn-sm" data-action="tuition-login" data-portal="family" data-id="${esc(listing.id)}">Family sign in</button></p>
@@ -483,7 +497,7 @@ export function bindTuitionMarketplaceEvents(ctx) {
   }
 }
 
-function submitInquiry(listing, rawState, toast, closeModal) {
+async function submitInquiry(listing, rawState, toast, closeModal) {
   const role = getEffectiveRole();
   const name = document.getElementById('tmName')?.value?.trim();
   const email = document.getElementById('tmEmail')?.value?.trim() || '';
@@ -526,6 +540,39 @@ function submitInquiry(listing, rawState, toast, closeModal) {
     } else {
       notes = message;
     }
+  }
+
+  if (isDatabaseMode()) {
+    // The server stores the inquiry and creates the lead in that center's CRM.
+    const childName = role === 'parent' || role === 'student' ? '' : document.getElementById('tmChildName')?.value?.trim() || '';
+    const res = await apiFetch(`/api/public/centers/${encodeURIComponent(listing.id)}/inquiries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        phone,
+        email,
+        childName,
+        grade,
+        message: role === 'parent' ? notes : message,
+        branchId: branchId || '',
+        source,
+        website: document.getElementById('tmWebsite')?.value || '',
+      }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const body = await res?.json().catch(() => ({}));
+      const msg = res?.status === 429
+        ? 'Too many inquiries. Please wait a minute and try again.'
+        : body?.error === 'phone_or_email_required'
+          ? 'Please enter a mobile number or email so the center can reach you'
+          : 'Could not send your inquiry. Please try again.';
+      toast(msg, 'error');
+      return;
+    }
+    closeModal?.();
+    toast(`Inquiry sent to ${listing.name}. The center will contact you soon.`, 'success');
+    return;
   }
 
   saveLead({

@@ -1,4 +1,5 @@
-import { getState, persist, getStudents, getStudent, getTeachers, getTeacher, getBatch, getBatches, getStudentAttendanceStats, getStudentTestStats, getBatchProgress, getTeacherReport, getTests } from './store.js';
+import { apiFetch } from './api-client.js';
+import { isDatabaseMode, getRawState, getState, persist, getStudents, getStudent, getTeachers, getTeacher, getBatch, getBatches, getStudentAttendanceStats, getStudentTestStats, getBatchProgress, getTeacherReport, getTests } from './store.js';
 import { getUpcomingSessions } from './scheduler.js';
 
 function uid(prefix = 'id') {
@@ -18,7 +19,7 @@ export function ensurePlatformData(state) {
   state.marketplace = state.marketplace || defaultMarketplace();
   mergeMarketplaceDefaults(state);
   state.webhooks = state.webhooks || [];
-  state.apiKeys = state.apiKeys || [{ id: 'key_demo', name: 'Demo API Key', key: 'edos_sk_demo_x7k2m9p4q1', scopes: ['read', 'write'], createdAt: new Date().toISOString().slice(0, 10) }];
+  state.apiKeys = state.apiKeys || [];
   state.tutorAvailability = state.tutorAvailability || {};
   state.publicSite = state.publicSite || defaultPublicSite();
   mergePublicSiteDefaults(state);
@@ -570,7 +571,23 @@ export function getApiKeys() {
   return ensurePlatformData(getState()).apiKeys;
 }
 
+/**
+ * Creates a developer API key. With the server it returns a promise of the key, which is
+ * shown once and never stored in the browser state (only its prefix is).
+ */
 export function createApiKey(name, scopes = ['read']) {
+  if (isDatabaseMode()) {
+    return apiFetch('/api/api-keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, scopes }),
+    }).then(async (res) => {
+      if (!res.ok) throw new Error(`Could not create API key (${res.status})`);
+      const { apiKey, key } = await res.json();
+      ensurePlatformData(getRawState()).apiKeys.push(apiKey);
+      return key;
+    });
+  }
   const key = `edos_sk_${Math.random().toString(36).slice(2, 18)}`;
   ensurePlatformData(getState()).apiKeys.push({
     id: uid('key'),
@@ -584,6 +601,11 @@ export function createApiKey(name, scopes = ['read']) {
 }
 
 export function revokeApiKey(id) {
+  if (isDatabaseMode()) {
+    const s = getRawState();
+    s.apiKeys = (s.apiKeys || []).filter((k) => k.id !== id);
+    return apiFetch(`/api/api-keys/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  }
   ensurePlatformData(getState()).apiKeys = getState().apiKeys.filter((k) => k.id !== id);
   persist();
 }
