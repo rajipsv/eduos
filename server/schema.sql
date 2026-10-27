@@ -58,3 +58,12 @@ CREATE TABLE IF NOT EXISTS platform_inbound_leads (
 );
 
 CREATE INDEX IF NOT EXISTS platform_inbound_leads_created_idx ON platform_inbound_leads (created_at DESC);
+
+-- Rate limiting for login / password reset / registration (shared across serverless instances)
+CREATE TABLE IF NOT EXISTS auth_attempts (
+  id BIGSERIAL PRIMARY KEY,
+  key TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS auth_attempts_key_created_idx ON auth_attempts (key, created_at DESC);

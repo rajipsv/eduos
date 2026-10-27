@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { testConnection } from './db.js';
@@ -23,94 +22,90 @@ import {
   runAuthMigrations,
 } from './auth/handlers.js';
 import { isAuthConfigured } from './auth/config.js';
-import { ensureNeonDemoSeeded } from './demo-seed.js';
 import {
   handleCreateInboundLead,
   handleListInboundLeads,
   handleUpdateInboundLead,
 } from './leads-handler.js';
+import { allowedOrigins, missingRequiredEnv } from './env.js';
+import { securityHeaders } from './security-headers.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 dotenv.config({ path: path.join(root, '.env') });
 
+const missing = missingRequiredEnv();
+if (missing.length) {
+  console.error(`Refusing to start in production: missing ${missing.join(', ')}`);
+  process.exit(1);
+}
+
 const app = express();
+app.disable('x-powered-by');
 const host = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT) || 8888;
 
-const types = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.ico': 'image/x-icon',
-};
-
 let dbReady = false;
 
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '12mb' }));
-
-app.get('/api/health', async (_req, res) => {
-  try {
-    res.json(await getHealthPayload());
-  } catch (err) {
-    console.error('GET /api/health failed:', err);
-    res.status(500).json({ ok: false, db: false, error: 'health_check_failed' });
-  }
+app.use((_req, res, next) => {
+  for (const [name, value] of Object.entries(securityHeaders)) res.setHeader(name, value);
+  next();
 });
 
-app.post('/api/auth/login', (req, res) => handleLogin(req, res));
-app.post('/api/auth/logout', (req, res) => handleLogout(req, res));
-app.post('/api/auth/refresh', (req, res) => handleRefresh(req, res));
-app.get('/api/auth/me', (req, res) => handleMe(req, res));
-app.post('/api/auth/register-center', (req, res) => handleRegisterCenter(req, res));
-app.post('/api/auth/forgot-password', (req, res) => handleForgotPassword(req, res));
-app.get('/api/auth/reset-password-info', (req, res) => handleResetPasswordInfo(req, res));
-app.post('/api/auth/reset-password', (req, res) => handleResetPassword(req, res));
+// Same-origin requests need no CORS. Other origins must be listed in ALLOWED_ORIGINS.
+const corsOrigins = allowedOrigins();
+app.use(cors({ origin: (origin, cb) => cb(null, !origin || corsOrigins.includes(origin)), credentials: true }));
+app.use(express.json({ limit: '1mb' }));
 
-app.get('/api/state', (req, res) => loadAppStateForRequest(req, res).then((result) => {
-  if (result.error) {
-    if (!res.headersSent) res.status(result.status).json({ error: result.error });
-    return;
-  }
+// Express 4 doesn't catch rejected promises from async handlers; send them to the error handler.
+const route = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
+
+const sendResult = (res, result) => {
+  if (res.headersSent) return;
+  if (result.error) return res.status(result.status).json({ error: result.error });
   res.status(result.status).json(result.body);
-}));
+};
 
-app.put('/api/state', (req, res) => saveAppStateForRequest(req, res, req.body).then((result) => {
-  if (result.error) {
-    if (!res.headersSent) res.status(result.status).json({ error: result.error });
-    return;
-  }
-  res.status(result.status).json(result.body);
-}));
+app.get(
+  '/api/health',
+  route(async (_req, res) => res.json(await getHealthPayload())),
+);
 
-app.delete('/api/state', (req, res) => removeAppStateForRequest(req, res).then((result) => {
-  if (result.error) {
-    if (!res.headersSent) res.status(result.status).json({ error: result.error });
-    return;
-  }
-  res.status(result.status).json(result.body);
-}));
+app.post('/api/auth/login', route(handleLogin));
+app.post('/api/auth/logout', route(handleLogout));
+app.post('/api/auth/refresh', route(handleRefresh));
+app.get('/api/auth/me', route(handleMe));
+app.post('/api/auth/register-center', route(handleRegisterCenter));
+app.post('/api/auth/forgot-password', route(handleForgotPassword));
+app.get('/api/auth/reset-password-info', route(handleResetPasswordInfo));
+app.post('/api/auth/reset-password', route(handleResetPassword));
 
-app.post('/api/leads', (req, res) => handleCreateInboundLead(req, res));
-app.get('/api/leads', (req, res) => handleListInboundLeads(req, res));
-app.patch('/api/leads', (req, res) => handleUpdateInboundLead(req, res));
+app.get('/api/state', route(async (req, res) => sendResult(res, await loadAppStateForRequest(req, res))));
+app.put('/api/state', route(async (req, res) => sendResult(res, await saveAppStateForRequest(req, res, req.body))));
+app.delete('/api/state', route(async (req, res) => sendResult(res, await removeAppStateForRequest(req, res))));
 
-app.use(express.static(root));
+app.post('/api/leads', route(handleCreateInboundLead));
+app.get('/api/leads', route(handleListInboundLeads));
+app.patch('/api/leads', route(handleUpdateInboundLead));
 
-app.use((req, res, next) => {
-  if (req.method !== 'GET' || req.path.startsWith('/api/')) return next();
-  const urlPath = decodeURIComponent(req.path.split('?')[0]);
-  const rel = urlPath.replace(/^\//, '') || 'index.html';
-  const file = path.normalize(path.join(root, rel));
-  if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
-    return next();
-  }
-  res.type(types[path.extname(file)] || 'application/octet-stream');
-  res.sendFile(file);
+app.use('/api', (_req, res) => res.status(404).json({ error: 'not_found' }));
+
+// Only public files are served. Server code, scripts, docs and config stay private.
+const PUBLIC_PAGES = { '/': 'index.html', '/index.html': 'index.html', '/start-page.html': 'start-page.html' };
+app.get(Object.keys(PUBLIC_PAGES), (req, res, next) => {
+  res.sendFile(path.join(root, PUBLIC_PAGES[req.path]), (err) => err && next(err));
+});
+for (const dir of ['css', 'js', 'img']) {
+  app.use(`/${dir}`, express.static(path.join(root, dir), { dotfiles: 'deny', index: false }));
+}
+
+app.use((_req, res) => res.status(404).type('text/plain').send('Not found'));
+
+app.use((err, _req, res, _next) => {
+  if (err.type === 'entity.too.large') return res.status(413).json({ error: 'payload_too_large' });
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'invalid_json' });
+  console.error('Request failed:', err);
+  if (!res.headersSent) res.status(500).json({ error: 'server_error' });
 });
 
 app.listen(port, host, async () => {
@@ -118,12 +113,8 @@ app.listen(port, host, async () => {
     dbReady = await testConnection();
     if (dbReady) {
       try {
+        // Applies the schema; seeds demo accounts only when demo mode is on.
         await runAuthMigrations();
-        if (isAuthConfigured()) {
-          await ensureNeonDemoSeeded().catch((err) => {
-            console.warn('Demo seed on startup skipped:', err.message);
-          });
-        }
       } catch (err) {
         console.warn('Auth migration warning:', err.message);
       }

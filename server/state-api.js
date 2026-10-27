@@ -1,6 +1,7 @@
 import { isAuthConfigured } from './auth/config.js';
 import { authenticateRequest } from './auth/middleware.js';
 import { getPool, testConnection } from './db.js';
+import { isDemoModeEnabled } from './env.js';
 
 export const STATE_ID = 'global';
 
@@ -70,28 +71,24 @@ export async function removeAppState() {
 }
 
 export async function loadAppStateForRequest(req, res) {
-  if (isAuthConfigured()) {
-    const auth = await authenticateRequest(req, res);
-    if (!auth.ok) return { error: 'unauthorized', status: 401 };
-  }
+  const auth = await authenticateRequest(req, res);
+  if (!auth.ok) return { error: 'unauthorized', status: 401 };
   return loadAppState();
 }
 
 export async function saveAppStateForRequest(req, res, data) {
-  if (isAuthConfigured()) {
-    const auth = await authenticateRequest(req, res);
-    if (!auth.ok) return { error: 'unauthorized', status: 401 };
-  }
+  const auth = await authenticateRequest(req, res);
+  if (!auth.ok) return { error: 'unauthorized', status: 401 };
   return saveAppState(data);
 }
 
+/** Wipes all data ("Reset demo data"). Demo mode only, platform owner or center admin. */
 export async function removeAppStateForRequest(req, res) {
-  if (isAuthConfigured()) {
-    const auth = await authenticateRequest(req, res);
-    if (!auth.ok) return { error: 'unauthorized', status: 401 };
-    if (auth.user.role !== 'platform_owner' && auth.user.role !== 'center_admin') {
-      return { error: 'forbidden', status: 403 };
-    }
+  if (!isDemoModeEnabled()) return { error: 'forbidden', status: 403 };
+  const auth = await authenticateRequest(req, res);
+  if (!auth.ok) return { error: 'unauthorized', status: 401 };
+  if (auth.auth && auth.user.role !== 'platform_owner' && auth.user.role !== 'center_admin') {
+    return { error: 'forbidden', status: 403 };
   }
   return removeAppState();
 }

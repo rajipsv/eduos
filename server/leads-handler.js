@@ -1,4 +1,3 @@
-import { isAuthConfigured } from './auth/config.js';
 import { authenticateRequest } from './auth/middleware.js';
 import {
   appendInboundLead,
@@ -17,9 +16,9 @@ function clientIp(req) {
 }
 
 async function requirePlatformOwner(req, res) {
-  if (!isAuthConfigured()) return { ok: true, user: null };
   const auth = await authenticateRequest(req, res);
   if (!auth.ok) return { ok: false };
+  if (!auth.auth) return { ok: true, user: null }; // local demo without JWT secrets
   if (auth.user.role !== 'platform_owner') {
     if (!res.headersSent) res.status(403).json({ error: 'forbidden' });
     return { ok: false };

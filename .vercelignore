@@ -1,0 +1,7 @@
+# Not needed on the deployed site.
+docs/qa
+scripts
+test
+.github
+start.bat
+serve.ps1

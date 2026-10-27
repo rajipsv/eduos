@@ -1,7 +1,5 @@
 import { loadAppState, saveAppState } from '../state-api.js';
-import { hashPassword, uid } from './crypto.js';
-import { findUserByEmail, upsertAuthUser } from './users.js';
-import { ensureNeonDemoSeeded } from '../demo-seed.js';
+import { uid } from './crypto.js';
 import { DEMO_PASSWORD } from '../demo-accounts.js';
 
 export async function loadAppStateData() {
@@ -12,17 +10,6 @@ export async function loadAppStateData() {
 
 export async function saveAppStateData(data) {
   return saveAppState(data);
-}
-
-function stripPasswordsFromUsers(data) {
-  if (!data?.users?.length) return data;
-  data.users = data.users.map(({ password, ...rest }) => rest);
-  return data;
-}
-
-/** Legacy sync — delegates to full Neon demo seed (app_state + auth_users). */
-export async function syncAuthUsersFromAppState() {
-  return ensureNeonDemoSeeded();
 }
 
 export async function registerCenterInAppState({ centerName, ownerName, email, phone, city }) {
@@ -97,10 +84,6 @@ export async function registerCenterInAppState({ centerName, ownerName, email, p
 
   await saveAppStateData(data);
   return { ok: true, center, user: userProfile };
-}
-
-export async function ensureDemoAuthUsers() {
-  return ensureNeonDemoSeeded();
 }
 
 export { DEMO_PASSWORD };

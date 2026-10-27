@@ -14,6 +14,7 @@ import {
   findValidRefreshToken,
   rotateRefreshToken,
   revokeRefreshToken,
+  revokeAllUserRefreshTokens,
 } from './refresh-tokens.js';
 import {
   createPasswordResetToken,
@@ -28,12 +29,32 @@ import { loadAppStateData, registerCenterInAppState } from './state-sync.js';
 import { ensureNeonDemoSeeded } from '../demo-seed.js';
 import { getPool } from '../db.js';
 import { authenticateRequest } from './middleware.js';
+import { appUrl, isDemoModeEnabled } from '../env.js';
+import { hitRateLimit, clientIp } from '../rate-limit.js';
+import { sendPasswordResetEmail } from '../email.js';
+
+// Compared against when the email is unknown, so response time doesn't reveal which emails exist.
+const DUMMY_PASSWORD_HASH = hashPassword('dummy-password-for-timing');
+
+async function tooManyAttempts(res, checks) {
+  for (const [bucket, key, opts] of checks) {
+    const r = await hitRateLimit(bucket, key, opts);
+    if (!r.ok) {
+      res.setHeader('Retry-After', String(r.retryAfterSec));
+      json(res, 429, { ok: false, error: 'Too many attempts. Please wait a few minutes and try again.' });
+      return true;
+    }
+  }
+  return false;
+}
 
 function json(res, status, body) {
   res.status(status).json(body);
 }
 
 function getOrigin(req) {
+  const configured = appUrl();
+  if (configured) return configured;
   const proto = req.headers['x-forwarded-proto'] || 'http';
   const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
   return `${proto}://${host}`;
@@ -59,12 +80,19 @@ export async function handleLogin(req, res) {
   const { email, password, portal } = req.body || {};
   if (!email || !password) return json(res, 400, { ok: false, error: 'Email and password required' });
 
-  await ensureNeonDemoSeeded().catch((err) => {
-    console.warn('Demo seed on login skipped:', err.message);
-  });
+  if (typeof email !== 'string' || typeof password !== 'string') {
+    return json(res, 400, { ok: false, error: 'Email and password required' });
+  }
 
-  const row = await findUserWithPasswordByEmail(email);
-  if (!row || !verifyPassword(password, row.password_hash)) {
+  const normEmail = email.trim().toLowerCase();
+  if (await tooManyAttempts(res, [
+    ['login:email', normEmail, { limit: 10, windowSec: 15 * 60 }],
+    ['login:ip', clientIp(req), { limit: 50, windowSec: 15 * 60 }],
+  ])) return;
+
+  const row = await findUserWithPasswordByEmail(normEmail);
+  const passwordOk = verifyPassword(password, row?.password_hash || DUMMY_PASSWORD_HASH);
+  if (!row || !passwordOk) {
     return json(res, 401, { ok: false, error: 'Invalid email or password' });
   }
 
@@ -138,7 +166,12 @@ export async function handleRegisterCenter(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res, 'POST');
 
   const { centerName, ownerName, email, phone, city, password } = req.body || {};
+  if ([centerName, ownerName, email, phone, city, password].some((v) => v != null && typeof v !== 'string')) {
+    return json(res, 400, { ok: false, error: 'Please fill all required fields' });
+  }
   const normEmail = email?.trim().toLowerCase();
+
+  if (await tooManyAttempts(res, [['register:ip', clientIp(req), { limit: 5, windowSec: 60 * 60 }]])) return;
 
   if (!centerName?.trim() || !ownerName?.trim() || !normEmail || !password) {
     return json(res, 400, { ok: false, error: 'Please fill all required fields' });
@@ -170,14 +203,28 @@ export async function handleForgotPassword(req, res) {
   if (!isAuthConfigured()) return authUnavailable(res);
   if (req.method !== 'POST') return methodNotAllowed(res, 'POST');
 
-  const email = req.body?.email?.trim().toLowerCase();
+  const rawEmail = req.body?.email;
+  const email = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : '';
   if (!email) return json(res, 400, { ok: false, error: 'Email is required' });
 
+  if (await tooManyAttempts(res, [
+    ['forgot:email', email, { limit: 3, windowSec: 60 * 60 }],
+    ['forgot:ip', clientIp(req), { limit: 20, windowSec: 60 * 60 }],
+  ])) return;
+
+  // The reset link is returned in the response only in demo mode. Otherwise it is emailed.
   let demoResetUrl = null;
   const user = await findUserByEmail(email);
   if (user) {
     const { token } = await createPasswordResetToken(user.id, email);
-    demoResetUrl = buildResetUrl(req, token);
+    const resetUrl = buildResetUrl(req, token);
+    if (isDemoModeEnabled()) {
+      demoResetUrl = resetUrl;
+    } else {
+      await sendPasswordResetEmail(email, resetUrl).catch((err) => {
+        console.error('Password reset email failed:', err.message);
+      });
+    }
   }
 
   return json(res, 200, {
@@ -210,6 +257,8 @@ export async function handleResetPassword(req, res) {
 
   await updateUserPassword(entry.user_id, hashPassword(password));
   await markPasswordResetTokenUsed(token);
+  // Sign out every existing session for this account.
+  await revokeAllUserRefreshTokens(entry.user_id);
   return json(res, 200, { ok: true, message: 'Password updated. You can sign in now.' });
 }
 

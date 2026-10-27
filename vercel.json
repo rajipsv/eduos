@@ -1,8 +1,105 @@
 {
-  "version": 2,
   "functions": {
     "api/**/*.js": {
       "maxDuration": 15
     }
-  }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy-Report-Only",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://graph.facebook.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/server/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/scripts/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/docs/qa/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/test/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/api/auth/_util.js",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/package.json",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/package-lock.json",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/.env.example",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/eslint.config.js",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/serve.js",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/serve.ps1",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/start.bat",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/README.md",
+      "destination": "/",
+      "permanent": false
+    }
+  ]
 }

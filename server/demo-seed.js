@@ -3,7 +3,8 @@ import { loadAppState, saveAppState, STATE_ID } from './state-api.js';
 import { getPool } from './db.js';
 import { hashPassword } from './auth/crypto.js';
 import { upsertAuthUser } from './auth/users.js';
-import { DEMO_IDS, DEMO_PASSWORD, DEMO_EMAILS } from './demo-accounts.js';
+import { DEMO_IDS, DEMO_PASSWORD, DEMO_EMAILS, isDemoEmail } from './demo-accounts.js';
+import { isDemoModeEnabled } from './env.js';
 
 function buildDemoAppState() {
   const centerId = DEMO_IDS.center;
@@ -222,7 +223,8 @@ async function upsertDemoAuthUsersFromState(data) {
   let upserted = 0;
 
   for (const u of data.users || []) {
-    if (!u.email) continue;
+    // Only the fixed demo accounts. Never touch real users' passwords or roles.
+    if (!u.email || !isDemoEmail(u.email)) continue;
     await upsertAuthUser({
       id: u.id,
       email: u.email,
@@ -246,6 +248,9 @@ export async function ensureNeonDemoSeeded({ forceAppState = false } = {}) {
   if (!process.env.DATABASE_URL) {
     return { ok: false, skipped: true, reason: 'no_database' };
   }
+  if (!isDemoModeEnabled()) {
+    return { ok: false, skipped: true, reason: 'demo_mode_disabled' };
+  }
 
   let data = await loadAppStateData();
   let appStateSeeded = false;
@@ -268,6 +273,11 @@ export async function ensureNeonDemoSeeded({ forceAppState = false } = {}) {
 }
 
 export async function runDemoSeedCli() {
+  if (!isDemoModeEnabled()) {
+    console.error('Demo seed refused: demo mode is off (production). Set ENABLE_DEMO_SEED=true to allow it.');
+    process.exitCode = 1;
+    return;
+  }
   const result = await ensureNeonDemoSeeded({ forceAppState: true });
   console.log('Neon demo seed complete:', result);
   await getPool().end();

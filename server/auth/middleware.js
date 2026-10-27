@@ -1,6 +1,7 @@
 import { isAuthConfigured } from './config.js';
 import { verifyAccessToken, getBearerToken } from './jwt.js';
 import { findUserById } from './users.js';
+import { isProduction } from '../env.js';
 
 export function authUnavailable(res) {
   return res.status(503).json({ error: 'auth_not_configured' });
@@ -8,6 +9,11 @@ export function authUnavailable(res) {
 
 export async function authenticateRequest(req, res) {
   if (!isAuthConfigured()) {
+    // Local demo without JWT secrets runs open; production never does.
+    if (isProduction()) {
+      res.status(503).json({ error: 'auth_not_configured' });
+      return { ok: false };
+    }
     return { ok: true, auth: false, user: null, claims: null };
   }
 
