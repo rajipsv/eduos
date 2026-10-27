@@ -65,7 +65,7 @@ export const LANDING_STATS = [
 
 /** Internal sales WhatsApp — not shown on UI; used for wa.me links only. */
 const TUTORSALA_SALES_WHATSAPP = '919553371972';
-export const TUTORSALA_SALES_EMAIL = 'hello@tutorsala.app';
+export const TUTORSALA_SALES_EMAIL = 'hello@tutorsala.com';
 
 /** Meta ads / demo funnel — standalone page at repo root. */
 export const START_PAGE_PATH = 'start-page.html';

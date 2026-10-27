@@ -12,7 +12,7 @@ export async function sendPasswordResetEmail(to, resetUrl) {
     console.warn('Password reset requested but RESEND_API_KEY is not set; no email sent.');
     return;
   }
-  const from = process.env.EMAIL_FROM || 'Tutorsala <no-reply@tutorsala.app>';
+  const from = process.env.EMAIL_FROM || 'Tutorsala <no-reply@tutorsala.com>';
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
