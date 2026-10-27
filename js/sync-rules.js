@@ -29,6 +29,7 @@ export const COLLECTIONS = {
   leads: { shape: 'list' },
   parentInquiries: { shape: 'list', ref: (r) => r.studentId },
   aiHistory: { shape: 'list', ref: (r) => r.createdBy },
+  tutorReviews: { shape: 'list', ref: (r) => r.teacherId },
   marketplace: { shape: 'list' },
   commTemplates: { shape: 'list' },
   commAutomations: { shape: 'list' },
@@ -100,7 +101,7 @@ export const FAMILY_ROLES = ['family', 'parent', 'student'];
 
 const TEACHER_ACCESS = {
   branches: ['all', 'none'],
-  teachers: ['all', 'own'],
+  teachers: ['all', 'merge'], // own profile draft and bio only
   students: ['own', 'none'],
   batches: ['own', 'merge'], // session status, notes and timing only
   attendance: ['own', 'own'],
@@ -117,6 +118,7 @@ const TEACHER_ACCESS = {
   messages: ['own', 'create'],
   parentInquiries: ['own', 'none'],
   aiHistory: ['own', 'own'],
+  tutorReviews: ['own', 'none'], // reviews about them
   commTemplates: ['all', 'none'],
   commAutomations: ['all', 'none'],
   commSettings: ['all', 'none'],
@@ -140,6 +142,7 @@ const FAMILY_ACCESS = {
   parentPreferences: ['own', 'own'],
   parentInquiries: ['own', 'create'],
   aiHistory: ['own', 'own'],
+  tutorReviews: ['own', 'own'], // one review per child per teacher; public at once, admin can hide
   centerSettings: ['all', 'none'],
 };
 
@@ -204,6 +207,10 @@ export function isOwnRecord(collection, record, key, ctx) {
       );
     case 'aiHistory':
       return record.createdBy === ctx.userId;
+    case 'tutorReviews':
+      // Teachers: reviews about them. Families: their own reviews of their child's teacher.
+      if (ctx.role === 'teacher') return teacherIds.has(record.teacherId);
+      return studentIds.has(record.studentId) && teacherIds.has(record.teacherId);
     default:
       return false;
   }

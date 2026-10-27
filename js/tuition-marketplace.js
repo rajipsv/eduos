@@ -1,6 +1,7 @@
 import { esc } from './html.js';
 import { getCenters, saveLead, getBranches, getDefaultBranch, isDatabaseMode } from './store.js';
 import { apiFetch } from './api-client.js';
+import { listingTutors, tutorCardHtml, tutorProfileHtml } from './tutor-profile.js';
 import {
   getSession, getCurrentUser, getEffectiveRole,
   getLinkedStudentId, getLinkedStudentIds,
@@ -382,11 +383,39 @@ function centerDetailHtml(listing, rawState) {
         </div>
       </div>
     </div>
+    ${ourTutorsHtml(listing, rawState)}
     ${inquiryBlock}`;
 }
 
+// Tutors whose public profile the center has published.
+function ourTutorsHtml(listing, rawState) {
+  const tutors = listingTutors(listing, rawState);
+  if (!tutors.length) return '';
+  return `
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-header"><h3>Our tutors</h3></div>
+      <div class="panel-body"><div class="tutor-card-grid">${tutors.map(tutorCardHtml).join('')}</div></div>
+    </div>`;
+}
+
 function bindDetailModalActions(listing, rawState, ctx) {
-  const { closeModal, toast, onLoginRequest } = ctx;
+  const { closeModal, toast, onLoginRequest, showModal } = ctx;
+
+  document.querySelectorAll('[data-action="open-tutor"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tutor = listingTutors(listing, rawState).find((t) => t.id === btn.dataset.id);
+      if (!tutor) return;
+      showModal({
+        title: `${tutor.name} · ${listing.name}`,
+        wide: true,
+        body: tutorProfileHtml(tutor),
+        footer: '<button type="button" class="btn btn-secondary" id="tutorBack">← Back to center</button>',
+        onMount: () => {
+          document.getElementById('tutorBack').onclick = () => openCenterModal(listing, rawState, ctx);
+        },
+      });
+    });
+  });
 
   document.querySelector('[data-action="tuition-inquire"]')?.addEventListener('click', () => {
     submitInquiry(listing, rawState, toast, closeModal);

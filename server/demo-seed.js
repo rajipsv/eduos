@@ -1,5 +1,6 @@
 import { generateSchedule, formatScheduleLabel } from '../js/scheduler.js';
 import { ensurePlatformData, seedPlatformDemo } from '../js/platform.js';
+import { demoTutorProfile } from '../js/tutor-profile.js';
 import { getPool } from './db.js';
 import { hashPassword } from './auth/crypto.js';
 import { upsertAuthUser } from './auth/users.js';
@@ -19,6 +20,10 @@ export function buildDemoAppState() {
     phone: '9876001001',
     subjects: ['Physics', 'Chemistry'],
     bio: '10+ years teaching board exam science',
+    // Published marketplace profile, so "View details" shows a tutor in the demo.
+    profileDraft: demoTutorProfile(),
+    publicProfile: demoTutorProfile(),
+    profileStatus: 'published',
   };
   const teacher2 = {
     id: DEMO_IDS.teacherVikram,
@@ -170,6 +175,18 @@ export function buildDemoAppState() {
     students,
     teachers: [teacher1, teacher2],
     leads: demoLeads(centerId),
+    tutorReviews: [
+      {
+        id: `rev_${DEMO_IDS.teacherAnita}_${DEMO_IDS.studentAarav}`,
+        teacherId: DEMO_IDS.teacherAnita,
+        studentId: DEMO_IDS.studentAarav,
+        rating: 5,
+        comment: 'Aarav finally enjoys Physics. Clear explanations and regular updates on his progress.',
+        parentName: 'Rajesh Sharma',
+        status: 'visible',
+        createdAt: '2025-07-20T10:00:00.000Z',
+      },
+    ],
     attendance: [
       { id: 'att_demo_1', centerId, batchId: batch1.id, date: yesterday, records: { [students[0].id]: 'present', [students[1].id]: 'absent' } },
       { id: 'att_demo_2', centerId, batchId: batch2.id, date: yesterday, records: { [students[2].id]: 'present' } },

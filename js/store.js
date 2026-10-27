@@ -8,6 +8,7 @@ import {
 } from './scheduler.js';
 import { ensurePlatformData, seedPlatformDemo, findBatchAvailabilitySlot, getTutorAvailability } from './platform.js';
 import { apiFetch, getAccessToken, isServerAuthEnabled, setServerAuthEnabled } from './api-client.js';
+import { demoTutorProfile } from './tutor-profile.js';
 import {
   COLLECTION_NAMES,
   COLLECTIONS,
@@ -610,6 +611,9 @@ function seedDemoData() {
     phone: '9876001001',
     subjects: ['Physics', 'Chemistry'],
     bio: '10+ years teaching board exam science',
+    profileDraft: demoTutorProfile(),
+    publicProfile: demoTutorProfile(),
+    profileStatus: 'published',
   };
 
   const teacher2 = {
@@ -795,6 +799,16 @@ function seedDemoData() {
     ],
     messages: [],
     invoices: [],
+    tutorReviews: [{
+      id: `rev_${teacher1.id}_${students[0].id}`,
+      teacherId: teacher1.id,
+      studentId: students[0].id,
+      rating: 5,
+      comment: 'Aarav finally enjoys Physics. Clear explanations and regular updates on his progress.',
+      parentName: 'Rajesh Sharma',
+      status: 'visible',
+      createdAt: '2025-07-20T10:00:00.000Z',
+    }],
     settings: defaultData().settings,
   };
 

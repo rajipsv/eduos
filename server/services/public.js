@@ -40,6 +40,45 @@ export async function listPublicCenters() {
         city: b.data.city || '',
         isDefault: Boolean(b.data.isDefault),
       }));
+  // Published tutor profiles and visible parent reviews. Never phone, email or drafts.
+  const tutorRows = await db.query(
+    `SELECT center_id, data FROM records WHERE collection = 'teachers' AND deleted_at IS NULL
+       AND data ? 'publicProfile' AND data->'publicProfile' <> 'null'::jsonb`,
+  );
+  const reviewRows = await db.query(
+    `SELECT center_id, data FROM records WHERE collection = 'tutorReviews' AND deleted_at IS NULL
+       AND data->>'status' = 'visible'`,
+  );
+  const firstName = (name) =>
+    String(name || 'Parent')
+      .trim()
+      .split(/\s+/)[0];
+  const tutorsOf = (centerId) =>
+    tutorRows.rows
+      .filter((t) => t.center_id === centerId)
+      .map(({ data: t }) => {
+        const reviews = reviewRows.rows
+          .filter((rv) => rv.center_id === centerId && rv.data.teacherId === t.id)
+          .map((rv) => rv.data)
+          .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+        const rating = reviews.length
+          ? Math.round((reviews.reduce((n, rv) => n + rv.rating, 0) / reviews.length) * 10) / 10
+          : null;
+        return {
+          id: t.id,
+          name: t.name,
+          subjects: t.subjects || [],
+          publicProfile: t.publicProfile,
+          rating,
+          reviewCount: reviews.length,
+          reviews: reviews.slice(0, 10).map((rv) => ({
+            name: firstName(rv.parentName),
+            rating: rv.rating,
+            comment: rv.comment || '',
+            date: String(rv.createdAt || '').slice(0, 10),
+          })),
+        };
+      });
   const centers = r.rows.map((row) => ({
     id: row.id,
     name: row.name,
@@ -48,6 +87,7 @@ export async function listPublicCenters() {
     ...Object.fromEntries(LISTING_FIELDS.filter((f) => row.data?.[f] !== undefined).map((f) => [f, row.data[f]])),
     _stats: { teachers: row.teachers, students: row.students, batches: row.batches },
     _branches: branchesOf(row.id),
+    _tutors: tutorsOf(row.id),
   }));
   return { status: 200, body: { centers } };
 }

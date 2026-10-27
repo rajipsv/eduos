@@ -27,11 +27,55 @@ const syncEnvelope = z.object({
     .max(MAX_CHANGES),
 });
 
+// A tutor's public profile: sections they name themselves, each with items.
+const httpLink = z
+  .string()
+  .max(500)
+  .refine((v) => v === '' || /^https?:\/\//i.test(v), 'link must start with http:// or https://');
+const tutorProfile = z
+  .object({
+    intro: text(1000).optional(),
+    sections: z
+      .array(
+        z.object({
+          id,
+          title: text(80),
+          items: z
+            .array(z.object({ id, text: text(200), detail: optText(500), link: httpLink.nullable().optional() }))
+            .max(20),
+        }),
+      )
+      .max(10),
+  })
+  .nullable()
+  .optional();
+
 // Fields the app depends on, per collection. Other fields pass through unchanged.
 const RECORD_SCHEMAS = {
   centers: z.object({ id, name: text(200).optional(), slug: optText(80) }).passthrough(),
   branches: z.object({ id, name: text(200) }).passthrough(),
-  teachers: z.object({ id, name: text(200), email: optText(320), phone: optText(40) }).passthrough(),
+  teachers: z
+    .object({
+      id,
+      name: text(200),
+      email: optText(320),
+      phone: optText(40),
+      profileDraft: tutorProfile,
+      publicProfile: tutorProfile,
+      profileStatus: z.enum(['draft', 'pending', 'published']).optional(),
+    })
+    .passthrough(),
+  tutorReviews: z
+    .object({
+      id,
+      teacherId: id,
+      studentId: id,
+      rating: z.number().int().min(1).max(5),
+      comment: optText(1000),
+      parentName: optText(120),
+      status: z.enum(['visible', 'hidden']),
+    })
+    .passthrough(),
   students: z
     .object({
       id,

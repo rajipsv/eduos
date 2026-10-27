@@ -33,6 +33,17 @@ import { formatTime, dayPickerHtml, bindDayPicker, getSelectedDays } from './sch
 import { getRecentWebInquiries } from './crm.js';
 import { academyBanner } from './academy.js';
 import { getEffectiveRole, getLinkedTeacherId } from './auth.js';
+import {
+  openProfileEditorModal,
+  profileStatusBadge,
+  tutorProfileHtml,
+  getTutorReviews,
+  reviewSummary,
+  setReviewVisible,
+  saveTutorReview,
+  reviewId,
+  stars,
+} from './tutor-profile.js';
 import { getStudentFeeSummary, canParentReportPayment, parentInvoiceStatusLabel, reportParentPayment, getPerClassProgress } from './billing.js';
 import { getBillingSettings } from './store.js';
 
@@ -329,6 +340,7 @@ function renderTutorHub() {
       <button class="report-tab" data-tutor-tab="homework">Homework</button>
       <button class="report-tab" data-tutor-tab="schedule">Schedule</button>
       <button class="report-tab" data-tutor-tab="development">Development</button>
+      <button class="report-tab" data-tutor-tab="profile">Public profile</button>
     </div>
     <div id="tutorContent">${tutorOverview(sel)}</div>`;
 }
@@ -341,6 +353,7 @@ function tutorTabContent(tab, requestedId) {
   if (tab === 'homework') return tutorHomeworkView(teacherId);
   if (tab === 'schedule') return tutorScheduleView(teacherId);
   if (tab === 'development') return tutorDevelopmentView(teacherId);
+  if (tab === 'profile') return tutorPublicProfileView(teacherId);
   return tutorOverview(teacherId);
 }
 
@@ -489,6 +502,47 @@ function tutorScheduleView(teacherId) {
       </div></div>
     </div>`;
 }
+
+// The tutor's marketplace profile: status, the published version, and parent reviews.
+function tutorPublicProfileView(teacherId) {
+  const teacher = getTeacher(teacherId);
+  if (!teacher) return '<div class="empty-state">Select a tutor</div>';
+  const admin = !tutorSelfOnly();
+  const reviews = getTutorReviews(teacherId);
+  const { rating, count } = reviewSummary(reviews);
+  const pendingNote = teacher.profileStatus === 'pending'
+    ? `<p class="meta">${admin ? 'This tutor submitted changes. Open the profile to review and publish them.' : 'Your changes are waiting for your center admin to publish them.'}</p>`
+    : '';
+  return `
+    <div class="panel"><div class="panel-header"><h3>Marketplace profile ${profileStatusBadge(teacher)}</h3>
+      <button class="btn btn-primary btn-sm" data-action="edit-tutor-profile">${admin ? 'Edit & publish' : 'Edit my profile'}</button></div>
+      <div class="panel-body">
+        ${pendingNote}
+        ${teacher.publicProfile
+          ? `<p class="meta">This is what parents see on the marketplace:</p>${tutorProfileHtml({ ...teacher, rating, reviewCount: count, reviews: [] })}`
+          : `<p class="empty-state">${admin ? 'Not published yet.' : 'Add your certificates, awards and anything else parents should know, then submit it for your center admin to publish.'}</p>`}
+      </div></div>
+    <div class="panel" style="margin-top:16px"><div class="panel-header"><h3>Parent reviews ${rating ? `· ${stars(rating)} ${esc(rating)}` : ''}</h3></div>
+      <div class="panel-body">${reviewListHtml(reviews, { canHide: admin })}</div></div>`;
+}
+
+function reviewListHtml(reviews, { canHide = false, showTeacher = false } = {}) {
+  if (!reviews.length) return '<p class="empty-state">No reviews yet.</p>';
+  return [...reviews]
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+    .map((r) => `
+      <div class="tutor-review${r.status === 'hidden' ? ' tutor-review-hidden' : ''}">
+        <div>${stars(r.rating)} <strong>${esc(r.parentName || 'Parent')}</strong>
+          ${showTeacher ? `<span class="meta">for ${esc(getTeacher(r.teacherId)?.name || 'tutor')}</span>` : ''}
+          <span class="meta">${esc(String(r.createdAt || '').slice(0, 10))}</span>
+          ${r.status === 'hidden' ? '<span class="badge badge-gray">Hidden</span>' : ''}
+          ${canHide ? `<button class="btn btn-sm btn-ghost" data-action="toggle-review" data-id="${esc(r.id)}" data-show="${r.status === 'hidden' ? '1' : ''}">${r.status === 'hidden' ? 'Show' : 'Hide'}</button>` : ''}
+        </div>
+        ${r.comment ? `<p>${esc(r.comment)}</p>` : ''}
+      </div>`).join('');
+}
+
+export { reviewListHtml };
 
 function tutorDevelopmentView(teacherId) {
   const pd = getTutorPd(teacherId);
@@ -711,10 +765,33 @@ function parentFeesView(studentId) {
     </div></div>`;
 }
 
+// Parents rate their child's tutor. Reviews show on the marketplace straight away;
+// posting again updates the same review.
+function parentRateTutorHtml(student) {
+  const batch = student?.batchId ? getBatch(student.batchId) : null;
+  const teacher = batch?.teacherId ? getTeacher(batch.teacherId) : null;
+  if (!teacher) return '';
+  const mine = getTutorReviews(teacher.id).find((r) => r.id === reviewId(teacher.id, student.id));
+  const rating = mine?.rating || 5;
+  return `
+    <div class="panel" style="margin-bottom:16px"><div class="panel-header"><h3>Rate ${esc(teacher.name)}</h3>${mine ? '<span class="badge badge-green">You reviewed this tutor</span>' : ''}</div>
+    <div class="panel-body">
+      <div class="form-group"><label>Your rating</label>
+        <select id="reviewRating">${[5, 4, 3, 2, 1].map((n) => `<option value="${n}" ${n === rating ? 'selected' : ''}>${'★'.repeat(n)}${'☆'.repeat(5 - n)} (${n})</option>`).join('')}</select>
+      </div>
+      <div class="form-group full"><label>Your review (shown on the marketplace with your first name)</label>
+        <textarea id="reviewComment" rows="3" maxlength="1000" placeholder="What has your child gained from these classes?">${esc(mine?.comment || '')}</textarea>
+      </div>
+      ${mine?.status === 'hidden' ? '<p class="meta">Your center has hidden this review from the marketplace.</p>' : ''}
+      <button class="btn btn-primary" data-action="save-review" data-teacher="${esc(teacher.id)}" data-student="${esc(student.id)}">${mine ? 'Update review' : 'Post review'}</button>
+    </div></div>`;
+}
+
 function parentFeedbackView(studentId) {
   const feedback = getFeedback(studentId);
   const student = getStudent(studentId);
   return `
+    ${parentRateTutorHtml(student)}
     <div class="panel"><div class="panel-header"><h3>Teacher Feedback — ${esc(student?.name)}</h3></div>
     <div class="panel-body">
       ${feedback.map((f) => `<div class="message-item sent"><div class="meta"><span>${esc(getTeacher(f.teacherId)?.name)}</span><span>${esc(f.date)}</span><span class="badge ${f.type === 'positive' ? 'badge-green' : 'badge-orange'}">${esc(f.type)}</span></div><div class="body">${esc(f.message)}</div></div>`).join('') || '<p class="empty-state">No feedback yet</p>'}
@@ -1266,6 +1343,17 @@ function bindTutorHubEvents({ showModal, closeModal, toast, refresh }) {
     });
   });
 
+  document.querySelector('[data-action="edit-tutor-profile"]')?.addEventListener('click', () => {
+    openProfileEditorModal(teacherId(), { showModal, closeModal, toast }, { canPublish: !tutorSelfOnly(), onChange: reloadTab });
+  });
+  document.querySelectorAll('[data-action="toggle-review"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      setReviewVisible(btn.dataset.id, Boolean(btn.dataset.show));
+      toast(btn.dataset.show ? 'Review shown on the marketplace' : 'Review hidden from the marketplace', 'success');
+      reloadTab();
+    });
+  });
+
   document.querySelectorAll('[data-tutor-row]').forEach((row) => {
     row.addEventListener('click', () => {
       const sel = document.getElementById('tutorSel');
@@ -1389,6 +1477,19 @@ function bindParentPortalEvents({ toast, refresh, showModal, closeModal }) {
   };
 
   document.getElementById('parentStudent')?.addEventListener('change', reloadTab);
+
+  document.querySelector('[data-action="save-review"]')?.addEventListener('click', (e) => {
+    const { teacher, student } = e.currentTarget.dataset;
+    saveTutorReview({
+      teacherId: teacher,
+      studentId: student,
+      rating: Number(document.getElementById('reviewRating').value),
+      comment: document.getElementById('reviewComment').value,
+      parentName: getStudent(student)?.parentName,
+    });
+    toast('Thank you — your review is on the marketplace', 'success');
+    reloadTab();
+  });
 
   document.querySelectorAll('[data-parent-tab]').forEach((tab) => {
     tab.addEventListener('click', () => {

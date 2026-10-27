@@ -117,6 +117,8 @@ import {
 } from './platform-views.js';
 import { renderTuitionMarketplace, bindTuitionMarketplaceEvents } from './tuition-marketplace.js';
 import { getCurrentUser, saveCenterAdminTeacherLink, getEffectiveRole } from './auth.js';
+import { openProfileEditorModal, profileStatusBadge, getTutorReviews, setReviewVisible } from './tutor-profile.js';
+import { reviewListHtml } from './layer-views.js';
 
 let chartInstance = null;
 
@@ -790,17 +792,23 @@ function renderTeachers() {
         const report = getTeacherReport(t.id);
         const isYou = adminUser?.linkedTeacherId === t.id;
         return `<div class="batch-card">
-          <h4>${esc(t.name)}${isYou ? ' <span class="badge badge-green">You</span>' : ''}</h4>
+          <h4>${esc(t.name)}${isYou ? ' <span class="badge badge-green">You</span>' : ''} ${profileStatusBadge(t)}</h4>
           <div class="meta">${esc(t.email)} · ${esc(t.phone)}</div>
           <div class="tags">${(t.subjects || []).map((s) => `<span class="tag">${s}</span>`).join('')}</div>
           <div class="meta">${esc(report.batchCount)} batches · ${esc(report.studentCount)} students · ${esc(report.completionRate)}% curriculum done</div>
           <div class="actions" style="margin-top:12px">
             <button class="btn btn-sm btn-secondary" data-action="edit-teacher" data-id="${esc(t.id)}">Edit</button>
             <button class="btn btn-sm btn-primary" data-action="teacher-report" data-id="${esc(t.id)}">Report</button>
+            <button class="btn btn-sm btn-secondary" data-action="teacher-public-profile" data-id="${esc(t.id)}">Public profile</button>
             <button class="btn btn-sm btn-danger" data-action="delete-teacher" data-id="${esc(t.id)}">Delete</button>
           </div>
         </div>`;
       }).join('') || '<div class="empty-state"><h4>No teachers yet</h4><p>Add teachers and assign them to batches.</p></div>'}
+    </div>
+    <div class="panel" style="margin-top:20px">
+      <div class="panel-header"><h3>Parent reviews</h3></div>
+      <div class="panel-body"><p class="meta" style="margin-top:0">Reviews appear on the marketplace as soon as parents post them. Hide any that shouldn't be public.</p>
+        ${reviewListHtml(getTutorReviews(), { canHide: true, showTeacher: true })}</div>
     </div>`;
 }
 
@@ -2215,6 +2223,16 @@ function bindTeacherEvents({ showModal, closeModal, toast, refresh, navigate }) 
   document.querySelector('[data-action="add-teacher"]')?.addEventListener('click', () => showTeacherForm(null, { showModal, closeModal, toast, refresh }));
   document.querySelectorAll('[data-action="edit-teacher"]').forEach((btn) => {
     btn.addEventListener('click', () => showTeacherForm(getTeacher(btn.dataset.id), { showModal, closeModal, toast, refresh }));
+  });
+  document.querySelectorAll('[data-action="teacher-public-profile"]').forEach((btn) => {
+    btn.addEventListener('click', () => openProfileEditorModal(btn.dataset.id, { showModal, closeModal, toast }, { canPublish: true, onChange: refresh }));
+  });
+  document.querySelectorAll('[data-action="toggle-review"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      setReviewVisible(btn.dataset.id, Boolean(btn.dataset.show));
+      toast(btn.dataset.show ? 'Review shown on the marketplace' : 'Review hidden from the marketplace', 'success');
+      refresh();
+    });
   });
   document.querySelectorAll('[data-action="delete-teacher"]').forEach((btn) => {
     btn.addEventListener('click', () => {

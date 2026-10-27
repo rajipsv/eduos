@@ -20,6 +20,18 @@ const without = (obj, keys) => Object.fromEntries(Object.entries(obj).filter(([k
 
 // 'merge' writes: which parts of an existing record a role may change.
 const MERGERS = {
+  // Teachers edit their own public-profile draft and bio, and can submit it for review.
+  // Publishing (publicProfile) and everything else stays with the center admin.
+  teachers(stored, incoming) {
+    const next = { ...stored };
+    if ('profileDraft' in incoming) next.profileDraft = incoming.profileDraft;
+    if ('bio' in incoming) next.bio = incoming.bio;
+    if (['draft', 'pending'].includes(incoming.profileStatus) && incoming.profileStatus !== stored.profileStatus) {
+      // A published profile stays published; a resubmission is shown to the admin as pending.
+      next.profileStatus = incoming.profileStatus;
+    }
+    return next;
+  },
   // Teachers update their batch's sessions (status, notes, timing). No new or removed
   // sessions, and nothing else on the batch.
   batches(stored, incoming) {
@@ -85,6 +97,13 @@ function applyRecordChange(change, { prev, ctx, centerId, user }) {
   }
 
   next = without(next, ['_projected']);
+  // Parent reviews are public as soon as they're posted. Only an admin can hide one, and a
+  // parent editing their review can't undo that.
+  if (collection === 'tutorReviews' && mode !== 'all') {
+    next.status = live ? live.data.status : 'visible';
+    next.createdAt = live?.data.createdAt || new Date().toISOString();
+    next.updatedAt = new Date().toISOString();
+  }
   // API keys never live in synced settings; they go through /api/settings/secrets.
   if (collection === 'centerSettings') next = without(next, SECRET_SETTINGS_FIELDS);
   if (shape === 'list') {

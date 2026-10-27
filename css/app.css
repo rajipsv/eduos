@@ -2505,3 +2505,36 @@ tr.invoice-reported { background: color-mix(in srgb, var(--accent, #e67700) 6%, 
     display: none;
   }
 }
+
+/* Tutor public profiles */
+.tutor-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.tutor-card {
+  display: flex; gap: 12px; align-items: flex-start; text-align: left; width: 100%;
+  padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); cursor: pointer; font: inherit; color: inherit;
+}
+.tutor-card:hover { border-color: var(--primary); }
+.tutor-card-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tutor-card-intro { color: var(--text-muted); }
+.tutor-avatar {
+  flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--primary-soft); color: var(--primary); font-weight: 700;
+}
+.tutor-avatar-lg { width: 64px; height: 64px; font-size: 1.3rem; }
+.tutor-stars { color: #e0a100; letter-spacing: 1px; }
+.tutor-profile-head { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; }
+.tutor-intro { line-height: 1.6; }
+.tutor-section { margin-top: 16px; }
+.tutor-section h4 { margin: 0 0 8px; }
+.tutor-section ul { margin: 0; padding-left: 18px; }
+.tutor-section li { margin-bottom: 8px; line-height: 1.5; }
+.tutor-verify { font-size: 0.82rem; margin-left: 6px; }
+.tutor-review { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.tutor-review p { margin: 6px 0 0; }
+.tutor-review-hidden { opacity: 0.55; }
+.tutor-editor { display: flex; flex-direction: column; gap: 12px; }
+.tutor-edit-section { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.tutor-edit-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.tutor-edit-row input { flex: 1 1 200px; font-weight: 600; }
+.tutor-edit-item { display: grid; grid-template-columns: 1fr; gap: 6px; padding: 8px; background: var(--surface-2); border-radius: var(--radius-sm); }
+.session-note { color: var(--text-muted); }

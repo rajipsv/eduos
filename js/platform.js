@@ -28,6 +28,7 @@ export function ensurePlatformData(state) {
   state.parentPreferences = state.parentPreferences || {};
   state.parentInquiries = state.parentInquiries || [];
   state.aiHistory = state.aiHistory || [];
+  state.tutorReviews = state.tutorReviews || [];
   state.apiEventLog = state.apiEventLog || [];
   state.sdkIntegrations = state.sdkIntegrations || defaultSdkIntegrations();
   state.commSettings = state.commSettings || {
