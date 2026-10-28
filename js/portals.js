@@ -60,7 +60,7 @@ export const PORTAL_CONFIG = {
       { id: 'student-success', accent: 'student-success', section: 'Student Success', items: [{ view: 'studentSuccess', label: 'Student Success' }] },
       { id: 'tutor-success', accent: 'tutor-success', section: 'Tutor Success', items: [{ view: 'tutorHub', label: 'Tutor Success' }] },
       { id: 'parent-portal', accent: 'parent-portal', section: 'Parent view (preview)', items: [{ view: 'parentPortal', label: 'Parent view (preview)' }] },
-      { id: 'ai', accent: 'ai', section: 'AI Assistants', items: [{ view: 'ai', label: 'AI Assistants' }] },
+      { id: 'ai', accent: 'ai', section: 'AI Assistant', items: [{ view: 'ai', label: 'AI Assistant' }] },
       { id: 'intelligence', accent: 'intelligence', section: 'Business Intelligence', items: [{ view: 'intelligence', label: 'Business Intelligence' }] },
       { id: 'extensions', accent: 'extensions', section: 'Extensions', items: [{ view: 'marketplace', label: 'Extensions & Partners' }] },
       { id: 'system', accent: 'system', section: 'System', items: [
@@ -82,9 +82,10 @@ export const PORTAL_CONFIG = {
         { view: 'studentSuccess', icon: '★', label: 'Student Success' },
         { view: 'students', icon: '▦', label: 'My students' },
         { view: 'commHub', icon: '▩', label: 'Messages' },
+        { view: 'ai', icon: '✦', label: 'AI Assistant' },
       ]},
     ],
-    views: ['teacherHome', 'schedule', 'attendance', 'tutorHub', 'studentSuccess', 'students', 'commHub', 'whatsapp'],
+    views: ['teacherHome', 'schedule', 'attendance', 'tutorHub', 'studentSuccess', 'students', 'commHub', 'whatsapp', 'ai'],
   },
   student: {
     defaultView: 'studentHome',
@@ -94,10 +95,11 @@ export const PORTAL_CONFIG = {
         { view: 'studentHome', icon: '◉', label: 'Home' },
         { view: 'schedule', icon: '▤', label: 'My classes' },
         { view: 'studentSuccess', icon: '★', label: 'Homework' },
+        { view: 'ai', icon: '✦', label: 'Study help (AI)' },
         { view: 'tuitionMarketplace', icon: '⊞', label: 'Find Tuitions' },
       ]},
     ],
-    views: ['studentHome', 'schedule', 'studentSuccess', 'tuitionMarketplace'],
+    views: ['studentHome', 'schedule', 'studentSuccess', 'ai', 'tuitionMarketplace'],
   },
   parent: {
     defaultView: 'parentPortal',
@@ -107,10 +109,11 @@ export const PORTAL_CONFIG = {
         { view: 'parentPortal', icon: '♡', label: 'Dashboard' },
         { view: 'studentSuccess', icon: '★', label: 'Homework' },
         { view: 'commHub', icon: '▩', label: 'Messages' },
+        { view: 'ai', icon: '✦', label: 'AI Assistant' },
         { view: 'tuitionMarketplace', icon: '⊞', label: 'Find Tuitions' },
       ]},
     ],
-    views: ['parentPortal', 'studentSuccess', 'commHub', 'tuitionMarketplace'],
+    views: ['parentPortal', 'studentSuccess', 'commHub', 'ai', 'tuitionMarketplace'],
   },
 };
 

@@ -1406,8 +1406,14 @@ export function getAIHistory(role) {
   return history;
 }
 
-export function clearAIHistory(role) {
+/** Removes conversations: `{ ids }` for specific ones (a user's own), or a role, or all. */
+export function clearAIHistory(arg) {
   const s = ensurePlatformData(getState());
-  s.aiHistory = role ? s.aiHistory.filter((h) => h.role !== role) : [];
+  if (arg && typeof arg === 'object' && Array.isArray(arg.ids)) {
+    const drop = new Set(arg.ids);
+    s.aiHistory = s.aiHistory.filter((h) => !drop.has(h.id));
+  } else {
+    s.aiHistory = arg ? s.aiHistory.filter((h) => h.role !== arg) : [];
+  }
   persist();
 }

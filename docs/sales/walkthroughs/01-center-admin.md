@@ -226,11 +226,13 @@ act on their behalf."
 
 ---
 
-## 14. AI Assistants
-**Where:** AI Assistants
+## 14. AI Assistant
+**Where:** AI Assistant
 
-**Shows:** a chat with role assistants (Academy Manager, Lesson Assistant, Parent Assistant,
-Tutor).
+**Shows:** the **AI Academy Manager**, a chat about your center, plus one-click actions
+(today's decisions, dropout risk, draft a parent message), insights and your own history. If
+the admin also teaches, a second tab offers the Lesson Assistant. Teachers, parents and
+students each get their own assistant in their own login.
 
 **Click:** ask "Which students are at risk?" or "Draft a message to Aarav's parents about his
 test"; **Clear History**.

@@ -21,7 +21,7 @@ Works **offline with rule-based AI** by default; add an OpenAI key in Settings f
 | Parent | Explain scores, attendance, how to help at home |
 | Student | Topic explanations and study help |
 
-All roles access **AI Assistants** from the sidebar when logged in with appropriate portal.
+Each login gets **only its own assistant** under **AI Assistant** in its menu: center admin → Academy Manager (plus Lesson Assistant if the admin also teaches), teacher → Lesson Assistant, parent view → Parent Assistant, student view → Study help. The assistant only uses data that login may see, and History shows only the user's own conversations.
 
 ---
 
@@ -33,10 +33,10 @@ All roles access **AI Assistants** from the sidebar when logged in with appropri
 
 | Tab | Function |
 |-----|----------|
-| Chat | Conversational AI with role switcher (Owner / Tutor / Parent / Student) |
+| Chat | Conversational AI for your role (a switcher appears only for admins who also teach) |
 | Actions | One-click generators — lesson plan, parent message, quiz, decisions, dropout risk, study plan |
 | Insights | Auto-generated alerts from attendance, tests, capacity |
-| History | Past conversations — filter by role, clear history |
+| History | Your own past conversations; clear your history |
 
 **Chat roles:**
 

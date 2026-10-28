@@ -118,7 +118,7 @@ import {
   renderTeacherHome, renderStudentHome, bindPlatformEvents,
 } from './platform-views.js';
 import { renderTuitionMarketplace, bindTuitionMarketplaceEvents } from './tuition-marketplace.js';
-import { getCurrentUser, saveCenterAdminTeacherLink, getEffectiveRole, getActiveCenterId } from './auth.js';
+import { getCurrentUser, saveCenterAdminTeacherLink, getEffectiveRole, getActiveCenterId, getSession, getLinkedTeacherId } from './auth.js';
 import { TUITION_CATEGORIES } from './tuition-categories.js';
 import { openProfileEditorModal, profileStatusBadge, getTutorReviews, setReviewVisible } from './tutor-profile.js';
 import { reviewListHtml } from './layer-views.js';
@@ -1210,66 +1210,89 @@ function renderWhatsApp() {
     </div>`;
 }
 
+// One assistant per role. A center admin who also teaches gets the Lesson Assistant too.
+const AI_PERSONAS = {
+  owner: { tab: 'Academy Manager', title: 'AI Academy Manager', greeting: 'Ask about operations, attendance, capacity, fees or leads.', placeholder: 'Ask the academy manager…', suggestions: ["Show me today's problems", 'Show insights', 'How is attendance?'] },
+  tutor: { tab: 'Lesson Assistant', title: 'AI Lesson Assistant', greeting: 'Ask me to plan lessons, write quizzes or suggest homework for your batches.', placeholder: 'Ask the lesson assistant…', suggestions: ['Generate lesson plan for tomorrow', 'Create a quiz on algebra', 'Homework ideas for physics'] },
+  parent: { tab: 'Parent Assistant', title: 'AI Parent Assistant', greeting: "Ask how your child is doing or how to help at home.", placeholder: 'Ask about your child…', suggestions: ['How is my child doing?', 'How can I help at home?', 'Tell me about attendance'] },
+  student: { tab: 'Study help', title: 'AI Study Help', greeting: "Ask me to explain anything you're learning.", placeholder: 'Ask a study question…', suggestions: ["Explain Newton's Laws", 'Help with quadratic equations', 'What is chemical bonding?'] },
+};
+
+function aiPersonasForUser() {
+  const role = getEffectiveRole();
+  if (role === 'center_admin' || role === 'platform_owner') return getLinkedTeacherId() ? ['owner', 'tutor'] : ['owner'];
+  if (role === 'teacher') return ['tutor'];
+  if (role === 'student') return ['student'];
+  return ['parent'];
+}
+
+let aiPersona = null;
+
+function currentAiPersona() {
+  const allowed = aiPersonasForUser();
+  if (!allowed.includes(aiPersona)) aiPersona = allowed[0];
+  return aiPersona;
+}
+
+/** This user's own conversations (older entries without an owner are kept by persona). */
+function myAiHistory(persona = null) {
+  const me = getSession()?.userId;
+  const allowed = aiPersonasForUser();
+  return getAIHistory()
+    .filter((h) => (h.createdBy ? h.createdBy === me : allowed.includes(h.role)))
+    .filter((h) => !persona || h.role === persona);
+}
+
 function renderAI() {
-  const history = getAIHistory().slice(0, 5);
+  const persona = currentAiPersona();
+  const owner = persona === 'owner' || aiPersonasForUser().includes('owner');
   return `
-    <div class="vision-banner"><h3>AI Assistants</h3><p>Four specialized AI assistants with chat, one-click actions, auto insights, and conversation history.</p></div>
+    <div class="vision-banner"><h3>${esc(AI_PERSONAS[persona].title)}</h3><p>Chat, one-click actions${owner ? ', insights about your center' : ''} and your past conversations.</p></div>
     <div class="report-tabs" id="aiMainTabs">
       <button class="report-tab active" data-ai-main="chat">Chat</button>
       <button class="report-tab" data-ai-main="actions">Actions</button>
-      <button class="report-tab" data-ai-main="insights">Insights</button>
+      ${persona === 'owner' || persona === 'tutor' ? '<button class="report-tab" data-ai-main="insights">Insights</button>' : ''}
       <button class="report-tab" data-ai-main="history">History</button>
     </div>
-    <div id="aiMainContent">${aiChatHtml()}</div>
-    ${history.length ? `<div class="panel" style="margin-top:16px;display:none" id="aiHistoryPanel"><div class="panel-header"><h3>Recent Conversations</h3><button class="btn btn-sm btn-danger" data-action="clear-ai-history">Clear</button></div>
-    <div class="panel-body">${history.map((h) => `<div class="message-item"><div class="meta"><span>${esc(h.role)}</span><span>${new Date(h.timestamp).toLocaleString()}</span></div><div class="body"><strong>You:</strong> ${esc(h.userMessage.slice(0, 80))}…</div></div>`).join('')}</div></div>` : ''}`;
+    <div id="aiMainContent">${aiChatHtml()}</div>`;
 }
 
 function aiChatHtml() {
+  const persona = currentAiPersona();
+  const cfg = AI_PERSONAS[persona];
+  const personas = aiPersonasForUser();
+  const showInsights = persona === 'owner' || persona === 'tutor';
   return `
-    <div class="report-tabs" id="aiRoleTabs" style="margin-bottom:16px">
-      <button class="report-tab active" data-ai-role="owner">Academy Owner</button>
-      <button class="report-tab" data-ai-role="tutor">Tutor</button>
-      <button class="report-tab" data-ai-role="parent">Parent</button>
-      <button class="report-tab" data-ai-role="student">Student</button>
-    </div>
-    <div class="grid-2">
+    ${personas.length > 1 ? `<div class="report-tabs" id="aiRoleTabs" style="margin-bottom:16px">${personas.map((p) => `<button class="report-tab ${p === persona ? 'active' : ''}" data-ai-role="${p}">${esc(AI_PERSONAS[p].tab)}</button>`).join('')}</div>` : ''}
+    <div class="${showInsights ? 'grid-2' : ''}">
       <div class="panel">
-        <div class="panel-header"><h3 id="aiRoleTitle">AI Academy Manager</h3><span class="badge badge-gray" id="aiModeBadge">${getState().integrationStatus?.ai ? 'GPT enabled' : 'Rule-based'}</span></div>
+        <div class="panel-header"><h3 id="aiRoleTitle">${esc(cfg.title)}</h3><span class="badge badge-gray" id="aiModeBadge">${getState().integrationStatus?.ai ? 'GPT enabled' : 'Rule-based'}</span></div>
         <div class="panel-body ai-chat">
-          <div class="ai-suggestions" id="aiSuggestions">
-            <button data-ai-prompt="Show me today's problems">Today's problems</button>
-            <button data-ai-prompt="Show insights">Insights</button>
-            <button data-ai-prompt="How is attendance?">Attendance</button>
-          </div>
+          <div class="ai-suggestions" id="aiSuggestions">${cfg.suggestions.map((s) => `<button data-ai-prompt="${esc(s)}">${esc(s)}</button>`).join('')}</div>
           <div class="ai-messages" id="aiMessages">
-            <div class="ai-msg assistant">I'm your AI Academy Manager. Ask about operations, attendance, capacity, or lead pipeline.</div>
+            <div class="ai-msg assistant">${esc(cfg.greeting)}</div>
           </div>
           <div class="ai-input-row">
-            <input id="aiInput" placeholder="Ask the academy manager...">
+            <input id="aiInput" placeholder="${esc(cfg.placeholder)}">
             <button class="btn btn-primary" data-action="ai-send">Send</button>
           </div>
         </div>
       </div>
-      <div class="panel">
+      ${showInsights ? `<div class="panel">
         <div class="panel-header"><h3>Auto Insights</h3><button class="btn btn-sm btn-secondary" data-action="refresh-insights">Refresh</button></div>
         <div class="panel-body"><div class="insight-list" id="aiInsights">${insightHtml()}</div></div>
-      </div>
+      </div>` : ''}
     </div>`;
 }
 
-function aiActionsHtml(role = 'owner') {
+function aiActionsHtml(role = currentAiPersona()) {
   const caps = getAICapabilities(role);
   const students = getStudents();
+  const personas = aiPersonasForUser();
   return `
     <div class="toolbar">
-      <label>Role:</label>
-      <select id="aiActionRole">
-        <option value="owner" ${role === 'owner' ? 'selected' : ''}>Academy Owner</option>
-        <option value="tutor" ${role === 'tutor' ? 'selected' : ''}>Tutor</option>
-        <option value="parent" ${role === 'parent' ? 'selected' : ''}>Parent</option>
-        <option value="student" ${role === 'student' ? 'selected' : ''}>Student</option>
-      </select>
+      ${personas.length > 1 ? `<label>Assistant:</label>
+      <select id="aiActionRole">${personas.map((p) => `<option value="${p}" ${p === role ? 'selected' : ''}>${esc(AI_PERSONAS[p].tab)}</option>`).join('')}</select>` : ''}
       ${students.length ? `<select id="aiActionStudent" style="margin-left:10px">${students.map((s) => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('')}</select>` : ''}
       <input id="aiActionTopic" placeholder="Topic (optional)" style="margin-left:10px">
     </div>
@@ -1283,13 +1306,12 @@ function aiActionsHtml(role = 'owner') {
     <div class="panel-body"><pre id="aiActionResult" style="white-space:pre-wrap;font-family:inherit;font-size:0.88rem;background:var(--surface-2);padding:16px;border-radius:var(--radius-sm)">Select an action above to see results.</pre></div></div>`;
 }
 
-function aiHistoryHtml(role) {
-  const history = getAIHistory(role);
+function aiHistoryHtml() {
+  const history = myAiHistory();
   return `
     <div class="toolbar">
-      <label>Filter role:</label>
-      <select id="aiHistoryRole"><option value="">All</option><option value="owner">Owner</option><option value="tutor">Tutor</option><option value="parent">Parent</option><option value="student">Student</option></select>
-      <button class="btn btn-secondary" data-action="clear-ai-history">Clear History</button>
+      <span class="meta">Your conversations only.</span>
+      <button class="btn btn-secondary" data-action="clear-ai-history">Clear my history</button>
     </div>
     <div class="panel"><div class="panel-body">${history.length ? history.map((h) => `
       <div class="message-item"><div class="meta"><span class="badge badge-gray">${esc(h.role)}</span><span>${new Date(h.timestamp).toLocaleString()}</span></div>
@@ -2626,21 +2648,12 @@ function bindIntelligenceEvents({ navigate }) {
 }
 
 function bindAIEvents({ toast, refresh }) {
-  let currentRole = 'owner';
-
-  const roleConfig = {
-    owner: { title: 'AI Academy Manager', greeting: 'Ask about operations, problems, capacity, or leads.', suggestions: ['Show me today\'s problems', 'Show insights', 'How is attendance?'] },
-    tutor: { title: 'AI Lesson Assistant', greeting: 'Ask me to generate lesson plans, quizzes, or homework.', suggestions: ['Generate lesson plan for tomorrow', 'Create a quiz on algebra', 'Homework ideas for physics'] },
-    parent: { title: 'AI Parent Assistant', greeting: 'Ask why scores changed or how to help your child.', suggestions: ['Why did my child score lower?', 'How can I help at home?', 'Tell me about attendance'] },
-    student: { title: 'AI Tutor', greeting: 'Ask me to explain any topic you\'re learning.', suggestions: ['Explain Newton\'s Laws', 'Help with quadratic equations', 'What is chemical bonding?'] },
-  };
-
   const reloadMainTab = (mainTab) => {
     const content = document.getElementById('aiMainContent');
     if (mainTab === 'chat') content.innerHTML = aiChatHtml();
-    else if (mainTab === 'actions') content.innerHTML = aiActionsHtml(currentRole);
+    else if (mainTab === 'actions') content.innerHTML = aiActionsHtml();
     else if (mainTab === 'insights') content.innerHTML = `<div class="panel"><div class="panel-header"><h3>Auto Insights</h3><button class="btn btn-sm btn-secondary" data-action="refresh-insights">Refresh</button></div><div class="panel-body"><div class="insight-list" id="aiInsights">${insightHtml()}</div></div></div>`;
-    else if (mainTab === 'history') content.innerHTML = aiHistoryHtml(currentRole);
+    else if (mainTab === 'history') content.innerHTML = aiHistoryHtml();
     bindAIEvents({ toast, refresh });
   };
 
@@ -2655,23 +2668,13 @@ function bindAIEvents({ toast, refresh }) {
   const messagesEl = document.getElementById('aiMessages');
   const input = document.getElementById('aiInput');
 
-  const setRole = (role) => {
-    currentRole = role;
-    const cfg = roleConfig[role];
-    const titleEl = document.getElementById('aiRoleTitle');
-    const suggEl = document.getElementById('aiSuggestions');
-    if (!titleEl || !suggEl || !messagesEl) return;
-    titleEl.textContent = cfg.title;
-    suggEl.innerHTML = cfg.suggestions.map((s) => `<button data-ai-prompt="${s}">${s}</button>`).join('');
-    messagesEl.innerHTML = `<div class="ai-msg assistant">${esc(cfg.greeting)}</div>`;
-    document.querySelectorAll('#aiRoleTabs .report-tab').forEach((t) => t.classList.toggle('active', t.dataset.aiRole === role));
-    document.querySelectorAll('#aiSuggestions [data-ai-prompt]').forEach((btn) => {
-      btn.addEventListener('click', () => send(btn.dataset.aiPrompt));
-    });
-  };
-
+  // Switching assistant (only for admins who also teach) redraws the chat.
   document.querySelectorAll('#aiRoleTabs [data-ai-role]').forEach((tab) => {
-    tab.addEventListener('click', () => setRole(tab.dataset.aiRole));
+    tab.addEventListener('click', () => {
+      if (!aiPersonasForUser().includes(tab.dataset.aiRole)) return;
+      aiPersona = tab.dataset.aiRole;
+      reloadMainTab('chat');
+    });
   });
 
   const appendMsg = (text, role) => {
@@ -2688,7 +2691,7 @@ function bindAIEvents({ toast, refresh }) {
     appendMsg(text, 'user');
     if (input) input.value = '';
     appendMsg('Thinking...', 'assistant');
-    const reply = await chatWithAI(text, currentRole);
+    const reply = await chatWithAI(text, currentAiPersona());
     messagesEl.lastChild.textContent = reply;
   };
 
@@ -2699,8 +2702,8 @@ function bindAIEvents({ toast, refresh }) {
   });
 
   document.getElementById('aiActionRole')?.addEventListener('change', (e) => {
-    currentRole = e.target.value;
-    document.getElementById('aiActionGrid').innerHTML = getAICapabilities(currentRole).map((c) => `
+    if (aiPersonasForUser().includes(e.target.value)) aiPersona = e.target.value;
+    document.getElementById('aiActionGrid').innerHTML = getAICapabilities(currentAiPersona()).map((c) => `
       <div class="batch-card"><h4>${esc(c.label)}</h4><p style="font-size:0.82rem;color:var(--text-muted);margin:8px 0">${esc(c.desc)}</p>
       <button class="btn btn-sm btn-primary" data-ai-action="${esc(c.id)}">Run</button></div>`).join('');
     bindAIEvents({ toast, refresh });
@@ -2718,13 +2721,12 @@ function bindAIEvents({ toast, refresh }) {
     });
   });
 
-  document.getElementById('aiHistoryRole')?.addEventListener('change', () => refresh());
-
   document.querySelectorAll('[data-action="clear-ai-history"]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      clearAIHistory(document.getElementById('aiHistoryRole')?.value || null);
-      toast('History cleared', 'success');
-      refresh();
+      // Only this user's own conversations.
+      clearAIHistory({ ids: myAiHistory().map((h) => h.id) });
+      toast('Your history was cleared', 'success');
+      reloadMainTab('history');
     });
   });
 

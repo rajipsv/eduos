@@ -48,7 +48,13 @@ teacher here."
 
 **Shows:** messages from the center about my child.
 
-### 4. Find Tuitions (marketplace)
+### 4. AI Assistant
+**Where:** AI Assistant
+
+**Shows:** the **AI Parent Assistant**: "How is my child doing?", "How can I help at
+home?", and a home study plan, using only my own child's data.
+
+### 5. Find Tuitions (marketplace)
 **Where:** Find Tuitions
 
 **Shows:** listed tuition centers with category chips (Academics, Music, Dance, Coding…),
@@ -70,16 +76,19 @@ tutors' profiles and other parents' reviews, and enquire directly."
 ## Student view
 Switch the top selector from **Parent** to **Student**.
 
-### 5. Home
+### 6. Home
 **Shows:** the student's own home: today's and upcoming classes, homework due, progress.
 
-### 6. My classes
+### 7. My classes
 **Shows:** the timetable with **Join** links, and what was covered in recent classes.
 
-### 7. Homework
+### 8. Homework
 **Shows:** assignments; **Submit**, and see grades and feedback.
 
-### 8. Find Tuitions
+### 9. Study help (AI)
+**Shows:** the student's own **AI Study Help**: "Explain Newton's laws", and a revision plan.
+
+### 10. Find Tuitions
 The same marketplace as above.
 
 **Say:** "Students get their own simple view, just their classes and homework."

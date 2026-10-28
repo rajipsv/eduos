@@ -102,11 +102,11 @@ const SYSTEM_PROMPTS = {
 
 // The assistant persona each role may use.
 const ALLOWED_PERSONAS = {
-  center_admin: ['owner', 'tutor', 'parent', 'student'],
-  platform_owner: ['owner', 'tutor', 'parent', 'student'],
-  teacher: ['tutor', 'student'],
-  family: ['parent', 'student'],
-  parent: ['parent', 'student'],
+  center_admin: ['owner', 'tutor'],
+  platform_owner: ['owner', 'tutor'],
+  teacher: ['tutor'],
+  family: ['parent', 'student'], // parent view or student view of the same family login
+  parent: ['parent'],
   student: ['student'],
 };
 

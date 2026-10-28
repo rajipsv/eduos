@@ -102,6 +102,16 @@ showing my certificates and results to parents."
 
 ---
 
+## 8. AI Assistant
+**Where:** AI Assistant
+
+**Shows:** the **AI Lesson Assistant**: chat, plus one-click lesson plan and quiz, using my
+own batches only.
+
+**Say:** "Lesson plans and quizzes in seconds."
+
+---
+
 ## What teachers can't see (worth saying in the video)
 Fees and invoices, enquiries, other teachers' batches and settings. Tutorsala shows each
 person only what they need.
