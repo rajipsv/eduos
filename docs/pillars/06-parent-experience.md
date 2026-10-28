@@ -15,7 +15,7 @@ The Parent Experience Portal gives guardians **real-time visibility** into their
 | Role | Access |
 |------|--------|
 | Parent | Parent Portal dashboard and tabs |
-| Center admin | Preview parent view (same UI, admin context) |
+| Center admin | Read-only preview of the parent view ("Parent view (preview)"): sees exactly what the parent sees; parent actions such as reviews, I've paid, homework and preferences are turned off |
 | Family account | One login — switch **Parent view** / **Student view** in top bar |
 
 **Demo family login:** `sharma@family.demo` / `demo123`

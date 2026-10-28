@@ -214,12 +214,15 @@ profile.
 
 ---
 
-## 13. Parent Portal (admin preview)
-**Where:** Parent Portal
+## 13. Parent view (preview)
+**Where:** Parent view (preview)
 
-**Shows:** exactly what a parent sees, for any student (see the family guide).
+**Shows:** a read-only preview of exactly what a parent sees, for any student (see the family
+guide). A banner names the parent, and the parent's own actions (I've paid, review the tutor,
+preferences, messages) are turned off here.
 
-**Say:** "This is the parent's view. Let me show it properly from a parent's login later."
+**Say:** "Before I call a parent, I can see exactly what they see, without being able to
+act on their behalf."
 
 ---
 

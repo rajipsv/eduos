@@ -30,6 +30,7 @@ import {
 } from './communication.js';
 import { formatTime, dayPickerHtml, bindDayPicker, getSelectedDays } from './scheduler.js';
 import { getEffectiveRole, getLinkedTeacherId } from './auth.js';
+import { FAMILY_ROLES } from './sync-rules.js';
 import {
   openProfileEditorModal,
   profileStatusBadge,
@@ -570,11 +571,49 @@ function tutorDevelopmentView(teacherId) {
     </div></div>`;
 }
 
+// Admins (and a platform owner viewing a center) see the parent portal as a read-only preview:
+// exactly what the parent sees, with the parent's actions turned off.
+const PARENT_ACTIONS = [
+  'parent-report-payment',
+  'parent-submit-hw',
+  'submit-hw',
+  'parent-contact',
+  'parent-request-summary',
+  'save-review',
+  'save-parent-prefs',
+];
+const PARENT_ACTION_SELECTOR = PARENT_ACTIONS.map((a) => `[data-action="${a}"]`).join(',');
+
+function isParentPreview() {
+  return !FAMILY_ROLES.includes(getEffectiveRole());
+}
+
+function parentPreviewBannerText(studentId) {
+  const student = getStudent(studentId);
+  const parent = student?.parentName || 'the parent';
+  return `Preview — you're seeing what <strong>${esc(parent)}</strong> sees for ${esc(student?.name || 'this student')}. Actions are turned off; parents use them from their own login.`;
+}
+
+/** Disables every parent action and form field inside the portal (preview only). */
+function applyParentPreview(root) {
+  root.querySelectorAll(PARENT_ACTION_SELECTOR).forEach((btn) => {
+    btn.disabled = true;
+    btn.title = 'Preview — only the parent can do this';
+  });
+  root.querySelectorAll('#parentContent input, #parentContent textarea, #parentContent select').forEach((el) => {
+    el.disabled = true;
+  });
+}
+
 function renderParentPortal() {
   const students = getStudents();
   const sel = students[0]?.id || '';
+  const preview = isParentPreview();
   return `
-    <div class="vision-banner"><h3>Parent Experience Portal</h3><p>Real-time visibility into your child's classes, progress, homework, attendance, and teacher communication.</p></div>
+    <div id="parentPortalRoot">
+    ${preview
+      ? `<div class="parent-preview-banner" id="parentPreviewBanner">${parentPreviewBannerText(sel)}</div>`
+      : '<div class="vision-banner"><h3>Parent Experience Portal</h3><p>Real-time visibility into your child\'s classes, progress, homework, attendance, and teacher communication.</p></div>'}
     <div class="toolbar">
       <label>Viewing as parent of:</label>
       <select id="parentStudent">${students.map((s) => `<option value="${esc(s.id)}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select>
@@ -590,7 +629,8 @@ function renderParentPortal() {
       <button class="report-tab" data-parent-tab="messages">Messages</button>
       <button class="report-tab" data-parent-tab="settings">Settings</button>
     </div>
-    <div id="parentContent">${parentHomeView(sel)}</div>`;
+    <div id="parentContent">${parentHomeView(sel)}</div>
+    </div>`;
 }
 
 function parentTabContent(tab, studentId) {
@@ -1416,6 +1456,27 @@ function bindParentPortalEvents({ toast, refresh, showModal, closeModal }) {
   };
 
   document.getElementById('parentStudent')?.addEventListener('change', reloadTab);
+
+  const root = document.getElementById('parentPortalRoot');
+  if (root && isParentPreview()) {
+    applyParentPreview(root);
+    const banner = document.getElementById('parentPreviewBanner');
+    // eslint-disable-next-line no-unsanitized/property -- names are escaped with esc()
+    if (banner) banner.innerHTML = parentPreviewBannerText(studentId());
+    const title = document.getElementById('pageTitle');
+    if (title) title.textContent = 'Parent view (preview)';
+    // Second guard: block any click on a parent action, even if a button gets re-enabled.
+    if (!root.dataset.previewGuard) {
+      root.dataset.previewGuard = '1';
+      root.addEventListener('click', (e) => {
+        if (e.target.closest(PARENT_ACTION_SELECTOR)) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          toast('Preview — only the parent can do this', 'info');
+        }
+      }, true);
+    }
+  }
 
   document.querySelector('[data-action="save-review"]')?.addEventListener('click', (e) => {
     const { teacher, student } = e.currentTarget.dataset;

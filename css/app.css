@@ -2554,3 +2554,10 @@ tr.invoice-reported { background: color-mix(in srgb, var(--accent, #e67700) 6%, 
 /* Settings: marketplace listing categories */
 .listing-cats { display: flex; flex-wrap: wrap; gap: 8px 16px; }
 .listing-cat { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+
+/* Admin's read-only preview of the parent portal */
+.parent-preview-banner {
+  margin-bottom: 16px; padding: 12px 16px; border-radius: var(--radius-sm);
+  background: #fff4e0; border: 1px solid #f0c36d; color: #6b4a00; line-height: 1.5;
+}
+#parentPortalRoot button:disabled, #parentPortalRoot input:disabled, #parentPortalRoot textarea:disabled, #parentPortalRoot select:disabled { cursor: not-allowed; opacity: 0.55; }

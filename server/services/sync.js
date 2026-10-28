@@ -5,7 +5,7 @@
 //   conflict  someone else changed it first; `record` is the current copy (null if deleted)
 //   forbidden this user may not make that change
 //   invalid   the data failed validation
-import { COLLECTIONS, SECRET_SETTINGS_FIELDS, recordKey, writeMode, isOwnRecord } from '../../js/sync-rules.js';
+import { COLLECTIONS, SECRET_SETTINGS_FIELDS, ADMIN_ROLES, recordKey, writeMode, isOwnRecord } from '../../js/sync-rules.js';
 import { getPool } from '../db.js';
 import { rowToCenter, upsertCenter } from '../db/centers.js';
 import { loadRecords, getRecordsForUpdate, upsertRecord, deleteRecord } from '../db/records.js';
@@ -20,6 +20,10 @@ const without = (obj, keys) => Object.fromEntries(Object.entries(obj).filter(([k
 
 // 'merge' writes: which parts of an existing record a role may change.
 const MERGERS = {
+  // Admins moderate reviews: only the visible/hidden status changes, never the text.
+  tutorReviews(stored, incoming) {
+    return ['visible', 'hidden'].includes(incoming.status) ? { ...stored, status: incoming.status } : stored;
+  },
   // Teachers edit their own public-profile draft and bio, and can submit it for review.
   // Publishing (publicProfile) and everything else stays with the center admin.
   teachers(stored, incoming) {
@@ -90,7 +94,9 @@ function applyRecordChange(change, { prev, ctx, centerId, user }) {
     if (live) return { status: 'forbidden' };
     next = incoming;
   } else if (mode === 'merge') {
-    if (!live || !isOwnRecord(collection, live.data, id, ctx) || !MERGERS[collection]) return { status: 'forbidden' };
+    // Admins manage every record in their center; others only their own.
+    const owns = ADMIN_ROLES.includes(ctx.role) || isOwnRecord(collection, live?.data, id, ctx);
+    if (!live || !owns || !MERGERS[collection]) return { status: 'forbidden' };
     next = MERGERS[collection](live.data, incoming, ctx);
   } else {
     return { status: 'forbidden' };
@@ -99,7 +105,7 @@ function applyRecordChange(change, { prev, ctx, centerId, user }) {
   next = without(next, ['_projected']);
   // Parent reviews are public as soon as they're posted. Only an admin can hide one, and a
   // parent editing their review can't undo that.
-  if (collection === 'tutorReviews' && mode !== 'all') {
+  if (collection === 'tutorReviews' && !ADMIN_ROLES.includes(ctx.role)) {
     next.status = live ? live.data.status : 'visible';
     next.createdAt = live?.data.createdAt || new Date().toISOString();
     next.updatedAt = new Date().toISOString();

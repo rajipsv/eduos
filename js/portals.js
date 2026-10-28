@@ -59,7 +59,7 @@ export const PORTAL_CONFIG = {
       ]},
       { id: 'student-success', accent: 'student-success', section: 'Student Success', items: [{ view: 'studentSuccess', label: 'Student Success' }] },
       { id: 'tutor-success', accent: 'tutor-success', section: 'Tutor Success', items: [{ view: 'tutorHub', label: 'Tutor Success' }] },
-      { id: 'parent-portal', accent: 'parent-portal', section: 'Parent Portal', items: [{ view: 'parentPortal', label: 'Parent Portal' }] },
+      { id: 'parent-portal', accent: 'parent-portal', section: 'Parent view (preview)', items: [{ view: 'parentPortal', label: 'Parent view (preview)' }] },
       { id: 'ai', accent: 'ai', section: 'AI Assistants', items: [{ view: 'ai', label: 'AI Assistants' }] },
       { id: 'intelligence', accent: 'intelligence', section: 'Business Intelligence', items: [{ view: 'intelligence', label: 'Business Intelligence' }] },
       { id: 'extensions', accent: 'extensions', section: 'Extensions', items: [{ view: 'marketplace', label: 'Extensions & Partners' }] },

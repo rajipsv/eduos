@@ -234,3 +234,35 @@ test("parents review only their child's tutor; reviews go live, the admin can hi
   const boot = await call('GET', '/api/bootstrap', { as: 'vikram' });
   assert.equal(boot.body.data.tutorReviews.filter((r) => r.teacherId !== DEMO.teacherVikram).length, 0);
 });
+
+test('admins can hide or show a review, but never write, edit or delete one', { skip }, async () => {
+  // Create: refused.
+  const newId = `rev_${DEMO.teacherVikram}_${DEMO.studentRohan}`;
+  const created = await sync('admin', [
+    {
+      collection: 'tutorReviews',
+      id: newId,
+      op: 'upsert',
+      data: { id: newId, teacherId: DEMO.teacherVikram, studentId: DEMO.studentRohan, rating: 5, comment: 'Written by admin', status: 'visible' },
+    },
+  ]);
+  assert.equal(one(created).status, 'forbidden');
+  assert.equal(await stored('tutorReviews', newId), undefined);
+
+  // Edit text while changing status: only the status changes.
+  const rid = `rev_${DEMO.teacherAnita}_${DEMO.studentAarav}`;
+  let row = await stored('tutorReviews', rid);
+  const res = await sync('admin', [
+    { collection: 'tutorReviews', id: rid, op: 'upsert', baseVersion: row.version, data: { ...row.data, comment: 'Edited by admin', rating: 1, status: 'visible' } },
+  ]);
+  assert.equal(one(res).status, 'ok');
+  const after = (await stored('tutorReviews', rid)).data;
+  assert.equal(after.comment, row.data.comment, 'admin changed the review text');
+  assert.equal(after.rating, row.data.rating, 'admin changed the rating');
+  assert.equal(after.status, 'visible');
+
+  // Delete: refused.
+  row = await stored('tutorReviews', rid);
+  const del = await sync('admin', [{ collection: 'tutorReviews', id: rid, op: 'delete', baseVersion: row.version }]);
+  assert.equal(one(del).status, 'forbidden');
+});

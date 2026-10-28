@@ -147,7 +147,8 @@ const FAMILY_ACCESS = {
 };
 
 function accessFor(role, collection) {
-  if (ADMIN_ROLES.includes(role)) return ['all', 'all'];
+  // Parent reviews are written only by parents; admins may only hide or show them.
+  if (ADMIN_ROLES.includes(role)) return collection === 'tutorReviews' ? ['all', 'merge'] : ['all', 'all'];
   const table = role === 'teacher' ? TEACHER_ACCESS : FAMILY_ROLES.includes(role) ? FAMILY_ACCESS : {};
   return table[collection] || ['none', 'none'];
 }
