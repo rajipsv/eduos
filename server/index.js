@@ -44,7 +44,14 @@ const route = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(ne
 app.all(/^\/api(\/|$)/, route((req, res) => handleApi(req, res, req.path)));
 
 // Only public files are served. Server code, scripts, docs and config stay private.
-const PUBLIC_PAGES = { '/': 'index.html', '/index.html': 'index.html', '/start-page.html': 'start-page.html' };
+const PUBLIC_PAGES = {
+  '/': 'index.html',
+  '/index.html': 'index.html',
+  '/start-page.html': 'start-page.html',
+  '/robots.txt': 'robots.txt',
+  '/sitemap.xml': 'sitemap.xml',
+  '/favicon.ico': 'favicon.ico',
+};
 app.get(Object.keys(PUBLIC_PAGES), (req, res, next) => {
   res.sendFile(path.join(root, PUBLIC_PAGES[req.path]), (err) => err && next(err));
 });

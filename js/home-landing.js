@@ -166,7 +166,7 @@ export function renderLandingHeader() {
     <header class="landing-header">
       <div class="landing-header-inner">
         <a href="#" class="landing-logo" data-scroll="top" aria-label="Tutorsala home">
-          <span class="brand-icon"><img src="img/tutorsala_logo.png" alt="Tutorsala Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;"></span>
+          <span class="brand-icon"><img src="img/tutorsala-logo.webp" width="128" height="128" alt="Tutorsala logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;"></span>
           <span class="landing-logo-text">
             <strong>Tutorsala</strong>
             <small>Less Chasing. More Teaching.</small>
@@ -307,7 +307,7 @@ export function renderLandingFooter() {
     <footer class="landing-footer">
       <div class="landing-footer-inner">
         <div class="landing-logo landing-logo-footer">
-          <span class="brand-icon"><img src="img/tutorsala_logo.png" alt="Tutorsala Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;"></span>
+          <span class="brand-icon"><img src="img/tutorsala-logo.webp" width="128" height="128" alt="Tutorsala logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: inherit;"></span>
           <strong>Tutorsala</strong>
         </div>
         <p>Operations platform for tuition centers — not course hosting.</p>

@@ -84,7 +84,9 @@ button, input, select, textarea {
   font-size: 1.25rem;
 }
 
-.brand h1 {
+.brand h1,
+.brand .brand-title {
+  margin: 0;
   font-size: 1.15rem;
   font-weight: 700;
 }
@@ -1907,7 +1909,8 @@ tr.invoice-reported { background: color-mix(in srgb, var(--accent, #e67700) 6%, 
   margin-bottom: 16px;
 }
 
-.auth-brand h1 {
+.auth-brand h1,
+.auth-brand .brand-title {
   font-family: var(--font-serif);
   font-size: 1.6rem;
   margin: 0;

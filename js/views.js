@@ -1476,7 +1476,39 @@ function renderSettings() {
     </div>`;
 }
 
+// Chart.js is only needed on a few screens, so it's loaded the first time one is opened
+// instead of on every page (it's ~200 KB).
+let chartJsLoading = null;
+
+function loadChartJs() {
+  if (window.Chart) return Promise.resolve();
+  if (!chartJsLoading) {
+    chartJsLoading = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+      script.onload = () => resolve();
+      script.onerror = () => {
+        chartJsLoading = null;
+        reject(new Error('Chart.js failed to load'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return chartJsLoading;
+}
+
 export function initCharts(view) {
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+  if (!document.querySelector('#content canvas')) return;
+  loadChartJs()
+    .then(() => drawCharts(view))
+    .catch((err) => console.warn(err.message));
+}
+
+function drawCharts(view) {
   if (chartInstance) {
     chartInstance.destroy();
     chartInstance = null;
@@ -2640,7 +2672,7 @@ function bindIntelligenceEvents({ navigate }) {
   const reloadBiTab = (tab) => {
     document.getElementById('biContent').innerHTML = biTabContent(tab);
     bindGoButtons();
-    if (tab === 'trends') initBICharts();
+    if (tab === 'trends') loadChartJs().then(initBICharts).catch((err) => console.warn(err.message));
   };
 
   document.querySelectorAll('[data-bi-tab]').forEach((tab) => {
