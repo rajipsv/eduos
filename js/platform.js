@@ -936,7 +936,10 @@ export function saveIntervention(intervention) {
 
 export function resolveIntervention(id) {
   const item = ensurePlatformData(getState()).interventions.find((i) => i.id === id);
-  if (item) item.status = 'resolved';
+  if (item) {
+    item.status = 'resolved';
+    item.resolvedAt = new Date().toISOString().slice(0, 10);
+  }
   persist();
 }
 

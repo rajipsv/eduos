@@ -220,6 +220,7 @@ function studentSuccessInterventions(studentId) {
             <div class="batch-card" style="margin-bottom:10px">
               <h4>${esc(i.title)}</h4>
               <div class="meta">${esc(i.reason)} · <span class="badge ${i.priority === 'high' ? 'badge-red' : i.priority === 'medium' ? 'badge-orange' : 'badge-green'}">${esc(i.priority)}</span> · ${esc(i.status)}</div>
+              <div class="meta">${interventionDatesText(i)}</div>
               <ul style="font-size:0.82rem;margin:8px 0;padding-left:18px">${(i.actions || []).map((a) => `<li>${a}</li>`).join('')}</ul>
               ${i.status === 'active' ? `<button class="btn btn-sm btn-secondary" data-action="resolve-int" data-id="${esc(i.id)}">Mark resolved</button>` : ''}
             </div>`).join('') : '<p class="empty-state">No interventions yet — generate a plan from success data.</p>'}
@@ -232,6 +233,22 @@ function studentSuccessInterventions(studentId) {
         </div>
       </div>
     </div>`;
+}
+
+// "Added 3 Nov 2025 · open 12 days" or "Added … · resolved 10 Nov 2025 (7 days)".
+function interventionDatesText(i) {
+  const fmt = (d) => new Date(`${d}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const days = (from, to) => Math.max(0, Math.round((new Date(`${to}T00:00:00`) - new Date(`${from}T00:00:00`)) / 86400000));
+  if (!i.createdAt) return '';
+  const today = new Date().toISOString().slice(0, 10);
+  const added = `Added ${esc(fmt(i.createdAt))}`;
+  if (i.status === 'resolved') {
+    return i.resolvedAt
+      ? `${added} · resolved ${esc(fmt(i.resolvedAt))} (${days(i.createdAt, i.resolvedAt)} days)`
+      : `${added} · resolved`;
+  }
+  const open = days(i.createdAt, today);
+  return `${added} · open ${open} day${open === 1 ? '' : 's'}${i.status === 'active' && open >= 14 ? ' <span class="badge badge-orange">Needs follow-up</span>' : ''}`;
 }
 
 function studentSuccessAssignments(studentId, { mode = 'admin' } = {}) {
