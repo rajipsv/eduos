@@ -1140,8 +1140,12 @@ function bindStudentSuccessEvents({ showModal, closeModal, toast, refresh }) {
   });
 
   document.querySelector('[data-action="apply-intervention"]')?.addEventListener('click', () => {
-    const plans = applyInterventionPlan(studentId());
-    toast(`${plans.length} intervention(s) applied`, 'success');
+    const { created, skipped } = applyInterventionPlan(studentId());
+    if (created.length) {
+      toast(`${created.length} new intervention(s) added${skipped.length ? ` · ${skipped.length} already open` : ''}`, 'success');
+    } else {
+      toast('No new issues — the existing plans are still active', 'info');
+    }
     refresh();
   });
 

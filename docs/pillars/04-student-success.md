@@ -65,7 +65,7 @@ Student Success tracks **learning outcomes beyond attendance**: success scores, 
 
 1. **Interventions tab** for an at-risk student.
 2. Review suggested plan (extra practice, parent call, etc.).
-3. Click **Generate & Apply Plan**.
+3. Click **Generate & Apply Plan**. Each weak area (attendance < 85%, test average < 75%, homework < 80%, a skill < 50%) becomes one intervention showing the rule that triggered it. Issues that already have an open intervention are skipped, and the parent is notified only when something new is added.
 4. When resolved, click **Mark resolved**.
 
 ### D. Manage homework

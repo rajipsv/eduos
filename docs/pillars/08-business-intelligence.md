@@ -28,7 +28,7 @@ Business Intelligence tells the academy owner **what to do next** — not just w
 
 | Tab | Function |
 |-----|----------|
-| Decisions | Today's priority cards — high/medium/info with **Resolve** links to relevant module |
+| Decisions | Today's priority cards — high/medium/info, each with a **Go to …** button that opens the screen where you fix it. Cards are worked out from live data and clear by themselves once the issue is fixed. |
 | KPIs | Headline metrics + recommended actions table |
 | Trends | 4-week attendance chart, weekly sessions completed chart |
 | Predictions | 30-day forecast cards + dropout risk register |

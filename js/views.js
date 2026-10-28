@@ -235,7 +235,7 @@ function renderDashboard() {
             <div class="decision-card ${esc(d.priority)}">
               <h4>${esc(d.title)}</h4>
               <p>${esc(d.detail)}</p>
-              <button class="btn btn-sm btn-secondary" data-action="go-${esc(d.action)}">Take action</button>
+              <button class="btn btn-sm btn-secondary" data-action="go-${esc(d.action)}">${esc(decisionButtonLabel(d.action))}</button>
             </div>`).join('')}
         </div>
       </div>
@@ -289,17 +289,34 @@ function renderIntelligence() {
     <div id="biContent">${biDecisionsHtml()}</div>`;
 }
 
+// Decision cards are worked out from live data and disappear once the issue is fixed.
+// Their button opens the screen where it is fixed; it doesn't close the card itself.
+const DECISION_TARGETS = {
+  attendance: 'Attendance',
+  batches: 'Batches',
+  teachers: 'Teachers',
+  schedule: 'Class Schedule',
+  crm: 'Lead pipeline',
+  ai: 'AI Assistants',
+  dashboard: 'Dashboard',
+};
+
+function decisionButtonLabel(action) {
+  return `Go to ${DECISION_TARGETS[action] || 'details'} →`;
+}
+
 function biDecisionsHtml() {
   const decisions = generateOwnerDecisions();
   return `
     <div class="panel">
       <div class="panel-header"><h3>Today's Priority Decisions</h3></div>
       <div class="panel-body">
+        <p style="font-size:0.82rem;color:var(--text-muted);margin:0 0 12px">Worked out from your live data. Each card clears by itself once the issue is fixed.</p>
         ${decisions.map((d) => `
           <div class="decision-card ${esc(d.priority)}">
             <h4>${esc(d.title)}</h4>
             <p>${esc(d.detail)}</p>
-            <button class="btn btn-sm btn-primary" data-action="go-${esc(d.action)}">Resolve</button>
+            <button class="btn btn-sm btn-primary" data-action="go-${esc(d.action)}">${esc(decisionButtonLabel(d.action))}</button>
           </div>`).join('')}
       </div>
     </div>`;
@@ -1558,7 +1575,7 @@ export function bindViewEvents(view, ctx, params = {}) {
   if (view === 'parentPortal') bindLayerEvents('parentPortal', ctx);
   if (view === 'marketplace') bindLayerEvents('marketplace', ctx);
   if (view === 'whatsapp') bindWhatsAppEvents({ toast, refresh });
-  if (view === 'intelligence') bindIntelligenceEvents({ toast, refresh });
+  if (view === 'intelligence') bindIntelligenceEvents({ navigate });
   if (view === 'ai') bindAIEvents({ toast, refresh });
   if (view === 'settings') bindSettingsEvents({ toast, refresh });
   if (view === 'tuitionMarketplace') bindTuitionMarketplaceEvents(ctx);
@@ -2587,10 +2604,15 @@ function bindWhatsAppEvents({ toast, refresh }) {
   });
 }
 
-function bindIntelligenceEvents({ toast, refresh }) {
+function bindIntelligenceEvents({ navigate }) {
+  const bindGoButtons = () => {
+    document.querySelectorAll('#biContent [data-action^="go-"]').forEach((btn) => {
+      btn.addEventListener('click', () => navigate(btn.dataset.action.replace('go-', '')));
+    });
+  };
   const reloadBiTab = (tab) => {
     document.getElementById('biContent').innerHTML = biTabContent(tab);
-    bindIntelligenceEvents({ toast, refresh });
+    bindGoButtons();
     if (tab === 'trends') initBICharts();
   };
 

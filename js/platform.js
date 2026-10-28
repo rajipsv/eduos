@@ -1004,26 +1004,34 @@ export function updateProjectStatus(projectId, status, grade) {
   return p;
 }
 
+// One intervention per weak area, each with the rule that triggered it and matching actions.
+// `key` identifies the issue so the same one isn't added twice while it is still open.
 export function generateInterventionPlan(studentId) {
   const success = computeSuccessScore(studentId);
   const student = getStudent(studentId);
   if (!success || !student) return [];
-  const plans = [];
-  for (const w of success.weaknesses) {
-    plans.push({
-      studentId,
-      title: `Address: ${w}`,
-      reason: w,
-      priority: success.score < 60 ? 'high' : 'medium',
-      status: 'active',
-      actions: success.recommendations.slice(0, 2),
-    });
+  const b = success.breakdown;
+  const priority = success.score < 60 ? 'high' : 'medium';
+  const rules = [];
+  if (b.attendance < 85) {
+    rules.push({ key: 'attendance', title: 'Improve attendance', reason: `Attendance ${b.attendance}% (target 85%)`, actions: ['Set up parent reminders for missed classes', 'Call the parent to understand the absences'] });
   }
+  if ((b.tests || 0) < 75) {
+    rules.push({ key: 'tests', title: 'Lift test scores', reason: b.tests ? `Test average ${b.tests}% (target 75%)` : 'No test scores recorded yet', actions: ['Schedule extra practice for weak topics', 'Review the last test with the student'] });
+  }
+  if (b.homework < 80) {
+    rules.push({ key: 'homework', title: 'Catch up on homework', reason: `Homework submitted ${b.homework}% (target 80%)`, actions: ['Send homework reminders via WhatsApp', 'Agree a weekly homework time with the parent'] });
+  }
+  for (const sk of getSkills(studentId).filter((x) => x.progress < 50)) {
+    rules.push({ key: `skill:${sk.subject}`, title: `Strengthen ${sk.subject}`, reason: `${sk.subject} progress ${sk.progress}% (target 50%)`, actions: [`Assign targeted ${sk.subject} practice`] });
+  }
+  const plans = rules.map((r) => ({ studentId, ...r, priority, status: 'active' }));
   if (!plans.length) {
     plans.push({
       studentId,
+      key: 'enrichment',
       title: 'Continue enrichment path',
-      reason: 'Student performing well across metrics',
+      reason: `Success score ${success.score} — on track in every area`,
       priority: 'low',
       status: 'monitoring',
       actions: ['Assign stretch project', 'Celebrate achievements with parents'],
@@ -1032,21 +1040,53 @@ export function generateInterventionPlan(studentId) {
   return plans;
 }
 
+// The key of an older intervention saved before keys existed, guessed from its title.
+function interventionKey(i) {
+  if (i.key) return i.key;
+  const t = `${i.title} ${i.reason}`.toLowerCase();
+  if (t.includes('attendance')) return 'attendance';
+  if (t.includes('test')) return 'tests';
+  if (t.includes('homework')) return 'homework';
+  const skill = t.match(/progress in ([a-z ]+)/);
+  if (skill) return `skill:${skill[1].trim()}`;
+  if (t.includes('enrichment')) return 'enrichment';
+  return t;
+}
+
+/**
+ * Saves only the plans for issues that don't already have an open intervention, and tells
+ * the parent only when something new was added.
+ * @returns {{ created: any[], skipped: any[] }}
+ */
 export function applyInterventionPlan(studentId) {
-  const plans = generateInterventionPlan(studentId);
-  for (const p of plans) saveIntervention(p);
-  import('./communication.js').then(({ dispatchCommunicationEvent }) => {
-    const student = getStudent(studentId);
-    if (!student) return;
-    dispatchCommunicationEvent('intervention', {
-      student: student.name,
-      parent: student.parentName,
-      parentPhone: student.parentPhone,
-      parentEmail: student.parentEmail,
-      summary: `Intervention plan created for ${student.name}: ${plans.map((p) => p.title).join('; ')}`,
+  const open = new Set(
+    getInterventions(studentId)
+      .filter((i) => i.status === 'active' || i.status === 'monitoring')
+      .map((i) => interventionKey(i).toLowerCase()),
+  );
+  const created = [];
+  const skipped = [];
+  for (const p of generateInterventionPlan(studentId)) {
+    if (open.has(p.key.toLowerCase())) skipped.push(p);
+    else {
+      saveIntervention(p);
+      created.push(p);
+    }
+  }
+  if (created.length) {
+    import('./communication.js').then(({ dispatchCommunicationEvent }) => {
+      const student = getStudent(studentId);
+      if (!student) return;
+      dispatchCommunicationEvent('intervention', {
+        student: student.name,
+        parent: student.parentName,
+        parentPhone: student.parentPhone,
+        parentEmail: student.parentEmail,
+        summary: `Support plan for ${student.name}: ${created.map((p) => p.title).join('; ')}`,
+      });
     });
-  });
-  return plans;
+  }
+  return { created, skipped };
 }
 
 export function generateParentSummary(studentId) {
