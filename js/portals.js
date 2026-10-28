@@ -43,7 +43,6 @@ export const PORTAL_CONFIG = {
         { view: 'dashboard', iconKey: 'dashboard', label: 'Dashboard' },
       ]},
       { id: 'crm', accent: 'crm', section: 'Education CRM', items: [
-        { view: 'publicSite', label: 'Public Website' },
         { view: 'crm', label: 'Lead pipeline' },
       ]},
       { id: 'academy', accent: 'academy', section: 'Academy', items: [

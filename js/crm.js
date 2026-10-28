@@ -55,10 +55,3 @@ export function formatLeadAge(createdAt) {
   if (days === 1) return '1 day ago';
   return `${days} days ago`;
 }
-
-export function getRecentWebInquiries(limit = 10) {
-  return getLeads()
-    .filter((l) => l.source === 'Website')
-    .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
-    .slice(0, limit);
-}

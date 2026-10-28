@@ -1,7 +1,6 @@
 import { esc, safeUrl } from './html.js';
 import {
-  getStudents, getStudent, getBatches, getBatch, getTeachers, getTeacher, getUpcomingSessions, getMessages, getState, saveLead,
-  addLeadActivity,
+  getStudents, getStudent, getBatches, getBatch, getTeachers, getTeacher, getUpcomingSessions, getMessages, getState,
 } from './store.js';
 import { openWhatsAppWeb } from './whatsapp.js';
 import {
@@ -15,7 +14,7 @@ import {
   getMarketplaceStats, searchMarketplace, rateMarketplaceItem, marketplaceBrowseOrder,
   getMarketplaceTypeLabel, getMarketplaceInstallHint, getMarketplaceInstallMessage, getMarketplaceActionLabel,
   getSdkIntegrations, toggleSdkIntegration,
-  getTutorAvailability, saveTutorAvailability, formatTutorAvailabilitySummary, getPublicSite, savePublicSite,
+  getTutorAvailability, saveTutorAvailability, formatTutorAvailabilitySummary,
   getInterventions, saveIntervention, resolveIntervention, buildLearningJourney,
   submitAssignment, gradeAssignment, generateInterventionPlan, applyInterventionPlan,
   generateParentSummary, sendParentSummary, getAllStudentsSuccessOverview,
@@ -30,8 +29,6 @@ import {
   sendViaChannel, runClassReminders, broadcastToParents, COMM_EVENTS,
 } from './communication.js';
 import { formatTime, dayPickerHtml, bindDayPicker, getSelectedDays } from './scheduler.js';
-import { getRecentWebInquiries } from './crm.js';
-import { academyBanner } from './academy.js';
 import { getEffectiveRole, getLinkedTeacherId } from './auth.js';
 import {
   openProfileEditorModal,
@@ -68,7 +65,6 @@ export const layerPageMeta = {
   parentPortal: { title: 'Parent Portal', subtitle: 'Progress, homework, attendance, fees, messages' },
   commHub: { title: 'Communication Hub', subtitle: 'Email, SMS, WhatsApp, push automations' },
   marketplace: { title: 'Extensions & Partners', subtitle: 'Connect tools, ops templates, and partner services' },
-  publicSite: { title: 'Public Website', subtitle: 'Marketing page and inquiry capture to CRM' },
 };
 
 export function renderLayerView(view) {
@@ -78,7 +74,6 @@ export function renderLayerView(view) {
     parentPortal: renderParentPortal,
     commHub: renderCommHub,
     marketplace: renderMarketplace,
-    publicSite: renderPublicSite,
   };
   return map[view]?.() || '';
 }
@@ -90,7 +85,6 @@ export function bindLayerEvents(view, ctx) {
     parentPortal: bindParentPortalEvents,
     commHub: bindCommHubEvents,
     marketplace: bindMarketplaceEvents,
-    publicSite: bindPublicSiteEvents,
   };
   binders[view]?.(ctx);
 }
@@ -1031,82 +1025,6 @@ function marketplaceCards(items, showUninstall = false) {
     </div>`).join('') || '<p class="empty-state">No items match your search.</p>';
 }
 
-function renderPublicSite() {
-  const site = getPublicSite();
-  const inquiries = getRecentWebInquiries(8);
-  return `
-    ${academyBanner('Public Website', 'Your marketing front door — inquiries flow straight into the Education CRM pipeline.')}
-    <div class="report-tabs" style="margin-top:16px">
-      <button class="report-tab active" data-site-tab="preview">Live preview</button>
-      <button class="report-tab" data-site-tab="settings">Page settings</button>
-      <button class="report-tab" data-site-tab="inquiries">Web inquiries (${esc(inquiries.length)})</button>
-    </div>
-    <div id="siteContent">${sitePreviewHtml(site)}</div>`;
-}
-
-function sitePreviewHtml(site) {
-  return `
-    <div class="grid-2" style="margin-top:12px">
-      <div class="panel">
-        <div class="panel-header"><h3>Landing Page Preview</h3></div>
-        <div class="panel-body" style="text-align:center;padding:40px 24px;background:var(--surface-2);border-radius:var(--radius-sm)">
-          <h2 style="font-family:var(--font-display);font-size:2rem;margin-bottom:12px">${esc(site.headline)}</h2>
-          <p style="color:var(--text-muted);margin-bottom:20px">${esc(site.subheadline || '')}</p>
-          <button class="btn btn-primary" type="button">${esc(site.ctaText || 'Request Demo')}</button>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-header"><h3>Inquiry Form (visitor view)</h3></div>
-        <div class="panel-body">
-          ${site.captureEnabled ? `<div class="form-grid">
-            <div class="form-group"><label>Student name</label><input id="inqName" placeholder="Full name"></div>
-            <div class="form-group"><label>Parent phone</label><input id="inqPhone" placeholder="Mobile number"></div>
-            <div class="form-group"><label>Email</label><input id="inqEmail" placeholder="email@example.com"></div>
-            <div class="form-group"><label>Grade</label><input id="inqGrade" placeholder="8, 9, 10…"></div>
-            <div class="form-group full"><label>Course interest</label><input id="inqCourse" placeholder="Science, Math…"></div>
-          </div>
-          <button class="btn btn-primary" style="margin-top:12px" data-action="submit-inquiry">Submit inquiry</button>
-          <p style="font-size:0.82rem;color:var(--text-muted);margin-top:10px">Creates a lead in CRM → Pipeline (Lead stage)</p>` : '<p class="empty-state">Lead capture is disabled — enable it in Page settings.</p>'}
-        </div>
-      </div>
-    </div>`;
-}
-
-function siteSettingsHtml(site) {
-  return `
-    <div class="panel" style="margin-top:12px"><div class="panel-header"><h3>Page settings</h3></div>
-    <div class="panel-body">
-      <div class="form-grid">
-        <div class="form-group full"><label>Headline</label><input id="siteHeadline" value="${esc(site.headline)}"></div>
-        <div class="form-group full"><label>Subheadline</label><input id="siteSubheadline" value="${esc(site.subheadline || '')}"></div>
-        <div class="form-group"><label>Button text</label><input id="siteCta" value="${esc(site.ctaText || '')}"></div>
-        <div class="form-group full"><label><input type="checkbox" id="siteCapture" ${site.captureEnabled ? 'checked' : ''}> Enable inquiry form → CRM</label></div>
-      </div>
-      <button class="btn btn-primary" style="margin-top:12px" data-action="save-site">Save settings</button>
-    </div></div>`;
-}
-
-function siteInquiriesHtml() {
-  const inquiries = getRecentWebInquiries(20);
-  return `
-    <div class="panel" style="margin-top:12px"><div class="panel-header"><h3>Website inquiries</h3></div>
-    <div class="panel-body table-wrap">
-      <table><thead><tr><th>Name</th><th>Grade</th><th>Course</th><th>Phone</th><th>Stage</th><th>Date</th></tr></thead>
-      <tbody>${inquiries.length ? inquiries.map((l) => `<tr>
-        <td><strong>${esc(l.name)}</strong></td><td>${esc(l.grade || '—')}</td><td>${esc(l.course || '—')}</td><td>${esc(l.phone)}</td>
-        <td><span class="badge badge-gray">${esc(l.stage)}</span></td><td>${esc(l.createdAt)}</td></tr>`).join('') : '<tr><td colspan="6" class="empty-state">No website inquiries yet</td></tr>'}
-      </tbody></table>
-      <p style="font-size:0.82rem;color:var(--text-muted);margin-top:12px">Open Education CRM to advance leads through demo → enrollment.</p>
-    </div></div>`;
-}
-
-function siteTabContent(tab) {
-  const site = getPublicSite();
-  if (tab === 'settings') return siteSettingsHtml(site);
-  if (tab === 'inquiries') return siteInquiriesHtml();
-  return sitePreviewHtml(site);
-}
-
 function getManageStudentId() {
   return document.getElementById('ssStudent')?.value
     || document.getElementById('tutorStudent')?.value
@@ -1865,52 +1783,5 @@ function bindMarketplaceEvents({ showModal, closeModal, toast, refresh, navigate
       toast('Rating saved', 'success');
       refresh();
     });
-  });
-}
-
-function bindPublicSiteEvents({ toast, refresh }) {
-  const reloadSite = (tab) => {
-    document.getElementById('siteContent').innerHTML = siteTabContent(tab);
-    bindPublicSiteEvents({ toast, refresh });
-  };
-
-  document.querySelectorAll('[data-site-tab]').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('[data-site-tab]').forEach((t) => t.classList.remove('active'));
-      tab.classList.add('active');
-      reloadSite(tab.dataset.siteTab);
-    });
-  });
-
-  document.querySelector('[data-action="save-site"]')?.addEventListener('click', () => {
-    savePublicSite({
-      headline: document.getElementById('siteHeadline').value.trim(),
-      subheadline: document.getElementById('siteSubheadline')?.value.trim() || '',
-      ctaText: document.getElementById('siteCta')?.value.trim() || 'Request Demo',
-      captureEnabled: document.getElementById('siteCapture').checked,
-    });
-    toast('Website settings saved', 'success');
-    refresh();
-  });
-
-  document.querySelector('[data-action="submit-inquiry"]')?.addEventListener('click', () => {
-    if (!getPublicSite().captureEnabled) return toast('Lead capture is disabled', 'error');
-    const name = document.getElementById('inqName')?.value.trim();
-    const phone = document.getElementById('inqPhone')?.value.trim();
-    if (!name || !phone) return toast('Name and phone required', 'error');
-    const lead = saveLead({
-      name,
-      phone,
-      email: document.getElementById('inqEmail')?.value.trim() || '',
-      grade: document.getElementById('inqGrade')?.value.trim() || '',
-      course: document.getElementById('inqCourse')?.value.trim() || '',
-      source: 'Website',
-      stage: 'lead',
-      notes: 'Submitted via public website inquiry form',
-      followUpDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
-    });
-    addLeadActivity(lead.id, 'inquiry', 'Website inquiry form submitted');
-    toast('Inquiry sent to CRM pipeline', 'success');
-    refresh();
   });
 }

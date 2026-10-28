@@ -144,7 +144,6 @@ export const pageMeta = {
   parentPortal: layerPageMeta.parentPortal,
   commHub: layerPageMeta.commHub,
   marketplace: layerPageMeta.marketplace,
-  publicSite: layerPageMeta.publicSite,
   ai: { title: 'AI Assistants', subtitle: 'Owner, tutor, parent and student AI with actions' },
   settings: { title: 'Settings', subtitle: 'Configure your tutoring center' },
   teacherHome: { title: 'Teacher Today', subtitle: 'Your classes and tasks' },
@@ -181,7 +180,6 @@ export function renderView(view, ctx, params = {}) {
     parentPortal: () => renderLayerView('parentPortal'),
     commHub: () => renderLayerView('commHub'),
     marketplace: () => renderLayerView('marketplace'),
-    publicSite: () => renderLayerView('publicSite'),
     ai: renderAI,
     settings: renderSettings,
   };
@@ -1532,7 +1530,7 @@ export function bindViewEvents(view, ctx, params = {}) {
 
   document.querySelectorAll('[data-action^="go-"]').forEach((btn) => {
     const target = btn.dataset.action.replace('go-', '');
-    if (['ai', 'students', 'fees', 'schedule', 'intelligence', 'attendance', 'batches', 'teachers', 'crm', 'dashboard', 'studentSuccess', 'tutorHub', 'parentPortal', 'commHub', 'marketplace', 'publicSite', 'whatsapp', 'platformCenters', 'platformDashboard', 'tuitionMarketplace'].includes(target)) {
+    if (['ai', 'students', 'fees', 'schedule', 'intelligence', 'attendance', 'batches', 'teachers', 'crm', 'dashboard', 'studentSuccess', 'tutorHub', 'parentPortal', 'commHub', 'marketplace', 'whatsapp', 'platformCenters', 'platformDashboard', 'tuitionMarketplace'].includes(target)) {
       btn.addEventListener('click', () => navigate(target));
     }
   });
@@ -1559,7 +1557,6 @@ export function bindViewEvents(view, ctx, params = {}) {
   if (view === 'tutorHub') bindLayerEvents('tutorHub', ctx);
   if (view === 'parentPortal') bindLayerEvents('parentPortal', ctx);
   if (view === 'marketplace') bindLayerEvents('marketplace', ctx);
-  if (view === 'publicSite') bindLayerEvents('publicSite', ctx);
   if (view === 'whatsapp') bindWhatsAppEvents({ toast, refresh });
   if (view === 'intelligence') bindIntelligenceEvents({ toast, refresh });
   if (view === 'ai') bindAIEvents({ toast, refresh });
