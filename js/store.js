@@ -1589,7 +1589,7 @@ const LEAD_STAGE_LABELS = {
   admission: 'Admission',
   payment: 'Payment',
   batch_allocation: 'Batch Allocation',
-  converted: 'Student',
+  converted: 'Enrolled',
 };
 
 export function addLeadActivity(leadId, type, note) {
@@ -1614,6 +1614,8 @@ export function updateLead(id, fields) {
 }
 
 export function moveLead(id, stage) {
+  // Only a real enrolment (convertLeadToStudent) may mark a lead as enrolled.
+  if (stage === 'converted') return;
   const lead = getLead(id);
   if (!lead) return;
   const prev = lead.stage;

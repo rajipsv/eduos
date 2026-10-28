@@ -34,7 +34,7 @@ Tutorsala runs everything around the teaching.
 ## Features
 
 ### 1. Enquiries and admissions (CRM)
-- One pipeline for every enquiry: Lead → Enquiry → Demo class → Counselling → Admission → Batch
+- One pipeline for every enquiry: Lead → Enquiry → Demo class → Counselling → Admission → Batch → Enrolled
 - Follow-up dates, notes and full activity history for each family
 - Enquiries from your Tutorsala marketplace listing arrive automatically; add calls, WhatsApp
   and walk-ins in one click

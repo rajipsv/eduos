@@ -51,7 +51,7 @@ Inquiries from the public page automatically create CRM leads with source **Webs
 5. Admission
 6. Payment
 7. Batch Allocation
-8. Student (converted)
+8. Enrolled (converted)
 
 **Lead sources:** Website, WhatsApp, Facebook Ads, Referral, Walk-in, Guest Marketplace, Student Marketplace, Parent Marketplace, Other.
 
@@ -94,7 +94,7 @@ Inquiries from the public page automatically create CRM leads with source **Webs
 1. Move lead to **Batch Allocation** stage.
 2. Click **Enroll** on the pipeline card (or in lead Details).
 3. Pick a batch and confirm parent/student details.
-4. Lead moves to **Student (converted)** and appears in **Academy → Students**.
+4. Lead moves to **Enrolled** and appears in **Academy → Students**. Enroll is the only way into this stage: Batch Allocation cards have no **Advance →** button.
 
 ---
 

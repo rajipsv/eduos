@@ -493,7 +493,7 @@ function crmLeadCard(lead, stageId) {
       ${meta ? `<p style="font-size:0.75rem;color:var(--accent)">${meta}</p>` : ''}
       <div class="pipeline-actions">
         <button class="btn btn-sm btn-secondary" data-action="view-lead" data-id="${esc(lead.id)}">Details</button>
-        ${stageId !== 'converted' ? `<button class="btn btn-sm btn-secondary" data-action="advance-lead" data-id="${esc(lead.id)}">Advance →</button>` : ''}
+        ${stageId !== 'converted' && stageId !== 'batch_allocation' ? `<button class="btn btn-sm btn-secondary" data-action="advance-lead" data-id="${esc(lead.id)}">Advance →</button>` : ''}
         ${stageId === 'batch_allocation' ? `<button class="btn btn-sm btn-primary" data-action="convert-lead" data-id="${esc(lead.id)}">Enroll</button>` : ''}
         ${lead.phone ? `<button class="btn btn-sm btn-secondary" data-action="wa-lead" data-id="${esc(lead.id)}">WhatsApp</button>` : ''}
         <button class="btn btn-sm btn-danger" data-action="delete-lead" data-id="${esc(lead.id)}">×</button>
@@ -1681,6 +1681,11 @@ function bindCRMEvents({ showModal, closeModal, toast, refresh }) {
     btn.addEventListener('click', () => {
       const lead = getLead(btn.dataset.id);
       const idx = CRM_STAGES.findIndex((s) => s.id === lead.stage);
+      // The last step is a real enrolment (student + family login), never a plain move.
+      if (CRM_STAGES[idx + 1]?.id === 'converted') {
+        showEnrollLeadModal(lead.id, { showModal, closeModal, toast, refresh });
+        return;
+      }
       if (idx < CRM_STAGES.length - 1) {
         moveLead(lead.id, CRM_STAGES[idx + 1].id);
         toast(`Moved to ${CRM_STAGES[idx + 1].label}`, 'success');

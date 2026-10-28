@@ -28,10 +28,11 @@ students who need attention, all on one screen."
 **Where:** Education CRM → Lead pipeline
 
 **Shows:** every enquiry moving from Lead → Enquiry → Demo class → Counselling → Admission →
-Batch allocation.
+Batch allocation → Enrolled.
 
 **Click:**
-- **Pipeline:** move a lead to the next stage with **Advance →**.
+- **Pipeline:** move a lead to the next stage with **Advance →**. From Batch Allocation the
+  only step is **Enroll**.
 - **+ New Lead:** add one (name, phone, grade, course, follow-up date).
 - **Details:** activity history and notes.
 - **WhatsApp:** message the parent.

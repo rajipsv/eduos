@@ -326,7 +326,7 @@ export const CRM_STAGES = [
   { id: 'admission', label: 'Admission' },
   { id: 'payment', label: 'Payment' },
   { id: 'batch_allocation', label: 'Batch Allocation' },
-  { id: 'converted', label: 'Student' },
+  { id: 'converted', label: 'Enrolled' },
 ];
 
 export const CRM_SOURCES = ['Website', 'WhatsApp', 'Facebook Ads', 'Referral', 'Walk-in', 'Guest Marketplace', 'Student Marketplace', 'Parent Marketplace', 'Other'];
