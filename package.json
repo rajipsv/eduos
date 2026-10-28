@@ -8,6 +8,7 @@
     "dev": "node server/index.js",
     "migrate": "node server/migrate.js",
     "seed:demo": "node server/seed-demo.mjs",
+    "build:landing": "node scripts/build-landing.mjs",
     "serve:static": "node serve.js",
     "lint": "eslint .",
     "test": "node --test \"test/*.test.js\"",

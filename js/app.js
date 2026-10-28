@@ -1,3 +1,4 @@
+import './app-shell.js'; // must stay first: creates the elements looked up below
 import { esc } from './html.js';
 import { exportAll, getRawState, initStore } from './store.js';
 import { renderView, pageMeta, initCharts, bindViewEvents } from './views.js';
@@ -235,6 +236,7 @@ function showApp(session) {
 }
 
 function mountAuth(mode = 'home', params = {}) {
+  document.documentElement.classList.remove('has-session');
   authRoot.classList.remove('hidden');
   appShell.classList.add('hidden');
   try {

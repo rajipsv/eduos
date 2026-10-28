@@ -191,9 +191,9 @@ export function renderLandingHero() {
     <section class="landing-hero" id="top">
       <div class="landing-hero-grid">
         <div class="landing-hero-copy">
-          <p class="landing-eyebrow">The operating system for education businesses</p>
-          <h1 class="landing-headline">Run your academy.<br>Delight every parent.<br><em>Scale with confidence.</em></h1>
-          <p class="landing-lead">Tutorsala is not an LMS — it is the ops platform for tuition centers. Acquire students, run batches, communicate with families, and grow revenue from one place.</p>
+          <p class="landing-eyebrow">Tuition center management software</p>
+          <h1 class="landing-headline">Run your entire tuition center<br><em>for the fee of one student.</em></h1>
+          <p class="landing-lead">Tutorsala is ₹3,000 a month, about what one student pays you, for enquiries, batches, attendance, fees and parent updates across your whole center. <strong>Launch offer: 50% off, just ₹1,500 a month.</strong></p>
           <div class="landing-hero-actions">
             <a class="btn btn-primary" href="${buildStartPageUrl()}">Book free demo</a>
             <button type="button" class="btn btn-secondary" data-scroll="pricing">See pricing</button>
@@ -314,16 +314,58 @@ export function renderLandingFooter() {
         <p class="landing-footer-links">
           <a href="${buildStartPageUrl()}">Book free demo</a>
           <span aria-hidden="true">·</span>
+          <a href="/privacy">Privacy</a>
+          <span aria-hidden="true">·</span>
+          <a href="/terms">Terms</a>
+          <span aria-hidden="true">·</span>
+          <a href="/contact">Contact</a>
+          <span aria-hidden="true">·</span>
           <button type="button" class="landing-footer-link" data-scroll="pricing">Pricing</button>
           <span aria-hidden="true">·</span>
           <a href="${buildPricingWhatsAppUrl('Tutorsala platform')}" target="_blank" rel="noopener noreferrer">Contact via WhatsApp</a>
           <span aria-hidden="true">·</span>
           <a href="mailto:${TUTORSALA_SALES_EMAIL}">${TUTORSALA_SALES_EMAIL}</a>
         </p>
-        <p class="landing-footer-copy">© ${new Date().getFullYear()} Tutorsala · Tutor Hub demo</p>
+        <p class="landing-footer-copy">© ${new Date().getFullYear()} Tutorsala</p>
       </div>
     </footer>`;
 }
+
+export function renderLandingMarketplace(marketplaceHtml) {
+  return `
+    <section class="landing-section landing-marketplace-wrap" id="tuitions">
+      <div class="landing-section-head">
+        <p class="landing-eyebrow">Tuition marketplace</p>
+        <h2>Find the right tuition center</h2>
+        <p class="landing-section-sub">Browse academics, dance, art, drawing, music, sports, coding, and more — send an inquiry without signing in. The center will follow up to schedule a demo and enrollment.</p>
+      </div>
+      <div class="auth-marketplace" id="authMarketplace">
+        ${marketplaceHtml}
+      </div>
+    </section>`;
+}
+
+/**
+ * The whole public home page. The app renders it with the live marketplace;
+ * scripts/build-landing.mjs writes it into index.html with a loading note instead,
+ * so the page can be read before any script runs.
+ */
+export function renderLandingPage(marketplaceHtml) {
+  return `
+    <div class="landing-page">
+      ${renderLandingHeader()}
+      <main>
+        ${renderLandingHero()}
+        ${renderLandingFeatures()}
+        ${renderLandingPricing()}
+        ${renderLandingTestimonials()}
+        ${renderLandingMarketplace(marketplaceHtml)}
+      </main>
+      ${renderLandingFooter()}
+    </div>`;
+}
+
+export const STATIC_MARKETPLACE_PLACEHOLDER = '<p class="landing-section-sub">Loading tuition centers…</p>';
 
 export function bindLandingScroll() {
   document.querySelectorAll('[data-scroll]').forEach((el) => {

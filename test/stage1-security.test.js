@@ -104,6 +104,9 @@ test('public pages and assets are served with security headers', async () => {
   assert.match(home.headers.get('content-security-policy') || '', /connect-src 'self';/);
   assert.equal(home.headers.get('x-powered-by'), null);
   assert.equal((await get('/start-page.html')).status, 200);
+  for (const page of ['/privacy', '/terms', '/contact', '/privacy.html', '/sitemap.xml']) {
+    assert.equal((await get(page)).status, 200, page);
+  }
   assert.equal((await get('/js/store.js')).status, 200);
   assert.equal((await get('/css/app.css')).status, 200);
 });

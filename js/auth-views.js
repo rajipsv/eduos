@@ -35,12 +35,7 @@ function bindStrengthMeter(inputId, meterId, context = () => ({})) {
 }
 import { renderTuitionMarketplace, bindTuitionMarketplaceEvents, TUITION_PENDING_KEY } from './tuition-marketplace.js';
 import {
-  renderLandingHeader,
-  renderLandingHero,
-  renderLandingFeatures,
-  renderLandingPricing,
-  renderLandingTestimonials,
-  renderLandingFooter,
+  renderLandingPage,
   bindLandingScroll,
   LOGIN_PORTALS,
 } from './home-landing.js';
@@ -57,27 +52,7 @@ function renderAuthHome() {
   const rawState = getRawState();
   const marketplaceHtml = renderTuitionMarketplace(rawState, { publicHome: true });
 
-  return `
-    <div class="landing-page">
-      ${renderLandingHeader()}
-      <main>
-        ${renderLandingHero()}
-        ${renderLandingFeatures()}
-        ${renderLandingPricing()}
-        ${renderLandingTestimonials()}
-        <section class="landing-section landing-marketplace-wrap" id="tuitions">
-          <div class="landing-section-head">
-            <p class="landing-eyebrow">Tuition marketplace</p>
-            <h2>Find the right tuition center</h2>
-            <p class="landing-section-sub">Browse academics, dance, art, drawing, music, sports, coding, and more — send an inquiry without signing in. The center will follow up to schedule a demo and enrollment.</p>
-          </div>
-          <div class="auth-marketplace" id="authMarketplace">
-            ${marketplaceHtml}
-          </div>
-        </section>
-      </main>
-      ${renderLandingFooter()}
-    </div>`;
+  return renderLandingPage(marketplaceHtml);
 }
 
 export function renderLoginChooserHtml() {

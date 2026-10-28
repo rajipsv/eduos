@@ -47,7 +47,12 @@ test('nested paths and unknown routes', async () => {
 
 test('vercel.json sends every /api path to the one function', () => {
   const config = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
-  assert.deepEqual(config.rewrites, [{ source: '/api/:path*', destination: '/api/index?__path=:path*' }]);
+  const apiRewrites = config.rewrites.filter((r) => r.source.startsWith('/api'));
+  assert.deepEqual(apiRewrites, [{ source: '/api/:path*', destination: '/api/index?__path=:path*' }]);
+  // The other rewrites only map clean page URLs to their .html files.
+  for (const r of config.rewrites.filter((x) => !x.source.startsWith('/api'))) {
+    assert.equal(r.destination, `${r.source}.html`);
+  }
   assert.deepEqual(Object.keys(config.functions), ['api/index.js']);
   const apiFiles = fs.readdirSync(new URL('../api/', import.meta.url), { recursive: true });
   assert.deepEqual(apiFiles, ['index.js']);

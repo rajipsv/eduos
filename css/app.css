@@ -1172,6 +1172,9 @@ tr.invoice-reported { background: color-mix(in srgb, var(--accent, #e67700) 6%, 
 
 .modal-overlay.hidden { display: none; }
 
+/* Set by index.html before paint when a session exists; app.js clears it if sign-in is needed. */
+.has-session #authRoot { display: none; }
+
 .auth-root {
   min-height: 100vh;
   overflow-y: auto;
