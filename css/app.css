@@ -2655,3 +2655,13 @@ tr.invoice-reported { background: color-mix(in srgb, var(--accent, #e67700) 6%, 
 @media (max-width: 480px) {
   .pwa-update-banner { width: calc(100vw - 32px); }
 }
+
+/* Send login (invites) */
+.invite-choice { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-weight: 400 !important; color: var(--text) !important; }
+.invite-choice + .invite-choice { margin-top: 8px; }
+.form-group .invite-choice input[type="radio"] { padding: 0; margin-top: 3px; width: auto; flex: none; }
+.invite-choice small { color: var(--text-muted); }
+.invite-link-row { display: flex; gap: 8px; }
+.invite-link-row input { flex: 1; min-width: 0; font-size: 0.85rem; }
+.invite-emailed { color: var(--primary); font-weight: 600; margin: 12px 0 0; }
+.invite-wa { text-decoration: none; }

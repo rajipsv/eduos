@@ -14,7 +14,7 @@ import { handleCreateInboundLead, handleListInboundLeads, handleUpdateInboundLea
 import { authenticateRequest } from './auth/middleware.js';
 import { buildBootstrap } from './services/bootstrap.js';
 import { applySync } from './services/sync.js';
-import { createUser, updateUser } from './services/users.js';
+import { createUser, updateUser, inviteUser } from './services/users.js';
 import { listPublicCenters, getHealthPayload } from './services/public.js';
 import { saveSecrets, aiChat, sendWhatsApp } from './services/integrations.js';
 import { createApiKey, revokeApiKey } from './services/api-keys.js';
@@ -50,6 +50,7 @@ export const ROUTES = [
   ['POST', '/api/sync', signedIn((user, req) => applySync(user, req, req.body))],
   ['POST', '/api/users', signedIn(createUser)],
   ['PATCH', '/api/users/:id', signedIn(updateUser)],
+  ['POST', '/api/users/:id/invite', signedIn(inviteUser)],
   ['PUT', '/api/settings/secrets', signedIn(saveSecrets)],
   ['POST', '/api/ai/chat', signedIn(aiChat)],
   ['POST', '/api/whatsapp/send', signedIn(sendWhatsApp)],

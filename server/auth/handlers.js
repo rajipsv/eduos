@@ -20,6 +20,7 @@ import {
   createPasswordResetToken,
   findValidPasswordResetToken,
   markPasswordResetTokenUsed,
+  isInviteToken,
 } from './password-reset.js';
 import {
   buildClientSessionFromDbUser,
@@ -62,7 +63,7 @@ function getOrigin(req) {
   return `${proto}://${host}`;
 }
 
-function buildResetUrl(req, token) {
+export function buildResetUrl(req, token) {
   return `${getOrigin(req)}/#reset-password/${encodeURIComponent(token)}`;
 }
 
@@ -71,12 +72,12 @@ async function sessionFor(user) {
   return buildClientSessionFromDbUser(user, center);
 }
 
-async function issueAuthResponse(req, res, user) {
+async function issueAuthResponse(req, res, user, extra = {}) {
   const session = await sessionFor(user);
   const accessToken = signAccessToken(user, process.env.JWT_SECRET);
   const refreshToken = await createRefreshToken(user.id);
   setRefreshCookie(res, refreshToken);
-  return json(res, 200, { ok: true, accessToken, session, user: { id: user.id, email: user.email, role: user.role, name: user.name } });
+  return json(res, 200, { ok: true, ...extra, accessToken, session, user: { id: user.id, email: user.email, role: user.role, name: user.name } });
 }
 
 export async function handleLogin(req, res) {
@@ -258,14 +259,25 @@ export async function handleForgotPassword(req, res) {
   });
 }
 
+const INVALID_RESET = 'This reset link is invalid or has expired.';
+const INVALID_INVITE = 'This invite link has expired or was already used. Ask your center to send a new one.';
+
 export async function handleResetPasswordInfo(req, res) {
   if (!isAuthConfigured()) return authUnavailable(res);
   if (req.method !== 'GET') return methodNotAllowed(res, 'GET');
 
   const token = req.query?.token;
+  const invite = isInviteToken(token);
   const entry = await findValidPasswordResetToken(token);
-  if (!entry) return json(res, 400, { ok: false, error: 'This reset link is invalid or has expired.' });
-  return json(res, 200, { ok: true, email: entry.email, name: entry.user_name || entry.email });
+  if (!entry) return json(res, 400, { ok: false, invite, error: invite ? INVALID_INVITE : INVALID_RESET });
+  const center = invite && entry.user_center_id ? await getCenter(getPool(), entry.user_center_id) : null;
+  return json(res, 200, {
+    ok: true,
+    invite,
+    email: entry.email,
+    name: entry.user_name || entry.email,
+    centerName: center?.name || null,
+  });
 }
 
 export async function handleResetPassword(req, res) {
@@ -273,19 +285,31 @@ export async function handleResetPassword(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res, 'POST');
 
   const { token, password } = req.body || {};
+  if (typeof token !== 'string' || typeof password !== 'string') {
+    return json(res, 400, { ok: false, error: 'Choose a password' });
+  }
   const passwordError = validatePassword(password);
   if (passwordError) return json(res, 400, { ok: false, error: passwordError });
 
+  const invalid = isInviteToken(token) ? INVALID_INVITE : INVALID_RESET;
   const entry = await findValidPasswordResetToken(token);
-  if (!entry) return json(res, 400, { ok: false, error: 'This reset link is invalid or has expired.' });
+  if (!entry) return json(res, 400, { ok: false, error: invalid });
   const personalError = validatePassword(password, { email: entry.email });
   if (personalError) return json(res, 400, { ok: false, error: personalError });
 
+  // Claim the link first, so two requests can't both use it.
+  if (!(await markPasswordResetTokenUsed(token))) return json(res, 400, { ok: false, error: invalid });
   await updateUserPassword(entry.user_id, hashPassword(password));
-  await markPasswordResetTokenUsed(token);
   // Sign out every existing session for this account.
   await revokeAllUserRefreshTokens(entry.user_id);
-  return json(res, 200, { ok: true, message: 'Password updated. You can sign in now.' });
+
+  // Then sign this browser straight in (unless the center is suspended).
+  const user = await findUserById(entry.user_id);
+  const center = user?.centerId ? await getCenter(getPool(), user.centerId) : null;
+  if (!user || center?.status === 'suspended') {
+    return json(res, 200, { ok: true, message: 'Password updated. You can sign in now.' });
+  }
+  return issueAuthResponse(req, res, user, { message: 'Password saved. You are now signed in.' });
 }
 
 function authUnavailable(res) {

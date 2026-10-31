@@ -116,8 +116,11 @@ export async function sendAttendanceUpdate(student, batch, date, status) {
   });
 }
 
+/** A wa.me link that opens WhatsApp with `message` ready to send to `phone`. */
+export function waMeLink(phone, message, countryCode) {
+  return `https://wa.me/${formatPhone(phone, countryCode)}?text=${encodeURIComponent(message)}`;
+}
+
 export function openWhatsAppWeb(phone, message, countryCode) {
-  const formatted = formatPhone(phone, countryCode);
-  const url = `https://wa.me/${formatted}?text=${encodeURIComponent(message)}`;
-  window.open(url, '_blank');
+  window.open(waMeLink(phone, message, countryCode), '_blank');
 }

@@ -12,12 +12,12 @@ import { PHONE_COUNTRY_CODES, normalizePhone, passwordStrength } from './account
 
 const STRENGTH = ['', 'Weak', 'Fair', 'Good', 'Strong'];
 
-function strengthMeterHtml(id) {
+export function strengthMeterHtml(id) {
   return `<div class="pw-meter" id="${id}" aria-live="polite"><span class="pw-meter-bar"><span></span></span><small></small></div>`;
 }
 
 /** Live strength meter and rule hint under a password field. */
-function bindStrengthMeter(inputId, meterId, context = () => ({})) {
+export function bindStrengthMeter(inputId, meterId, context = () => ({})) {
   const input = document.getElementById(inputId);
   const meter = document.getElementById(meterId);
   if (!input || !meter) return;
@@ -137,15 +137,15 @@ function renderResetPasswordPage(token) {
     <div class="auth-shell auth-shell-form">
       <div class="auth-card">
         <button class="btn btn-ghost auth-back" type="button" data-auth-mode="home">← Back to home</button>
-        <h2 style="margin-top:16px;font-family:var(--font-display)">Choose a new password</h2>
-        <div id="resetPasswordContent" data-reset-token="${token || ''}">
+        <h2 id="resetPasswordHeading" style="margin-top:16px;font-family:var(--font-display)">Choose a new password</h2>
+        <div id="resetPasswordContent" data-reset-token="${esc(token || '')}">
           <p class="auth-sub">Checking reset link…</p>
         </div>
       </div>
     </div>`;
 }
 
-async function hydrateResetPasswordPage(toast, onModeChange) {
+async function hydrateResetPasswordPage(toast, onModeChange, onAuthed) {
   const host = document.getElementById('resetPasswordContent');
   const token = host?.dataset.resetToken;
   if (!host || !token) {
@@ -153,26 +153,43 @@ async function hydrateResetPasswordPage(toast, onModeChange) {
     return;
   }
   const info = await getPasswordResetTokenInfo(token);
+  if (info.invite) {
+    const heading = document.getElementById('resetPasswordHeading');
+    if (heading) {
+      heading.textContent = info.centerName
+        ? `Welcome to ${info.centerName} on Tutorsala — choose your password`
+        : 'Welcome to Tutorsala — choose your password';
+    }
+  }
   host.innerHTML = info.ok
     ? renderResetPasswordFormHtml(token, info)
-    : renderResetPasswordInvalidHtml(info.error);
-  bindResetPasswordSubmit(toast, onModeChange);
+    : renderResetPasswordInvalidHtml(info.error, info.invite);
+  host.querySelectorAll('[data-auth-mode]').forEach((btn) => {
+    btn.addEventListener('click', () => onModeChange?.(btn.dataset.authMode));
+  });
+  bindResetPasswordSubmit(toast, onModeChange, onAuthed);
 }
 
-function renderResetPasswordInvalidHtml(message) {
+function renderResetPasswordInvalidHtml(message, invite = false) {
   return `
-    <p class="auth-sub auth-reset-error">${message || 'This reset link is invalid or has expired.'}</p>
-    <button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-mode="forgot-password">Request a new link</button>`;
+    <p class="auth-sub auth-reset-error">${esc(message || 'This reset link is invalid or has expired.')}</p>
+    ${invite
+      ? '<p class="auth-sub">Already chose a password? Sign in from the home page.</p><button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-mode="home">Go to sign in</button>'
+      : '<button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-mode="forgot-password">Request a new link</button>'}`;
 }
 
 function renderResetPasswordFormHtml(token, info) {
+  const intro = info.invite
+    ? `Hello ${esc(info.name)}! Choose a password for <strong>${esc(info.email)}</strong>. You'll sign in with this email from now on.`
+    : `Resetting password for <strong>${esc(info.email)}</strong>`;
   return `
-    <p class="auth-sub">Resetting password for <strong>${esc(info.email)}</strong></p>
+    <p class="auth-sub">${intro}</p>
     <div class="form-grid" style="margin-top:16px">
-      <div class="form-group full"><label>New password</label><input id="resetPassword" type="password" autocomplete="new-password" minlength="8">${strengthMeterHtml('resetPasswordMeter')}</div>
+      <div class="form-group full"><label>${info.invite ? 'Password' : 'New password'}</label><input id="resetPassword" type="password" autocomplete="new-password" minlength="8">${strengthMeterHtml('resetPasswordMeter')}</div>
       <div class="form-group full"><label>Confirm password</label><input id="resetPasswordConfirm" type="password" autocomplete="new-password" minlength="8"></div>
     </div>
-    <button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-reset-submit data-reset-token="${token}">Update password</button>`;
+    <input type="hidden" id="resetEmail" value="${esc(info.email)}">
+    <button class="btn btn-primary" type="button" style="width:100%;margin-top:16px" data-auth-reset-submit data-reset-token="${esc(token)}">${info.invite ? 'Save password and sign in' : 'Update password'}</button>`;
 }
 
 function renderLoginPage(portal) {
@@ -230,20 +247,29 @@ function bindForgotPasswordSubmit(toast, { closeModal, onModeChange, compact = f
   });
 }
 
-function bindResetPasswordSubmit(toast, onModeChange) {
-  bindStrengthMeter('resetPassword', 'resetPasswordMeter');
-  document.querySelector('[data-auth-reset-submit]')?.addEventListener('click', async () => {
-    const token = document.querySelector('[data-auth-reset-submit]')?.dataset.resetToken;
+function bindResetPasswordSubmit(toast, onModeChange, onAuthed) {
+  const emailContext = () => ({ email: document.getElementById('resetEmail')?.value });
+  bindStrengthMeter('resetPassword', 'resetPasswordMeter', emailContext);
+  const submit = document.querySelector('[data-auth-reset-submit]');
+  submit?.addEventListener('click', async () => {
+    const token = submit.dataset.resetToken;
     const password = document.getElementById('resetPassword')?.value;
     const confirm = document.getElementById('resetPasswordConfirm')?.value;
     if (password !== confirm) return toast('Passwords do not match', 'error');
-    const weak = validatePassword(password);
+    const weak = validatePassword(password, emailContext());
     if (weak) return toast(weak, 'error');
 
-    const result = await resetPasswordWithToken(token, password);
+    submit.disabled = true;
+    const result = await resetPasswordWithToken(token, password).catch((err) => ({ ok: false, error: err.message }));
+    submit.disabled = false;
     if (!result.ok) return toast(result.error, 'error');
-    toast(result.message, 'success');
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    if (result.signedIn && onAuthed) {
+      toast(`${result.message} Welcome, ${result.session?.name || ''}`.trim(), 'success');
+      onAuthed(result.session);
+      return;
+    }
+    toast(result.message, 'success');
     onModeChange?.('home');
   });
 }
@@ -374,9 +400,9 @@ export function bindAuthEvents({ onAuthed, toast, onModeChange, showModal, close
     bindRegisterSubmit(onAuthed, toast, closeModal);
     bindForgotPasswordSubmit(toast, { onModeChange });
     if (document.getElementById('resetPasswordContent')) {
-      hydrateResetPasswordPage(toast, onModeChange);
+      hydrateResetPasswordPage(toast, onModeChange, onAuthed);
     } else {
-      bindResetPasswordSubmit(toast, onModeChange);
+      bindResetPasswordSubmit(toast, onModeChange, onAuthed);
     }
     document.querySelectorAll('[data-auth-forgot]').forEach((btn) => {
       btn.addEventListener('click', () => onModeChange?.('forgot-password'));
