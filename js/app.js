@@ -212,18 +212,33 @@ function syncSubscriptionBanner(session) {
   const el = document.createElement('div');
   el.className = `subscription-banner subscription-banner-${banner.level}`;
   el.setAttribute('role', banner.dismissable ? 'status' : 'alert');
-  el.innerHTML = `<span>${esc(banner.message)}</span>
-    <span class="subscription-banner-actions">
-      <a class="btn btn-sm btn-primary" href="${esc(subscriptionWhatsAppUrl(center.name))}" target="_blank" rel="noopener noreferrer">WhatsApp us</a>
-      ${banner.dismissable ? '<button type="button" class="btn btn-sm btn-ghost" data-dismiss-plan-banner aria-label="Hide this reminder">Later</button>' : ''}
-    </span>`;
+  const text = document.createElement('span');
+  text.textContent = banner.message;
+  const actions = document.createElement('span');
+  actions.className = 'subscription-banner-actions';
+  const link = document.createElement('a');
+  link.className = 'btn btn-sm btn-primary';
+  link.href = subscriptionWhatsAppUrl(center.name);
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = 'WhatsApp us';
+  actions.append(link);
+  if (banner.dismissable) {
+    const later = document.createElement('button');
+    later.type = 'button';
+    later.className = 'btn btn-sm btn-ghost';
+    later.textContent = 'Later';
+    later.setAttribute('aria-label', 'Hide this reminder');
+    later.addEventListener('click', () => {
+      try {
+        sessionStorage.setItem(BANNER_DISMISS_KEY, banner.key);
+      } catch { /* storage blocked */ }
+      el.remove();
+    });
+    actions.append(later);
+  }
+  el.append(text, actions);
   content.parentElement.insertBefore(el, content);
-  el.querySelector('[data-dismiss-plan-banner]')?.addEventListener('click', () => {
-    try {
-      sessionStorage.setItem(BANNER_DISMISS_KEY, banner.key);
-    } catch { /* storage blocked */ }
-    el.remove();
-  });
 }
 
 function buildShellForSession(session) {
