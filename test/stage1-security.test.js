@@ -107,6 +107,15 @@ test('public pages and assets are served with security headers', async () => {
   for (const page of ['/privacy', '/terms', '/contact', '/privacy.html', '/sitemap.xml']) {
     assert.equal((await get(page)).status, 200, page);
   }
+  const sw = await get('/sw.js');
+  assert.equal(sw.status, 200);
+  assert.equal(sw.headers.get('cache-control'), 'no-cache');
+  assert.match(sw.headers.get('content-type') || '', /javascript/);
+  const manifest = await get('/manifest.webmanifest');
+  assert.equal(manifest.status, 200);
+  assert.match(manifest.headers.get('content-type') || '', /application\/manifest\+json/);
+  assert.equal((await get('/offline.html')).status, 200);
+  assert.equal((await get('/img/icons/icon-192.png')).status, 200);
   assert.equal((await get('/js/store.js')).status, 200);
   assert.equal((await get('/css/app.css')).status, 200);
 });

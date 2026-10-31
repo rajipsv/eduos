@@ -2567,3 +2567,46 @@ tr.invoice-reported { background: color-mix(in srgb, var(--accent, #e67700) 6%, 
   background: #fff4e0; border: 1px solid #f0c36d; color: #6b4a00; line-height: 1.5;
 }
 #parentPortalRoot button:disabled, #parentPortalRoot input:disabled, #parentPortalRoot textarea:disabled, #parentPortalRoot select:disabled { cursor: not-allowed; opacity: 0.55; }
+
+/* ─── PWA: update banner ─── */
+/* Shown by js/pwa.js when a new version has downloaded: "A new version of Tutorsala is ready. [Refresh] [×]" */
+.pwa-update-banner {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 290;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 10px 10px 10px 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  font-size: 0.9rem;
+  animation: slideIn 0.25s ease;
+}
+.pwa-update-banner .pwa-update-text { flex: 1 1 auto; min-width: 0; line-height: 1.35; }
+.pwa-update-banner .btn { flex: 0 0 auto; }
+.pwa-update-dismiss {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.pwa-update-dismiss:hover { background: var(--surface-2); color: var(--text); }
+@media (max-width: 480px) {
+  .pwa-update-banner { width: calc(100vw - 32px); }
+}

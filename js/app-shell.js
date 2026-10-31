@@ -15,6 +15,7 @@ document.body.insertAdjacentHTML('beforeend', `
       <nav class="nav" id="mainNav"></nav>
       <div class="sidebar-footer">
         <div class="sidebar-user" id="sessionLabel"></div>
+        <button type="button" class="btn btn-ghost btn-sm hidden" data-pwa-install>Install app</button>
         <p class="sidebar-footer-tagline">Tutoring operations platform</p>
       </div>
     </aside>

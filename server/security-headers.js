@@ -10,6 +10,8 @@ export const CSP = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: https:",
   "connect-src 'self'",
+  "worker-src 'self'",
+  "manifest-src 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

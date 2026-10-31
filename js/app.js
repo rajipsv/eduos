@@ -8,6 +8,7 @@ import { renderAuthScreen, bindAuthEvents } from './auth-views.js';
 import { platformPageMeta } from './platform-views.js';
 import { TUITION_PENDING_KEY, TUITION_OPEN_KEY, canSendTuitionInquiry } from './tuition-marketplace.js';
 import { getBranches } from './store.js';
+import { initPwa } from './pwa.js';
 
 let currentView = 'dashboard';
 let platformDetailCenterId = null;
@@ -315,6 +316,9 @@ window.addEventListener('tutorsala:sync-issue', (e) => {
   else if (conflicts) toast('Someone else changed this at the same time. Showing the latest version.', 'default');
   if (getSession() && (rejected || conflicts)) ctx.refresh();
 });
+
+// Offline support and the "Install app" buttons. Registers after page load, so it doesn't slow startup.
+initPwa({ toast, showModal });
 
 try {
   await initStore();

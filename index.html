@@ -20,6 +20,12 @@
 
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
 
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Tutorsala">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
   <meta property="og:type" content="website">
 
   <meta property="og:site_name" content="Tutorsala">
@@ -46,7 +52,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="css/app.css?v=20261029a">
+  <link rel="stylesheet" href="css/app.css?v=20261031a">
 
   <script>
     // Signed-in visitors go straight to the app, so hide the public landing before it paints.
@@ -77,6 +83,7 @@
           <button type="button" class="landing-nav-link" data-scroll="tuitions">Browse tuitions</button>
         </nav>
         <div class="landing-header-cta">
+          <button type="button" class="btn btn-ghost btn-sm hidden" data-pwa-install>Install app</button>
           <a class="btn btn-secondary btn-sm" href="/start-page.html">Book free demo</a>
           <button type="button" class="btn btn-primary btn-sm" data-auth-open-login>Log in</button>
         </div>
@@ -317,7 +324,7 @@
 
   <script type="module">
     if (location.protocol !== 'file:') {
-      import('./js/app.js?v=20261029a').catch(function (err) {
+      import('./js/app.js?v=20261031a').catch(function (err) {
         console.error(err);
         document.documentElement.classList.remove('has-session');
         var note = document.createElement('p');

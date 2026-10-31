@@ -1,0 +1,30 @@
+{
+  "id": "/",
+  "name": "Tutorsala",
+  "short_name": "Tutorsala",
+  "description": "Run your tuition center: enquiries, batches, attendance, fees and parent updates in one app.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "theme_color": "#2d6a4f",
+  "background_color": "#f4f1eb",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["education", "business", "productivity"],
+  "icons": [
+    { "src": "/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/img/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Book a free demo",
+      "short_name": "Free demo",
+      "url": "/start-page.html",
+      "icons": [{ "src": "/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

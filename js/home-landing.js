@@ -179,6 +179,7 @@ export function renderLandingHeader() {
           <button type="button" class="landing-nav-link" data-scroll="tuitions">Browse tuitions</button>
         </nav>
         <div class="landing-header-cta">
+          <button type="button" class="btn btn-ghost btn-sm hidden" data-pwa-install>Install app</button>
           <a class="btn btn-secondary btn-sm" href="${buildStartPageUrl()}">Book free demo</a>
           <button type="button" class="btn btn-primary btn-sm" data-auth-open-login>Log in</button>
         </div>

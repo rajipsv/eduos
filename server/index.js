@@ -57,9 +57,17 @@ const PUBLIC_PAGES = {
   '/robots.txt': 'robots.txt',
   '/sitemap.xml': 'sitemap.xml',
   '/favicon.ico': 'favicon.ico',
+  '/manifest.webmanifest': 'manifest.webmanifest',
+  '/offline.html': 'offline.html',
+  '/sw.js': 'sw.js',
+};
+// Same caching rules as vercel.json: the service worker must always be re-checked.
+const PAGE_HEADERS = {
+  '/sw.js': { 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' },
+  '/manifest.webmanifest': { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'public, max-age=86400' },
 };
 app.get(Object.keys(PUBLIC_PAGES), (req, res, next) => {
-  res.sendFile(path.join(root, PUBLIC_PAGES[req.path]), (err) => err && next(err));
+  res.sendFile(path.join(root, PUBLIC_PAGES[req.path]), { headers: PAGE_HEADERS[req.path] || {} }, (err) => err && next(err));
 });
 for (const dir of ['css', 'js', 'img']) {
   app.use(`/${dir}`, express.static(path.join(root, dir), { dotfiles: 'deny', index: false }));
