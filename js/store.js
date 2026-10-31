@@ -341,6 +341,7 @@ function applySyncResults(sent, results) {
   const sentByKey = new Map(sent.map((c) => [`${c.collection}/${c.id}`, c]));
   let conflicts = 0;
   let rejected = 0;
+  const rejections = [];
   for (const r of results || []) {
     const key = `${r.collection}/${r.id}`;
     const change = sentByKey.get(key);
@@ -368,12 +369,13 @@ function applySyncResults(sent, results) {
     } else {
       // forbidden or invalid: put back the last saved copy so it isn't sent again.
       rejected += 1;
+      rejections.push({ collection: r.collection, id: r.id, status: r.status, error: r.error, code: r.code });
       console.warn(`Tutorsala: change to ${key} was ${r.status}`, r.error || '');
       const prev = base.get(r.id);
       putStateRecord(r.collection, r.id, prev ? JSON.parse(prev.json) : null);
     }
   }
-  if (conflicts || rejected) notifySyncIssue({ conflicts, rejected });
+  if (conflicts || rejected) notifySyncIssue({ conflicts, rejected, rejections });
 }
 
 let syncTimer = null;
