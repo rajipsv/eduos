@@ -4,7 +4,7 @@ import noUnsanitized from 'eslint-plugin-no-unsanitized';
 
 export default [
   {
-    ignores: ['node_modules/**', 'docs/**', 'scripts/**', 'server/data/**'],
+    ignores: ['node_modules/**', 'docs/**', 'scripts/**', 'server/data/**', '.claude/**'],
   },
   js.configs.recommended,
   {

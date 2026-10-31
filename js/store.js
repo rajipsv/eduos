@@ -452,7 +452,14 @@ if (typeof document !== 'undefined') {
 
 async function loadPublicCenters() {
   try {
-    const res = await fetch('/api/public/centers');
+    // Opening the site with ?demo=1 shows the demo center for the rest of the visit (sales demos).
+    // Otherwise only real, complete listings are shown.
+    let demo = new URLSearchParams(location.search).get('demo') === '1';
+    try {
+      if (demo) sessionStorage.setItem('tutorsala_demo', '1');
+      else demo = sessionStorage.getItem('tutorsala_demo') === '1';
+    } catch { /* storage blocked */ }
+    const res = await fetch(`/api/public/centers${demo ? '?demo=1' : ''}`);
     if (!res.ok) return [];
     return (await res.json()).centers || [];
   } catch {

@@ -52,7 +52,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="css/app.css?v=20261031b">
+  <link rel="stylesheet" href="css/app.css?v=20261101a">
 
   <script>
     // Signed-in visitors go straight to the app, so hide the public landing before it paints.
@@ -79,7 +79,7 @@
         <nav class="landing-nav" aria-label="Main">
           <button type="button" class="landing-nav-link" data-scroll="features">Features</button>
           <button type="button" class="landing-nav-link" data-scroll="pricing">Pricing</button>
-          <button type="button" class="landing-nav-link" data-scroll="testimonials">Testimonials</button>
+          <button type="button" class="landing-nav-link" data-scroll="how-it-works">How it works</button>
           <button type="button" class="landing-nav-link" data-scroll="tuitions">Browse tuitions</button>
         </nav>
         <div class="landing-header-cta">
@@ -236,38 +236,29 @@
       </div>
     </section>
         
-    <section class="landing-section landing-section-alt" id="testimonials">
+    <section class="landing-section landing-section-alt" id="how-it-works">
       <div class="landing-section-head">
-        <p class="landing-eyebrow">Trusted by academies & families</p>
-        <h2>What our users say</h2>
-        <p class="landing-section-sub">Real outcomes for center owners, tutors, and parents on Tutorsala.</p>
+        <p class="landing-eyebrow">How it works</p>
+        <h2>Running on Tutorsala in your first month</h2>
+        <p class="landing-section-sub">Start with a free 30-day pilot. We set it up with you, so your team and parents can begin from day one.</p>
       </div>
-      <div class="landing-testimonials-grid">
+      <div class="landing-features-grid">
         
-          <blockquote class="landing-testimonial">
-            <div class="landing-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p>"We replaced five spreadsheets and a WhatsApp group. Parents finally get updates on time — and our enrollment pipeline actually works."</p>
-            <footer>
-              <strong>Priya Mehta</strong>
-              <span>Owner, Bright Minds Academy · Mumbai</span>
-            </footer>
-          </blockquote>
-          <blockquote class="landing-testimonial">
-            <div class="landing-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p>"I can see my son&#39;s homework, attendance, and teacher feedback in one place. No more chasing the tutor on phone."</p>
-            <footer>
-              <strong>Rajesh Sharma</strong>
-              <span>Parent · Mumbai</span>
-            </footer>
-          </blockquote>
-          <blockquote class="landing-testimonial">
-            <div class="landing-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p>"Marking attendance and messaging parents used to take an hour after class. Now it&#39;s done before I leave the desk."</p>
-            <footer>
-              <strong>Dr. Anita Desai</strong>
-              <span>Physics Tutor · Bright Minds Academy</span>
-            </footer>
-          </blockquote>
+          <article class="landing-feature-card">
+            <span class="landing-feature-icon">1</span>
+            <h3>Day 1: we set up your center with you</h3>
+            <p>On a call, we add your batches, teachers and fees, and import your students from Excel. Nothing to install.</p>
+          </article>
+          <article class="landing-feature-card">
+            <span class="landing-feature-icon">2</span>
+            <h3>Week 1: classes run on Tutorsala</h3>
+            <p>Teachers mark attendance and homework in seconds. Parents get WhatsApp updates and see their child in the parent portal.</p>
+          </article>
+          <article class="landing-feature-card">
+            <span class="landing-feature-icon">3</span>
+            <h3>Month 1: you see the whole center</h3>
+            <p>Fees due and paid, new enquiries, and which students need attention, without chasing anyone on the phone.</p>
+          </article>
       </div>
     </section>
         
@@ -324,7 +315,7 @@
 
   <script type="module">
     if (location.protocol !== 'file:') {
-      import('./js/app.js?v=20261031b').catch(function (err) {
+      import('./js/app.js?v=20261101a').catch(function (err) {
         console.error(err);
         document.documentElement.classList.remove('has-session');
         var note = document.createElement('p');
