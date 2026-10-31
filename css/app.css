@@ -2510,6 +2510,11 @@ tr.invoice-reported { background: color-mix(in srgb, var(--accent, #e67700) 6%, 
   .landing-header-cta .btn-ghost {
     display: none;
   }
+
+  /* Phones are where installing matters most, so keep "Install app" (still hidden via .hidden until installable). */
+  .landing-header-cta .landing-install-btn {
+    display: inline-flex;
+  }
 }
 
 /* Tutor public profiles */
