@@ -1,4 +1,5 @@
 import { esc, safeUrl } from './html.js';
+import { openStudentImport } from './student-import-view.js';
 import {
   getBatches,
   getBatch,
@@ -903,6 +904,7 @@ function renderStudents() {
     ${academyStatsGrid(['students', 'batches', 'capacityPct'])}
     <div class="toolbar" style="margin-top:12px">
       <button class="btn btn-primary" data-action="add-student">+ Add Student</button>
+      ${['center_admin', 'platform_owner'].includes(getEffectiveRole()) ? '<button class="btn btn-secondary" data-action="import-students">Import from Excel</button>' : ''}
       <select id="filterBatch">
         <option value="">All batches</option>
         ${batches.map((b) => `<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')}
@@ -2400,6 +2402,8 @@ function bindReportEvents() {
 
 function bindStudentEvents({ showModal, closeModal, toast, refresh }) {
   document.querySelector('[data-action="add-student"]')?.addEventListener('click', () => showStudentForm(null, { showModal, closeModal, toast, refresh }));
+  const importBtn = document.querySelector('[data-action="import-students"]');
+  if (importBtn) importBtn.onclick = () => openStudentImport({ showModal, toast, refresh });
   document.querySelectorAll('[data-action="edit-student"]').forEach((btn) => {
     btn.addEventListener('click', () => showStudentForm(getStudent(btn.dataset.id), { showModal, closeModal, toast, refresh }));
   });

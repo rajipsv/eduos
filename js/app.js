@@ -345,7 +345,9 @@ familyViewSelect?.addEventListener('change', () => {
 
 // The server refused or rolled back some changes: tell the user and show the saved data.
 window.addEventListener('tutorsala:sync-issue', (e) => {
-  const { conflicts, rejected, failed, messages } = e.detail || {};
+  const { conflicts, rejected, failed, rejections } = e.detail || {};
+  // Reasons the server explains itself (e.g. the plan's student limit), shown once each.
+  const messages = [...new Set((rejections || []).map((r) => r.message).filter(Boolean))];
   if (failed) toast('Could not save your changes. They will be retried.', 'error');
   else if (rejected && messages?.length) toast(messages.join(' '), 'error');
   else if (rejected) toast("Some changes weren't allowed and were undone.", 'error');

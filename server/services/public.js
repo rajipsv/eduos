@@ -2,6 +2,8 @@
 // Data anyone may see without signing in.
 import { getPool, testConnection } from '../db.js';
 import { isAuthConfigured } from '../auth/config.js';
+import { DEMO_IDS } from '../demo-accounts.js';
+import { isProduction } from '../env.js';
 
 const LISTING_FIELDS = [
   'city',
@@ -15,8 +17,25 @@ const LISTING_FIELDS = [
   'createdAt',
 ];
 
-/** GET /api/public/centers: listed, active centers with their public fields only. */
-export async function listPublicCenters() {
+/**
+ * A center is shown to parents only once it has something to show: a city plus subjects,
+ * categories or a tagline. Brand-new or test centers with an empty profile stay hidden.
+ * @param {any} data centers.data
+ */
+export function isListingReady(data) {
+  const d = data || {};
+  if (d.listingEnabled === false || d.listingEnabled === 'false') return false;
+  const has = (v) => (Array.isArray(v) ? v.length > 0 : Boolean(String(v ?? '').trim()));
+  return has(d.city) && (has(d.publicSubjects) || has(d.categories) || has(d.publicTagline));
+}
+
+/**
+ * GET /api/public/centers: listed, active centers with their public fields only.
+ * The demo center is left out on the live site unless the page asks for it (?demo=1, used in sales demos).
+ * @param {{ includeDemo?: boolean }} [options]
+ */
+export async function listPublicCenters({ includeDemo = false } = {}) {
+  const showDemo = includeDemo || !isProduction();
   const db = getPool();
   const r = await db.query(
     `SELECT c.id, c.name, c.slug, c.status, c.data,
@@ -79,7 +98,9 @@ export async function listPublicCenters() {
           })),
         };
       });
-  const centers = r.rows.map((row) => ({
+  const centers = r.rows
+    .filter((row) => (row.id === DEMO_IDS.center ? showDemo : isListingReady(row.data)))
+    .map((row) => ({
     id: row.id,
     name: row.name,
     slug: row.slug,
@@ -92,10 +113,15 @@ export async function listPublicCenters() {
   return { status: 200, body: { centers } };
 }
 
+function isEmailConfigured() {
+  return Boolean(process.env.RESEND_API_KEY);
+}
+
 export async function getHealthPayload() {
   if (!process.env.DATABASE_URL) {
-    return { ok: true, db: false, auth: false, reason: 'DATABASE_URL not configured' };
+    return { ok: true, db: false, auth: false, email: isEmailConfigured(), reason: 'DATABASE_URL not configured' };
   }
   const db = await testConnection();
-  return { ok: true, db, auth: db && isAuthConfigured() };
+  // email: whether password-reset and invite emails can be sent (RESEND_API_KEY is set).
+  return { ok: true, db, auth: db && isAuthConfigured(), email: isEmailConfigured() };
 }

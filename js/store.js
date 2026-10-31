@@ -348,7 +348,7 @@ function applySyncResults(sent, results) {
   const sentByKey = new Map(sent.map((c) => [`${c.collection}/${c.id}`, c]));
   let conflicts = 0;
   let rejected = 0;
-  const messages = [];
+  const rejections = [];
   for (const r of results || []) {
     const key = `${r.collection}/${r.id}`;
     const change = sentByKey.get(key);
@@ -376,13 +376,13 @@ function applySyncResults(sent, results) {
     } else {
       // forbidden or invalid: put back the last saved copy so it isn't sent again.
       rejected += 1;
-      if (r.message && !messages.includes(r.message)) messages.push(r.message);
+      rejections.push({ collection: r.collection, id: r.id, status: r.status, error: r.error, code: r.code, message: r.message });
       console.warn(`Tutorsala: change to ${key} was ${r.status}`, r.error || '');
       const prev = base.get(r.id);
       putStateRecord(r.collection, r.id, prev ? JSON.parse(prev.json) : null);
     }
   }
-  if (conflicts || rejected) notifySyncIssue({ conflicts, rejected, messages });
+  if (conflicts || rejected) notifySyncIssue({ conflicts, rejected, rejections });
 }
 
 let syncTimer = null;
@@ -461,7 +461,14 @@ if (typeof document !== 'undefined') {
 
 async function loadPublicCenters() {
   try {
-    const res = await fetch('/api/public/centers');
+    // Opening the site with ?demo=1 shows the demo center for the rest of the visit (sales demos).
+    // Otherwise only real, complete listings are shown.
+    let demo = new URLSearchParams(location.search).get('demo') === '1';
+    try {
+      if (demo) sessionStorage.setItem('tutorsala_demo', '1');
+      else demo = sessionStorage.getItem('tutorsala_demo') === '1';
+    } catch { /* storage blocked */ }
+    const res = await fetch(`/api/public/centers${demo ? '?demo=1' : ''}`);
     if (!res.ok) return [];
     return (await res.json()).centers || [];
   } catch {

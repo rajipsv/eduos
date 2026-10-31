@@ -33,11 +33,6 @@ function signedIn(fn) {
   };
 }
 
-const plain = (fn) => async (_req, res) => {
-  const result = await fn();
-  res.status(result.status).json(result.body);
-};
-
 // [method, path, handler]. ":name" segments are passed to the handler as extra arguments.
 export const ROUTES = [
   ['GET', '/api/health', async (_req, res) => res.status(200).json(await getHealthPayload())],
@@ -62,7 +57,10 @@ export const ROUTES = [
   ['DELETE', '/api/api-keys/:id', signedIn(revokeApiKey)],
   ['PATCH', '/api/platform/centers/:id/subscription', signedIn(updateCenterSubscription)],
 
-  ['GET', '/api/public/centers', plain(listPublicCenters)],
+  ['GET', '/api/public/centers', async (req, res) => {
+    const result = await listPublicCenters({ includeDemo: req.query?.demo === '1' });
+    res.status(result.status).json(result.body);
+  }],
   ['POST', '/api/public/centers/:id/inquiries', createInquiry],
 
   ['POST', '/api/leads', handleCreateInboundLead],

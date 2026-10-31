@@ -33,27 +33,22 @@ export const LANDING_FEATURES = [
   },
 ];
 
-export const LANDING_TESTIMONIALS = [
+/** First-month steps for a new center. Replace with real customer quotes once centers agree to share them. */
+export const LANDING_STEPS = [
   {
-    quote: 'We replaced five spreadsheets and a WhatsApp group. Parents finally get updates on time — and our enrollment pipeline actually works.',
-    name: 'Priya Mehta',
-    role: 'Owner, Bright Minds Academy',
-    city: 'Mumbai',
-    rating: 5,
+    step: '1',
+    title: 'Day 1: we set up your center with you',
+    desc: 'On a call, we add your batches, teachers and fees, and import your students from Excel. Nothing to install.',
   },
   {
-    quote: 'I can see my son\'s homework, attendance, and teacher feedback in one place. No more chasing the tutor on phone.',
-    name: 'Rajesh Sharma',
-    role: 'Parent',
-    city: 'Mumbai',
-    rating: 5,
+    step: '2',
+    title: 'Week 1: classes run on Tutorsala',
+    desc: 'Teachers mark attendance and homework in seconds. Parents get WhatsApp updates and see their child in the parent portal.',
   },
   {
-    quote: 'Marking attendance and messaging parents used to take an hour after class. Now it\'s done before I leave the desk.',
-    name: 'Dr. Anita Desai',
-    role: 'Physics Tutor',
-    city: 'Bright Minds Academy',
-    rating: 5,
+    step: '3',
+    title: 'Month 1: you see the whole center',
+    desc: 'Fees due and paid, new enquiries, and which students need attention, without chasing anyone on the phone.',
   },
 ];
 
@@ -151,10 +146,6 @@ export const LOGIN_PORTALS = [
   { id: 'family', title: 'Family', subtitle: 'One login — parent & student views' },
 ];
 
-function stars(n) {
-  return '★'.repeat(n) + '☆'.repeat(5 - n);
-}
-
 export function buildPricingWhatsAppUrl(planName) {
   const digits = String(TUTORSALA_SALES_WHATSAPP).replace(/\D/g, '');
   const text = `Hi Tutorsala team, I'm interested in the ${planName} plan. Please share platform subscription and payment details for my tuition center.`;
@@ -175,11 +166,11 @@ export function renderLandingHeader() {
         <nav class="landing-nav" aria-label="Main">
           <button type="button" class="landing-nav-link" data-scroll="features">Features</button>
           <button type="button" class="landing-nav-link" data-scroll="pricing">Pricing</button>
-          <button type="button" class="landing-nav-link" data-scroll="testimonials">Testimonials</button>
+          <button type="button" class="landing-nav-link" data-scroll="how-it-works">How it works</button>
           <button type="button" class="landing-nav-link" data-scroll="tuitions">Browse tuitions</button>
         </nav>
         <div class="landing-header-cta">
-          <button type="button" class="btn btn-ghost btn-sm hidden" data-pwa-install>Install app</button>
+          <button type="button" class="btn btn-ghost btn-sm landing-install-btn hidden" data-pwa-install>Install app</button>
           <a class="btn btn-secondary btn-sm" href="${buildStartPageUrl()}">Book free demo</a>
           <button type="button" class="btn btn-primary btn-sm" data-auth-open-login>Log in</button>
         </div>
@@ -281,24 +272,21 @@ export function renderLandingPricing() {
     </section>`;
 }
 
-export function renderLandingTestimonials() {
+export function renderLandingHowItWorks() {
   return `
-    <section class="landing-section landing-section-alt" id="testimonials">
+    <section class="landing-section landing-section-alt" id="how-it-works">
       <div class="landing-section-head">
-        <p class="landing-eyebrow">Trusted by academies & families</p>
-        <h2>What our users say</h2>
-        <p class="landing-section-sub">Real outcomes for center owners, tutors, and parents on Tutorsala.</p>
+        <p class="landing-eyebrow">How it works</p>
+        <h2>Running on Tutorsala in your first month</h2>
+        <p class="landing-section-sub">Start with a free 30-day pilot. We set it up with you, so your team and parents can begin from day one.</p>
       </div>
-      <div class="landing-testimonials-grid">
-        ${LANDING_TESTIMONIALS.map((t) => `
-          <blockquote class="landing-testimonial">
-            <div class="landing-testimonial-stars" aria-label="${esc(t.rating)} out of 5 stars">${stars(t.rating)}</div>
-            <p>"${esc(t.quote)}"</p>
-            <footer>
-              <strong>${esc(t.name)}</strong>
-              <span>${esc(t.role)}${t.city ? ` · ${t.city}` : ''}</span>
-            </footer>
-          </blockquote>`).join('')}
+      <div class="landing-features-grid">
+        ${LANDING_STEPS.map((st) => `
+          <article class="landing-feature-card">
+            <span class="landing-feature-icon">${esc(st.step)}</span>
+            <h3>${esc(st.title)}</h3>
+            <p>${esc(st.desc)}</p>
+          </article>`).join('')}
       </div>
     </section>`;
 }
@@ -359,7 +347,7 @@ export function renderLandingPage(marketplaceHtml) {
         ${renderLandingHero()}
         ${renderLandingFeatures()}
         ${renderLandingPricing()}
-        ${renderLandingTestimonials()}
+        ${renderLandingHowItWorks()}
         ${renderLandingMarketplace(marketplaceHtml)}
       </main>
       ${renderLandingFooter()}
