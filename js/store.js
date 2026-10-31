@@ -534,21 +534,32 @@ export async function clearServerData() {
   state = hydrateServerState({ centers: listed }, { publicCenters: listed });
 }
 
-/** Creates a login on the server (server mode). Returns the new user or null. */
+/**
+ * Creates a login on the server (server mode). With `sendInvite: true` the server also returns
+ * a "choose your password" link as `invite`.
+ * @returns {Promise<{ ok: boolean, user?: any, invite?: any, error?: string, message?: string }>}
+ */
 export async function createServerUser(fields) {
   const res = await apiFetch('/api/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) {
     console.warn('Tutorsala: could not create login', res.status);
-    return null;
+    return { ok: false, error: body.error || `HTTP ${res.status}`, message: body.message };
   }
-  const { user } = await res.json();
+  const { user } = body;
   state.users = state.users || [];
   if (!state.users.some((u) => u.id === user.id)) state.users.push(user);
-  return user;
+  return { ok: true, user, invite: body.invite };
+}
+
+/** Records something about a login in local state only (e.g. when it was last seen). */
+export function patchLocalUser(userId, fields) {
+  const u = (state.users || []).find((x) => x.id === userId);
+  if (u) Object.assign(u, fields);
 }
 
 /** Saves center API keys on the server (encrypted there). '' removes one; undefined keeps it. */
@@ -1393,17 +1404,20 @@ export function updateUserPassword(userId, password) {
 
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
-export function createPasswordResetToken(userId, email) {
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Browser-only demo mode. `invite` makes a 7-day "choose your password" link. */
+export function createPasswordResetToken(userId, email, { invite = false } = {}) {
   ensureState();
   state.passwordResetTokens = state.passwordResetTokens || [];
   state.passwordResetTokens = state.passwordResetTokens.filter((t) => t.userId !== userId || t.used);
-  const token = `rst_${Date.now()}_${Math.random().toString(36).slice(2, 14)}`;
+  const token = `${invite ? 'inv' : 'rst'}_${Date.now()}_${Math.random().toString(36).slice(2, 14)}`;
   const entry = {
     token,
     userId,
     email: email.trim().toLowerCase(),
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS).toISOString(),
+    expiresAt: new Date(Date.now() + (invite ? INVITE_TTL_MS : PASSWORD_RESET_TTL_MS)).toISOString(),
     used: false,
   };
   state.passwordResetTokens.push(entry);

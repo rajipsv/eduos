@@ -323,14 +323,31 @@ If you did not request this, you can ignore this email.
 export async function getPasswordResetTokenInfo(token) {
   if (isServerAuthEnabled()) {
     const result = await authGet(`/api/auth/reset-password-info?token=${encodeURIComponent(token)}`);
-    if (!result.ok) return { ok: false, error: result.error || 'This reset link is invalid or has expired.' };
-    return { ok: true, email: result.email, name: result.name };
+    if (!result.ok) {
+      return { ok: false, invite: Boolean(result.invite), error: result.error || 'This reset link is invalid or has expired.' };
+    }
+    return { ok: true, email: result.email, name: result.name, invite: Boolean(result.invite), centerName: result.centerName || null };
   }
 
+  const invite = isInviteTokenString(token);
   const entry = findValidPasswordResetToken(token);
-  if (!entry) return { ok: false, error: 'This reset link is invalid or has expired.' };
+  if (!entry) {
+    return {
+      ok: false,
+      invite,
+      error: invite
+        ? 'This invite link has expired or was already used. Ask your center to send a new one.'
+        : 'This reset link is invalid or has expired.',
+    };
+  }
   const user = getUsers().find((u) => u.id === entry.userId);
-  return { ok: true, email: entry.email, name: user?.name || entry.email };
+  const centerName = invite && user?.centerId ? getCenter(user.centerId)?.name || null : null;
+  return { ok: true, email: entry.email, name: user?.name || entry.email, invite, centerName };
+}
+
+/** Invite links ("choose your password") use the reset machinery with an `inv_` token. */
+export function isInviteTokenString(token) {
+  return typeof token === 'string' && token.startsWith('inv_');
 }
 
 export async function resetPasswordWithToken(token, newPassword) {
@@ -340,6 +357,12 @@ export async function resetPasswordWithToken(token, newPassword) {
   if (isServerAuthEnabled()) {
     const result = await authPost('/api/auth/reset-password', { token, password: newPassword });
     if (!result.ok) return { ok: false, error: result.error || 'Reset failed' };
+    // The server signs the person straight in after the password is saved.
+    if (result.accessToken && result.session) {
+      applyServerSession(result.session, result.accessToken);
+      await reloadStoreFromServer();
+      return { ok: true, signedIn: true, session: getSession(), message: result.message || 'Password saved. You are now signed in.' };
+    }
     return { ok: true, message: result.message || 'Password updated. You can sign in now.' };
   }
 
@@ -348,6 +371,8 @@ export async function resetPasswordWithToken(token, newPassword) {
 
   updateUserPassword(entry.userId, newPassword);
   markPasswordResetTokenUsed(token);
+  const signed = await login(entry.email, newPassword);
+  if (signed.ok) return { ok: true, signedIn: true, session: signed.session, message: 'Password saved. You are now signed in.' };
   return { ok: true, message: 'Password updated. You can sign in now.' };
 }
 

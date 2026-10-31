@@ -55,8 +55,14 @@ async function centerStats(db) {
 }
 
 async function centerUsers(db, centerId) {
-  const r = await db.query('SELECT * FROM auth_users WHERE center_id = $1 ORDER BY created_at', [centerId]);
+  // lastSeenAt: latest sign-in or session refresh, so admins can see who has started using Tutorsala.
+  const r = await db.query(
+    `SELECT u.*, (SELECT max(t.created_at) FROM auth_refresh_tokens t WHERE t.user_id = u.id) AS last_seen_at
+       FROM auth_users u WHERE u.center_id = $1 ORDER BY u.created_at`,
+    [centerId],
+  );
   return r.rows.map((row) => ({
+    lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at).toISOString() : null,
     id: row.id,
     email: row.email,
     role: row.role,

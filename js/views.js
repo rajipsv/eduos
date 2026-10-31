@@ -122,6 +122,7 @@ import { getCurrentUser, saveCenterAdminTeacherLink, getEffectiveRole, getActive
 import { TUITION_CATEGORIES } from './tuition-categories.js';
 import { openProfileEditorModal, profileStatusBadge, getTutorReviews, setReviewVisible } from './tutor-profile.js';
 import { reviewListHtml } from './layer-views.js';
+import { openSendLoginModal, loginBadgeHtml, canSendLogins } from './invites.js';
 
 let chartInstance = null;
 
@@ -810,7 +811,7 @@ function renderTeachers() {
         const report = getTeacherReport(t.id);
         const isYou = adminUser?.linkedTeacherId === t.id;
         return `<div class="batch-card">
-          <h4>${esc(t.name)}${isYou ? ' <span class="badge badge-green">You</span>' : ''} ${profileStatusBadge(t)}</h4>
+          <h4>${esc(t.name)}${isYou ? ' <span class="badge badge-green">You</span>' : ''} ${profileStatusBadge(t)} ${loginBadgeHtml('teacher', t)}</h4>
           <div class="meta">${esc(t.email)} · ${esc(t.phone)}</div>
           <div class="tags">${(t.subjects || []).map((s) => `<span class="tag">${s}</span>`).join('')}</div>
           <div class="meta">${esc(report.batchCount)} batches · ${esc(report.studentCount)} students · ${esc(report.completionRate)}% curriculum done</div>
@@ -818,6 +819,7 @@ function renderTeachers() {
             <button class="btn btn-sm btn-secondary" data-action="edit-teacher" data-id="${esc(t.id)}">Edit</button>
             <button class="btn btn-sm btn-primary" data-action="teacher-report" data-id="${esc(t.id)}">Report</button>
             <button class="btn btn-sm btn-secondary" data-action="teacher-public-profile" data-id="${esc(t.id)}">Public profile</button>
+            ${isYou || !canSendLogins() ? '' : `<button class="btn btn-sm btn-secondary" data-action="send-login" data-kind="teacher" data-id="${esc(t.id)}">Send login</button>`}
             <button class="btn btn-sm btn-danger" data-action="delete-teacher" data-id="${esc(t.id)}">Delete</button>
           </div>
         </div>`;
@@ -927,9 +929,10 @@ function studentRows(students) {
       <td><strong>${esc(s.name)}</strong><br><small>Grade ${esc(s.grade)}</small></td>
       <td>${esc(batch?.name || '—')}</td>
       <td>${esc(s.phone)}<br><small>${esc(s.email)}</small></td>
-      <td>${esc(s.parentName)}<br><small>${esc(s.parentPhone)}</small></td>
+      <td>${esc(s.parentName)}<br><small>${esc(s.parentPhone)}</small>${canSendLogins() ? `<br>${loginBadgeHtml('family', s)}` : ''}</td>
       <td>
         <button class="btn btn-sm btn-secondary" data-action="edit-student" data-id="${esc(s.id)}">Edit</button>
+        ${canSendLogins() ? `<button class="btn btn-sm btn-secondary" data-action="send-login" data-kind="family" data-id="${esc(s.id)}">Send login</button>` : ''}
         <button class="btn btn-sm btn-danger" data-action="delete-student" data-id="${esc(s.id)}">Delete</button>
       </td>
     </tr>`;
@@ -2325,6 +2328,9 @@ function bindTeacherEvents({ showModal, closeModal, toast, refresh, navigate }) 
   document.querySelectorAll('[data-action="edit-teacher"]').forEach((btn) => {
     btn.addEventListener('click', () => showTeacherForm(getTeacher(btn.dataset.id), { showModal, closeModal, toast, refresh }));
   });
+  document.querySelectorAll('[data-action="send-login"][data-kind="teacher"]').forEach((btn) => {
+    btn.addEventListener('click', () => openSendLoginModal('teacher', btn.dataset.id, { showModal, closeModal, toast, refresh }));
+  });
   document.querySelectorAll('[data-action="teacher-public-profile"]').forEach((btn) => {
     btn.addEventListener('click', () => openProfileEditorModal(btn.dataset.id, { showModal, closeModal, toast }, { canPublish: true, onChange: refresh }));
   });
@@ -2401,6 +2407,9 @@ function bindStudentEvents({ showModal, closeModal, toast, refresh }) {
   document.querySelector('[data-action="add-student"]')?.addEventListener('click', () => showStudentForm(null, { showModal, closeModal, toast, refresh }));
   document.querySelectorAll('[data-action="edit-student"]').forEach((btn) => {
     btn.addEventListener('click', () => showStudentForm(getStudent(btn.dataset.id), { showModal, closeModal, toast, refresh }));
+  });
+  document.querySelectorAll('#studentsTable [data-action="send-login"]').forEach((btn) => {
+    btn.addEventListener('click', () => openSendLoginModal('family', btn.dataset.id, { showModal, closeModal, toast, refresh }));
   });
   document.querySelectorAll('[data-action="delete-student"]').forEach((btn) => {
     btn.addEventListener('click', () => {

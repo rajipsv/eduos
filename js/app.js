@@ -245,7 +245,8 @@ function mountAuth(mode = 'home', params = {}) {
     bindAuthEvents({
       onAuthed: () => showApp(getSession()),
       toast,
-      onModeChange: (m) => mountAuth(m),
+      // Leaving an invite/reset page while still signed in goes back to the app.
+      onModeChange: (m) => (m === 'home' && getSession() ? showApp(getSession()) : mountAuth(m)),
       showModal,
       closeModal,
     });
@@ -326,17 +327,18 @@ try {
   initAuth();
 
   const session = getSession();
-  if (session) {
+  const initial = resolveInitialAuthMode();
+  // An invite or reset link opens its page even in a browser where someone is signed in;
+  // saving the new password then signs in as that person instead.
+  if (session && initial.mode !== 'reset-password') {
     showApp(session);
   } else {
-    const initial = resolveInitialAuthMode();
     mountAuth(initial.mode, initial.params);
   }
 
   window.addEventListener('hashchange', () => {
-    if (getSession()) return;
-    const initial = resolveInitialAuthMode();
-    if (initial.mode === 'reset-password') mountAuth(initial.mode, initial.params);
+    const next = resolveInitialAuthMode();
+    if (next.mode === 'reset-password') mountAuth(next.mode, next.params);
   });
 } catch (err) {
   console.error(err);
