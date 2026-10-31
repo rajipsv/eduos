@@ -3,6 +3,7 @@
 import { getPool, testConnection } from '../db.js';
 import { isAuthConfigured } from '../auth/config.js';
 import { DEMO_IDS } from '../demo-accounts.js';
+import { isEmailConfigured } from '../email.js';
 import { isProduction } from '../env.js';
 
 const LISTING_FIELDS = [
@@ -113,15 +114,11 @@ export async function listPublicCenters({ includeDemo = false } = {}) {
   return { status: 200, body: { centers } };
 }
 
-function isEmailConfigured() {
-  return Boolean(process.env.RESEND_API_KEY);
-}
-
 export async function getHealthPayload() {
   if (!process.env.DATABASE_URL) {
     return { ok: true, db: false, auth: false, email: isEmailConfigured(), reason: 'DATABASE_URL not configured' };
   }
   const db = await testConnection();
-  // email: whether password-reset and invite emails can be sent (RESEND_API_KEY is set).
+  // email: whether password-reset and invite emails can be sent (SMTP or Resend is set up).
   return { ok: true, db, auth: db && isAuthConfigured(), email: isEmailConfigured() };
 }
