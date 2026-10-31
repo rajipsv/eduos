@@ -7,7 +7,8 @@ import { renderNavHtml, getDefaultView, canAccessView, getNavRole, getSectionIdF
 import { renderAuthScreen, bindAuthEvents } from './auth-views.js';
 import { platformPageMeta } from './platform-views.js';
 import { TUITION_PENDING_KEY, TUITION_OPEN_KEY, canSendTuitionInquiry } from './tuition-marketplace.js';
-import { getBranches } from './store.js';
+import { getBranches, getCenter } from './store.js';
+import { subscriptionBanner, subscriptionWhatsAppUrl } from './subscription.js';
 import { initPwa } from './pwa.js';
 
 let currentView = 'dashboard';
@@ -192,8 +193,42 @@ function syncTopbarForRole(session) {
   document.getElementById('quickNotifyBtn')?.classList.toggle('hidden', navRole === 'parent' || navRole === 'student');
 }
 
+const BANNER_DISMISS_KEY = 'tutorsala_plan_banner_dismissed';
+
+// Center admins only: a reminder when the free pilot or paid period is ending or has ended.
+// Nothing is locked; after the end date the reminder can't be closed.
+function syncSubscriptionBanner(session) {
+  document.querySelector('.subscription-banner')?.remove();
+  if (session?.role !== 'center_admin' || !session.centerId) return;
+  const center = getCenter(session.centerId);
+  const banner = center ? subscriptionBanner(center) : null;
+  if (!banner) return;
+  let dismissed = null;
+  try {
+    dismissed = sessionStorage.getItem(BANNER_DISMISS_KEY);
+  } catch { /* storage blocked */ }
+  if (banner.dismissable && dismissed === banner.key) return;
+
+  const el = document.createElement('div');
+  el.className = `subscription-banner subscription-banner-${banner.level}`;
+  el.setAttribute('role', banner.dismissable ? 'status' : 'alert');
+  el.innerHTML = `<span>${esc(banner.message)}</span>
+    <span class="subscription-banner-actions">
+      <a class="btn btn-sm btn-primary" href="${esc(subscriptionWhatsAppUrl(center.name))}" target="_blank" rel="noopener noreferrer">WhatsApp us</a>
+      ${banner.dismissable ? '<button type="button" class="btn btn-sm btn-ghost" data-dismiss-plan-banner aria-label="Hide this reminder">Later</button>' : ''}
+    </span>`;
+  content.parentElement.insertBefore(el, content);
+  el.querySelector('[data-dismiss-plan-banner]')?.addEventListener('click', () => {
+    try {
+      sessionStorage.setItem(BANNER_DISMISS_KEY, banner.key);
+    } catch { /* storage blocked */ }
+    el.remove();
+  });
+}
+
 function buildShellForSession(session) {
   document.querySelector('.support-banner')?.remove();
+  syncSubscriptionBanner(session);
   const navRole = getNavRole(session);
   openNavSectionId = getSectionIdForView(navRole, getDefaultView(getNavRole(session))) || 'command';
   mainNav.innerHTML = renderNavHtml(navRole, { activeView: currentView, openSectionId: openNavSectionId });
@@ -310,8 +345,9 @@ familyViewSelect?.addEventListener('change', () => {
 
 // The server refused or rolled back some changes: tell the user and show the saved data.
 window.addEventListener('tutorsala:sync-issue', (e) => {
-  const { conflicts, rejected, failed } = e.detail || {};
+  const { conflicts, rejected, failed, messages } = e.detail || {};
   if (failed) toast('Could not save your changes. They will be retried.', 'error');
+  else if (rejected && messages?.length) toast(messages.join(' '), 'error');
   else if (rejected) toast("Some changes weren't allowed and were undone.", 'error');
   else if (conflicts) toast('Someone else changed this at the same time. Showing the latest version.', 'default');
   if (getSession() && (rejected || conflicts)) ctx.refresh();

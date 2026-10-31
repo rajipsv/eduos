@@ -2,7 +2,7 @@
 // GET /api/bootstrap: everything the signed-in user may see in their center.
 import { COLLECTION_NAMES, fromRecords } from '../../js/sync-rules.js';
 import { getPool } from '../db.js';
-import { getCenter, listCenters } from '../db/centers.js';
+import { getCenter, listCenters, centerForViewer } from '../db/centers.js';
 import { loadRecords, countRecordsByCenter } from '../db/records.js';
 import { buildContext, isAdmin, project } from './access.js';
 import { integrationStatus } from './integrations.js';
@@ -111,7 +111,7 @@ export async function buildBootstrap(user, req) {
   }
 
   const center = await getCenter(db, centerId);
-  const centers = user.role === 'platform_owner' ? await listCenters(db) : [center];
+  const centers = user.role === 'platform_owner' ? await listCenters(db) : [centerForViewer(center, user.role)];
   const cv = await db.query('SELECT id, version FROM centers WHERE id = ANY($1)', [centers.map((c) => c.id)]);
   versions.centers = Object.fromEntries(cv.rows.map((r) => [r.id, r.version]));
   data.centers = centers;

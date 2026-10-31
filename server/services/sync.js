@@ -7,7 +7,14 @@
 //   invalid   the data failed validation
 import { COLLECTIONS, SECRET_SETTINGS_FIELDS, ADMIN_ROLES, recordKey, writeMode, isOwnRecord } from '../../js/sync-rules.js';
 import { getPool } from '../db.js';
-import { rowToCenter, upsertCenter } from '../db/centers.js';
+import { rowToCenter, upsertCenter, getCenter, centerForViewer } from '../db/centers.js';
+import {
+  studentLimitFor,
+  countActiveStudents,
+  isActiveStudent,
+  studentLimitMessage,
+  STUDENT_LIMIT_ERROR,
+} from '../../js/subscription.js';
 import { loadRecords, getRecordsForUpdate, upsertRecord, deleteRecord } from '../db/records.js';
 import { parseSyncRequest, checkRecord } from '../validation.js';
 import { buildContext, project } from './access.js';
@@ -15,6 +22,8 @@ import { resolveCenter } from './bootstrap.js';
 
 // Fields a center admin may not change on their own center (platform owner only).
 const PROTECTED_CENTER_FIELDS = ['status', 'plan', 'ownerUserId', 'ownerEmail', 'createdAt'];
+// Changed only through PATCH /api/platform/centers/:id/subscription, never by sync.
+const SUBSCRIPTION_FIELDS = ['plan', 'subscription'];
 
 const without = (obj, keys) => Object.fromEntries(Object.entries(obj).filter(([k]) => !keys.includes(k)));
 
@@ -140,13 +149,14 @@ async function applyCenterChange(db, change, user) {
 
   let next = { ...change.data, id: change.id };
   if (!isOwner) for (const f of PROTECTED_CENTER_FIELDS) next[f] = live[f];
+  for (const f of SUBSCRIPTION_FIELDS) next[f] = live[f];
   next = Object.fromEntries(Object.entries(next).filter(([, v]) => v !== undefined));
   const error = checkRecord('centers', next);
   if (error) return { status: 'invalid', error };
   const version = await upsertCenter(db, next);
   return {
     status: 'ok',
-    record: next,
+    record: centerForViewer(next, user.role),
     version,
     audit: live.status !== next.status ? { from: live.status, to: next.status } : null,
   };
@@ -180,10 +190,26 @@ export async function applySync(user, req, body) {
         )
       : new Map();
 
+    // Active students allowed by the center's plan. New (or reactivated) students past it are refused.
+    let seats = null;
+    if (centerId && recordChanges.some((c) => c.collection === 'students')) {
+      const students = ctxRows.filter((r) => r.collection === 'students').map((r) => r.data);
+      seats = { limit: studentLimitFor(await getCenter(db, centerId)), used: countActiveStudents(students) };
+    }
+
     for (const change of recordChanges) {
       const key = `${change.collection}/${change.id}`;
       const prev = stored.get(key);
-      const outcome = applyRecordChange(change, { prev, ctx, centerId, user });
+      let outcome = applyRecordChange(change, { prev, ctx, centerId, user });
+      if (seats && change.collection === 'students' && outcome.status === 'ok') {
+        const wasActive = Boolean(prev && !prev.deleted) && isActiveStudent(prev.data);
+        const willBeActive = outcome.write === 'upsert' && isActiveStudent(outcome.data);
+        if (!wasActive && willBeActive && seats.used >= seats.limit) {
+          outcome = { status: 'invalid', error: STUDENT_LIMIT_ERROR, message: studentLimitMessage(seats.limit) };
+        } else {
+          seats.used += (willBeActive ? 1 : 0) - (wasActive ? 1 : 0);
+        }
+      }
       const base = { collection: change.collection, id: change.id, status: outcome.status };
 
       if (outcome.status === 'ok' && outcome.write === 'upsert') {
@@ -219,6 +245,7 @@ export async function applySync(user, req, body) {
         results.push({
           ...base,
           ...(outcome.error ? { error: outcome.error } : {}),
+          ...(outcome.message ? { message: outcome.message } : {}),
           ...(outcome.deleted ? { deleted: true, version: outcome.version } : {}),
         });
       }

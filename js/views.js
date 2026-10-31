@@ -36,6 +36,7 @@ import {
   saveTeacher,
   deleteTeacher,
   saveStudent,
+  getStudentLimitInfo,
   deleteStudent,
   saveAttendance,
   saveTest,
@@ -2421,6 +2422,8 @@ function bindStudentEvents({ showModal, closeModal, toast, refresh }) {
 }
 
 function showStudentForm(student, { showModal, closeModal, toast, refresh }) {
+  const seats = student ? null : getStudentLimitInfo();
+  if (seats && !seats.canAdd) return toast(seats.message, 'error');
   const batches = getBatches();
   showModal({
     title: student ? 'Edit Student' : 'Add Student',
@@ -2452,7 +2455,7 @@ function showStudentForm(student, { showModal, closeModal, toast, refresh }) {
         const name = document.getElementById('sName').value.trim();
         if (!name) return toast('Name is required', 'error');
         const feeOverrideRaw = document.getElementById('sFeeOverride').value.trim();
-        saveStudent({
+        const saved = saveStudent({
           id: student?.id,
           name,
           grade: document.getElementById('sGrade').value.trim(),
@@ -2472,6 +2475,7 @@ function showStudentForm(student, { showModal, closeModal, toast, refresh }) {
           address: document.getElementById('sAddress').value.trim(),
           notes: document.getElementById('sNotes').value.trim(),
         });
+        if (saved?.error) return toast(saved.error, 'error');
         closeModal();
         toast('Student saved', 'success');
         refresh();

@@ -18,6 +18,13 @@ import {
   toRecordMap,
   writableCollections,
 } from './sync-rules.js';
+import {
+  applySubscriptionUpdate,
+  countActiveStudents,
+  studentLimitFor,
+  studentLimitMessage,
+  STUDENT_LIMIT_ERROR,
+} from './subscription.js';
 
 const STORAGE_KEY = 'tutorhub_data_v5';
 const SESSION_KEY = 'tutorhub_session';
@@ -341,6 +348,7 @@ function applySyncResults(sent, results) {
   const sentByKey = new Map(sent.map((c) => [`${c.collection}/${c.id}`, c]));
   let conflicts = 0;
   let rejected = 0;
+  const messages = [];
   for (const r of results || []) {
     const key = `${r.collection}/${r.id}`;
     const change = sentByKey.get(key);
@@ -368,12 +376,13 @@ function applySyncResults(sent, results) {
     } else {
       // forbidden or invalid: put back the last saved copy so it isn't sent again.
       rejected += 1;
+      if (r.message && !messages.includes(r.message)) messages.push(r.message);
       console.warn(`Tutorsala: change to ${key} was ${r.status}`, r.error || '');
       const prev = base.get(r.id);
       putStateRecord(r.collection, r.id, prev ? JSON.parse(prev.json) : null);
     }
   }
-  if (conflicts || rejected) notifySyncIssue({ conflicts, rejected });
+  if (conflicts || rejected) notifySyncIssue({ conflicts, rejected, messages });
 }
 
 let syncTimer = null;
@@ -1286,6 +1295,50 @@ export function getCenter(id) {
   return (state.centers || []).find((c) => c.id === id);
 }
 
+/**
+ * Platform owner: change a center's Tutorsala subscription (plan, pilot end, payment, limits).
+ * Goes straight to the server, not through sync. Returns { center } or { error }.
+ */
+export async function updateCenterSubscription(centerId, update) {
+  if (!dbMode) {
+    // Browser-only demo: same rules, saved locally.
+    const center = getCenter(centerId);
+    if (!center) return { error: 'Center not found' };
+    const payment = update.payment ? { id: uid('payment'), ...update.payment, recordedAt: new Date().toISOString() } : undefined;
+    const subscription = applySubscriptionUpdate(center, { ...update, payment });
+    return { center: saveCenter({ ...center, plan: subscription.plan, subscription }) };
+  }
+  let res;
+  try {
+    res = await apiFetch(`/api/platform/centers/${encodeURIComponent(centerId)}/subscription`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(update),
+    });
+  } catch {
+    return { error: 'Could not reach the server. Please try again.' };
+  }
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) return { error: payload.message || payload.error || `Could not save (${res.status})` };
+  const id = String(payload.center.id);
+  putStateRecord('centers', id, payload.center);
+  syncedFor('centers').set(id, { json: JSON.stringify(payload.center), version: payload.version });
+  persist();
+  return { center: payload.center };
+}
+
+/** Active students in the current center against the plan's limit (admins only; others get null). */
+export function getStudentLimitInfo() {
+  const session = sessionInfo();
+  const cid = getActiveCenterIdFromSession();
+  if (!cid || !ADMIN_ROLES.includes(session?.role)) return null;
+  const center = getCenter(cid);
+  if (!center) return null;
+  const limit = studentLimitFor(center);
+  const used = countActiveStudents((state.students || []).filter((s) => !s.centerId || s.centerId === cid));
+  return { limit, used, canAdd: used < limit, message: studentLimitMessage(limit) };
+}
+
 export function saveCenter(center) {
   const idx = (state.centers || []).findIndex((c) => c.id === center.id);
   if (idx >= 0) state.centers[idx] = center;
@@ -1653,7 +1706,8 @@ export function convertLeadToStudent(leadId, batchId) {
     feeStartDate: new Date().toISOString().slice(0, 10),
     notes: lead.notes || '',
   };
-  saveStudent(student);
+  const saved = saveStudent(student);
+  if (saved?.error) return saved;
   ensureFamilyAccountForStudent(student, lead);
   lead.stage = 'converted';
   lead.convertedStudentId = student.id;
@@ -1974,9 +2028,15 @@ export function saveStudent(student) {
     ...student,
   };
   const idx = state.students.findIndex((s) => s.id === normalized.id);
+  if (idx < 0) {
+    // The plan allows a set number of active students (the server checks this too).
+    const seats = getStudentLimitInfo();
+    if (seats && !seats.canAdd) return { error: seats.message, code: STUDENT_LIMIT_ERROR };
+  }
   if (idx >= 0) state.students[idx] = normalized;
   else state.students.push(withTenant({ ...normalized, id: uid('student') }));
   persist();
+  return null;
 }
 
 export function deleteStudent(id) {

@@ -4,6 +4,7 @@
 // and every record has a size limit.
 import { z } from 'zod';
 import { COLLECTION_NAMES } from '../js/sync-rules.js';
+import { PLANS, PAYMENT_METHODS, isoDate } from '../js/subscription.js';
 
 export const MAX_RECORD_BYTES = 200 * 1024;
 export const MAX_CHANGES = 500;
@@ -112,6 +113,41 @@ const RECORD_SCHEMAS = {
 export function parseSyncRequest(body) {
   const r = syncEnvelope.safeParse(body);
   if (!r.success) return { ok: false, error: r.error.issues[0]?.message || 'invalid_body' };
+  return { ok: true, value: r.data };
+}
+
+// PATCH /api/platform/centers/:id/subscription (platform owner only).
+const day = z
+  .string()
+  .refine((v) => /^\d{4}-\d{2}-\d{2}$/.test(v) && isoDate(v) === v, 'dates must be real days written as YYYY-MM-DD');
+const subscriptionUpdate = z
+  .object({
+    plan: z.enum(/** @type {[string, ...string[]]} */ (PLANS)).optional(),
+    pilotEndsAt: day.optional(),
+    paidUntil: day.nullable().optional(),
+    extraBranches: z.number().int().min(0).max(500).optional(),
+    studentLimit: z.number().int().min(1).max(100000).nullable().optional(),
+    payment: z
+      .object({
+        date: day,
+        amount: z.number().positive().max(10000000),
+        method: z.enum(/** @type {[string, ...string[]]} */ (PAYMENT_METHODS)),
+        reference: z.string().trim().max(120).optional().default(''),
+        note: z.string().trim().max(500).optional().default(''),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, 'nothing to change');
+
+export function parseSubscriptionUpdate(body) {
+  const r = subscriptionUpdate.safeParse(body);
+  if (!r.success) {
+    const issue = r.error.issues[0];
+    const where = issue?.path?.length ? `${issue.path.join('.')}: ` : '';
+    return { ok: false, error: `${where}${issue?.message || 'invalid'}` };
+  }
   return { ok: true, value: r.data };
 }
 

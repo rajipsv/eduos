@@ -1,6 +1,7 @@
 // @ts-check
 import { insertRecords } from './records.js';
 import { uid } from '../auth/crypto.js';
+import { subscriptionForViewer } from '../../js/subscription.js';
 
 // Center fields kept in their own columns. Everything else lives in `data`.
 const COLUMN_FIELDS = ['id', 'name', 'slug', 'status', 'plan', 'ownerUserId'];
@@ -22,7 +23,17 @@ export function rowToCenter(row) {
     status: row.status,
     plan: row.plan,
     ownerUserId: row.owner_user_id,
+    // Older centers kept no createdAt of their own; the pilot end date is worked out from it.
+    createdAt: row.data?.createdAt || (row.created_at ? new Date(row.created_at).toISOString().slice(0, 10) : undefined),
   };
+}
+
+/** A center as the given role may see it: the subscription is trimmed or removed. */
+export function centerForViewer(center, role) {
+  if (!center) return center;
+  const { subscription, ...rest } = center;
+  const shown = subscriptionForViewer(subscription, role);
+  return shown ? { ...rest, subscription: shown } : rest;
 }
 
 function splitCenter(center) {

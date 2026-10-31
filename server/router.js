@@ -19,6 +19,7 @@ import { listPublicCenters, getHealthPayload } from './services/public.js';
 import { saveSecrets, aiChat, sendWhatsApp } from './services/integrations.js';
 import { createApiKey, revokeApiKey } from './services/api-keys.js';
 import { createInquiry } from './services/inquiries.js';
+import { updateCenterSubscription } from './services/subscriptions.js';
 
 /** Signed-in routes: fn(user, req, ...params) returns { status, body }. */
 function signedIn(fn) {
@@ -59,6 +60,7 @@ export const ROUTES = [
   ['POST', '/api/whatsapp/send', signedIn(sendWhatsApp)],
   ['POST', '/api/api-keys', signedIn(createApiKey)],
   ['DELETE', '/api/api-keys/:id', signedIn(revokeApiKey)],
+  ['PATCH', '/api/platform/centers/:id/subscription', signedIn(updateCenterSubscription)],
 
   ['GET', '/api/public/centers', plain(listPublicCenters)],
   ['POST', '/api/public/centers/:id/inquiries', createInquiry],

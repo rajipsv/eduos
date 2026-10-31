@@ -27,6 +27,7 @@ import {
 } from './session.js';
 import { getPool } from '../db.js';
 import { getCenter, createCenterWithDefaults } from '../db/centers.js';
+import { addDays, PILOT_DAYS } from '../../js/subscription.js';
 import { uid } from './crypto.js';
 import { authenticateRequest } from './middleware.js';
 import { appUrl, isDemoModeEnabled } from '../env.js';
@@ -187,6 +188,7 @@ export async function handleRegisterCenter(req, res) {
   const centerId = uid('center');
   const userId = uid('user');
   const slug = centerName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  const today = new Date().toISOString().slice(0, 10);
   const client = await getPool().connect();
   try {
     await client.query('BEGIN');
@@ -199,8 +201,10 @@ export async function handleRegisterCenter(req, res) {
       ownerEmail: normEmail,
       ownerUserId: userId,
       status: 'active',
-      plan: 'trial',
-      createdAt: new Date().toISOString().slice(0, 10),
+      plan: 'pilot',
+      createdAt: today,
+      // Every new center starts with a free 30-day pilot.
+      subscription: { plan: 'pilot', pilotEndsAt: addDays(today, PILOT_DAYS), paidUntil: null, extraBranches: 0, studentLimit: null, payments: [] },
     });
     await insertUser(
       { id: userId, email: normEmail, passwordHash: hashPassword(password), role: 'center_admin', name: ownerName.trim(), centerId },

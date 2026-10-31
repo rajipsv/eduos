@@ -1,6 +1,18 @@
 import { esc, safeUrl } from './html.js';
 import { apiFetch } from './api-client.js';
-import { getCenters, getTeachers, getStudents, getBatches, getLeads } from './store.js';
+import { getCenters, getTeachers, getStudents, getBatches, getLeads, updateCenterSubscription } from './store.js';
+import {
+  getSubscription,
+  subscriptionStatus,
+  nextPaidUntil,
+  formatDay,
+  formatRupees,
+  todayIso,
+  PLANS,
+  PLAN_LABELS,
+  PAYMENT_METHODS,
+  STUDENTS_PER_BRANCH,
+} from './subscription.js';
 import { getSession, platformViewCenter, platformExitCenterView, setCenterStatus, isPlatformOwner } from './auth.js';
 import { PLATFORM_LAYERS } from './intelligence.js';
 import { getUpcomingSessions, formatTime, sessionNotesHtml } from './scheduler.js';
@@ -180,7 +192,7 @@ export function renderPlatformCenters(rawState) {
   return `
     <div class="toolbar"><input id="centerSearch" placeholder="Search centers…" style="flex:1;max-width:280px"></div>
     <div class="panel"><div class="panel-body table-wrap">
-      <table><thead><tr><th>Center</th><th>City</th><th>Plan</th><th>Teachers</th><th>Students</th><th>Leads</th><th>Status</th><th></th></tr></thead>
+      <table><thead><tr><th>Center</th><th>City</th><th>Plan</th><th>Subscription</th><th>Teachers</th><th>Students / limit</th><th>Leads</th><th>Status</th><th></th></tr></thead>
       <tbody id="centersTableBody">${centersTableRows(centers, rawState)}</tbody></table>
     </div></div>`;
 }
@@ -188,17 +200,150 @@ export function renderPlatformCenters(rawState) {
 function centersTableRows(centers, rawState) {
   return centers.map((c) => {
     const st = getCenterOpsStats(c.id, rawState);
+    const sub = getSubscription(c);
     return `<tr data-center-row="${esc(c.name.toLowerCase())}">
       <td><strong>${esc(c.name)}</strong><br><small>${esc(c.slug || '')}</small></td>
       <td>${esc(c.city || '—')}</td>
-      <td>${esc(c.plan || 'trial')}</td>
+      <td>${esc(PLAN_LABELS[sub.plan])}</td>
+      <td>${subscriptionChip(c)}</td>
       <td>${esc(st.teachers)}</td>
-      <td>${esc(st.students)}</td>
+      <td>${studentsUsedHtml(st.students, sub.studentLimit)}</td>
       <td>${esc(st.leads)}</td>
       <td><span class="badge ${c.status === 'suspended' ? 'badge-red' : 'badge-green'}">${esc(c.status || 'active')}</span></td>
       <td><button class="btn btn-sm btn-primary" data-action="open-center" data-id="${esc(c.id)}">Open</button></td>
     </tr>`;
   }).join('');
+}
+
+const TONE_BADGE = { green: 'badge-green', orange: 'badge-orange', red: 'badge-red', gray: 'badge-gray' };
+
+function subscriptionChip(center) {
+  const st = subscriptionStatus(center);
+  return `<span class="badge ${TONE_BADGE[st.tone] || 'badge-gray'}">${esc(st.label)}</span>`;
+}
+
+function studentsUsedHtml(used, limit) {
+  const full = used >= limit;
+  return `<span${full ? ' style="color:var(--danger);font-weight:600"' : ''}>${esc(used)} / ${esc(limit)}</span>`;
+}
+
+// Starter ₹18,000/year (launch price) + ₹12,000 per extra branch. Only pre-fills the payment form.
+function suggestedAmount(sub) {
+  return 18000 + 12000 * sub.extraBranches;
+}
+
+function renderSubscriptionPanel(center, st) {
+  const sub = getSubscription(center);
+  const status = subscriptionStatus(center);
+  const payments = [...sub.payments].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  const id = esc(center.id);
+  return `
+    <div class="panel" style="margin-top:20px" id="subscriptionPanel">
+      <div class="panel-header"><h3>Subscription</h3>${subscriptionChip(center)}</div>
+      <div class="panel-body">
+        <p style="font-size:0.88rem;line-height:1.7">
+          <strong>Plan:</strong> ${esc(PLAN_LABELS[sub.plan])} ·
+          <strong>Pilot ends:</strong> ${esc(formatDay(sub.pilotEndsAt))} ·
+          <strong>Paid until:</strong> ${esc(sub.paidUntil ? formatDay(sub.paidUntil) : 'Not paid yet')} ·
+          <strong>Active students:</strong> ${studentsUsedHtml(st.students, sub.studentLimit)} ·
+          <strong>Extra branches:</strong> ${esc(sub.extraBranches)}
+        </p>
+        ${status.kind === 'demo' ? '<p style="font-size:0.85rem;color:var(--text-muted)">Demo center: its admin sees no reminders until you save a plan here.</p>' : ''}
+        <div class="form-grid" style="margin-top:12px">
+          <div class="form-group"><label for="subPlan">Plan</label>
+            <select id="subPlan">${PLANS.map((p) => `<option value="${p}"${sub.plan === p ? ' selected' : ''}>${esc(PLAN_LABELS[p])}</option>`).join('')}</select></div>
+          <div class="form-group"><label for="subPilotEnds">Pilot ends on</label>
+            <input type="date" id="subPilotEnds" value="${esc(sub.pilotEndsAt || '')}"></div>
+          <div class="form-group"><label for="subPaidUntil">Paid until</label>
+            <input type="date" id="subPaidUntil" value="${esc(sub.paidUntil || '')}"></div>
+          <div class="form-group"><label for="subExtraBranches">Extra branches allowed</label>
+            <input type="number" id="subExtraBranches" min="0" max="500" step="1" value="${esc(sub.extraBranches)}"></div>
+          <div class="form-group"><label for="subStudentLimit">Active student limit</label>
+            <input type="number" id="subStudentLimit" min="1" step="1" value="${esc(sub.studentLimitOverride ?? '')}" placeholder="Default: ${esc(STUDENTS_PER_BRANCH)} per branch (${esc(STUDENTS_PER_BRANCH * (1 + sub.extraBranches))})"></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" data-action="save-subscription" data-id="${id}">Save plan</button>
+          <button class="btn btn-secondary" data-action="record-payment" data-id="${id}">Record a payment</button>
+        </div>
+        <h4 style="margin-top:20px">Payments</h4>
+        ${payments.length ? `<div class="table-wrap"><table class="data-table">
+          <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th><th>Note</th></tr></thead>
+          <tbody>${payments.map((p) => `<tr>
+            <td>${esc(formatDay(p.date))}</td>
+            <td>${esc(formatRupees(p.amount))}</td>
+            <td>${esc(p.method || '—')}</td>
+            <td>${esc(p.reference || '—')}</td>
+            <td>${esc(p.note || '')}</td>
+          </tr>`).join('')}</tbody></table></div>` : '<p class="empty-state">No payments recorded yet.</p>'}
+      </div>
+    </div>`;
+}
+
+function readSubscriptionForm() {
+  const val = (elId) => document.getElementById(elId)?.value.trim() ?? '';
+  const update = {
+    plan: val('subPlan'),
+    extraBranches: Number(val('subExtraBranches') || 0),
+    studentLimit: val('subStudentLimit') === '' ? null : Number(val('subStudentLimit')),
+    paidUntil: val('subPaidUntil') || null,
+  };
+  if (val('subPilotEnds')) update.pilotEndsAt = val('subPilotEnds');
+  if (!Number.isInteger(update.extraBranches) || update.extraBranches < 0) return { error: 'Extra branches must be a whole number' };
+  if (update.studentLimit !== null && (!Number.isInteger(update.studentLimit) || update.studentLimit < 1)) {
+    return { error: 'Student limit must be a whole number, or leave it blank' };
+  }
+  return { update };
+}
+
+function showRecordPaymentModal(center, { showModal, closeModal, toast, refresh }) {
+  const sub = getSubscription(center);
+  const today = todayIso();
+  showModal({
+    title: `Record a payment — ${center.name}`,
+    body: `<div class="form-grid">
+      <div class="form-group"><label for="payDate">Payment date</label><input type="date" id="payDate" value="${esc(today)}"></div>
+      <div class="form-group"><label for="payAmount">Amount (₹)</label><input type="number" id="payAmount" min="1" step="1" value="${esc(suggestedAmount(sub))}"></div>
+      <div class="form-group"><label for="payMethod">Paid by</label>
+        <select id="payMethod">${PAYMENT_METHODS.map((m) => `<option value="${esc(m)}">${esc(m === 'cash' ? 'Cash' : m)}</option>`).join('')}</select></div>
+      <div class="form-group"><label for="payReference">Reference (UTR / transaction id)</label><input id="payReference" maxlength="120"></div>
+      <div class="form-group"><label for="payPaidUntil">Paid until</label><input type="date" id="payPaidUntil" value="${esc(nextPaidUntil(center, today))}"></div>
+      <div class="form-group full"><label for="payNote">Note (only you see this)</label><textarea id="payNote" maxlength="500"></textarea></div>
+    </div>
+    <p style="font-size:0.82rem;color:var(--text-muted)">Paid until moves one year on by default. Change it if this payment covers a different period.${sub.plan === 'pilot' ? ' The center moves from the free pilot to the Starter plan.' : ''}</p>`,
+    footer: '<button class="btn btn-secondary" data-modal-cancel>Cancel</button><button class="btn btn-primary" id="savePaymentBtn">Save payment</button>',
+    onMount: () => {
+      const dateEl = document.getElementById('payDate');
+      const untilEl = document.getElementById('payPaidUntil');
+      let untilEdited = false;
+      untilEl.addEventListener('input', () => { untilEdited = true; });
+      dateEl.addEventListener('change', () => {
+        if (!untilEdited && dateEl.value) untilEl.value = nextPaidUntil(center, dateEl.value);
+      });
+      const btn = document.getElementById('savePaymentBtn');
+      btn.onclick = async () => {
+        const amount = Number(document.getElementById('payAmount').value);
+        if (!dateEl.value) return toast('Enter the payment date', 'error');
+        if (!(amount > 0)) return toast('Enter the amount paid', 'error');
+        if (!untilEl.value) return toast('Enter the paid-until date', 'error');
+        btn.disabled = true;
+        const result = await updateCenterSubscription(center.id, {
+          payment: {
+            date: dateEl.value,
+            amount,
+            method: document.getElementById('payMethod').value,
+            reference: document.getElementById('payReference').value.trim(),
+            note: document.getElementById('payNote').value.trim(),
+          },
+          paidUntil: untilEl.value,
+        });
+        btn.disabled = false;
+        if (result.error) return toast(result.error, 'error');
+        closeModal();
+        toast(`Payment of ${formatRupees(amount)} recorded`, 'success');
+        refresh();
+      };
+    },
+  });
 }
 
 export function renderPlatformCenterDetail(centerId, rawState) {
@@ -212,7 +357,7 @@ export function renderPlatformCenterDetail(centerId, rawState) {
       <button class="btn btn-secondary" data-action="go-platformCenters">← All centers</button>
       ${viewing ? `<button class="btn btn-primary" data-action="enter-center-app">Enter center workspace</button>` : `<button class="btn btn-primary" data-action="support-view" data-id="${esc(center.id)}">Support view</button>`}
     </div>
-    <div class="panel"><div class="panel-header"><h3>${esc(center.name)}</h3><span class="badge badge-gray">${esc(center.plan || 'trial')}</span></div>
+    <div class="panel"><div class="panel-header"><h3>${esc(center.name)}</h3><span class="badge badge-gray">${esc(PLAN_LABELS[getSubscription(center).plan])}</span></div>
     <div class="panel-body">
       <p style="font-size:0.88rem;line-height:1.7"><strong>City:</strong> ${esc(center.city || '—')} · <strong>Phone:</strong> ${esc(center.phone || '—')} · <strong>Owner email:</strong> ${esc(center.ownerEmail || '—')} · <strong>Joined:</strong> ${esc(center.createdAt || '—')}</p>
       <div class="stats-grid" style="margin-top:16px">
@@ -226,7 +371,8 @@ export function renderPlatformCenterDetail(centerId, rawState) {
     ? `<button class="btn btn-secondary" data-action="activate-center" data-id="${esc(center.id)}">Reactivate center</button>`
     : `<button class="btn btn-danger" data-action="suspend-center" data-id="${esc(center.id)}">Suspend center</button>`}
       </div>
-    </div></div>`;
+    </div></div>
+    ${renderSubscriptionPanel(center, st)}`;
 }
 
 export function renderPlatformRoadmap() {
@@ -279,6 +425,23 @@ export function bindPlatformEvents(ctx) {
     setCenterStatus(e.target.dataset.id, 'active');
     toast('Center reactivated', 'success');
     refresh();
+  });
+
+  document.querySelector('[data-action="save-subscription"]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const { update, error } = readSubscriptionForm();
+    if (error) return toast(error, 'error');
+    btn.disabled = true;
+    const result = await updateCenterSubscription(btn.dataset.id, update);
+    btn.disabled = false;
+    if (result.error) return toast(result.error, 'error');
+    toast('Subscription saved', 'success');
+    refresh();
+  });
+
+  document.querySelector('[data-action="record-payment"]')?.addEventListener('click', (e) => {
+    const center = getCenters().find((c) => c.id === e.currentTarget.dataset.id);
+    if (center) showRecordPaymentModal(center, ctx);
   });
 
   document.getElementById('centerSearch')?.addEventListener('input', (e) => {
